@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 const dbConfig = {
   server: "localhost",
-  database: "HelpDeskDB",
+  database: process.env.DB_NAME || "ServiceBillingDB",
   driver: "msnodesqlv8",
   options: {
     trustedConnection: true,
@@ -327,7 +327,9 @@ async function ensureUsersTable() {
     IF COL_LENGTH('dbo.Users', 'CreatedByUserID') IS NULL
       ALTER TABLE dbo.Users ADD CreatedByUserID INT NULL;
 
-    IF COL_LENGTH('dbo.Tickets', 'CreatedByUserID') IS NULL
+    -- Tickets is optional while the legacy module is being migrated.
+    IF OBJECT_ID('dbo.Tickets', 'U') IS NOT NULL
+      AND COL_LENGTH('dbo.Tickets', 'CreatedByUserID') IS NULL
       ALTER TABLE dbo.Tickets ADD CreatedByUserID INT NULL;
 
     IF OBJECT_ID('dbo.Notifications', 'U') IS NULL
@@ -1747,7 +1749,8 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, async () => {
-  console.log(`Servidor Help Desk disponible en http://localhost:${PORT}`);
+  console.log(`Service Billing System disponible en http://localhost:${PORT}`);
+  console.log(`Base de datos configurada: ${dbConfig.database}`);
 
   try {
     await ensureUsersTable();
