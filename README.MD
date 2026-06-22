@@ -6,15 +6,23 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository is currently in Phase 1 of the migration. The visible product identity has been updated to Service Billing System, but several internal modules, database tables, API endpoints, seed scripts, and report exports still use the original ticket-based Help Desk structure.
+This repository has completed Phase 4 of the migration. The product identity, new SQL Server schema, database connection, and Clients API are available, while several internal modules and frontend screens still use the original ticket-based Help Desk structure.
 
-No database changes have been made in this phase. Existing endpoints such as `/api/tickets` and tables such as `Tickets` remain in place temporarily to avoid breaking the application while the new service billing model is introduced safely.
+Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
+
+## Project Progress
+
+- Phase 1: Identity and documentation ✅
+- Phase 2: ServiceBillingDB database ✅
+- Phase 3: ServiceBillingDB connection ✅
+- Phase 4: Clients CRUD ✅
 
 ## Current Capabilities
 
 - Session-based login.
 - Role-based access control for `Admin` and `User`.
 - User administration.
+- Client CRUD API with soft deletion.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -52,6 +60,7 @@ The system is being converted toward these Service Billing features:
 - `style.css`: responsive dark theme, cards, tables, forms, buttons, and visual states.
 - `app.js`: frontend logic, API calls, translations, filters, role-based UI, and dynamic rendering.
 - `server.js`: Express backend with SQL Server connection, authentication, legacy ticket records, users, notifications, password recovery, and reports API.
+- `service-billing-schema.sql`: creates `ServiceBillingDB`, its service billing tables, relationships, indexes, and demo data.
 - `seed.js`: creates demo users and legacy ticket records.
 - `seed-demo-data.js`: creates additional demo data for the current legacy structure.
 - `audit-migration.sql`: legacy audit migration script.
@@ -84,48 +93,56 @@ http://localhost:3000
 
 ## Demo Accounts
 
-Admin:
+Service Billing admin:
 
 ```text
-Email: admin@helpdesk.local
+Email: william@servicebilling.local
 Password: Admin123!
 ```
 
-User:
+Service Billing technician:
 
 ```text
-Email: user@helpdesk.local
-Password: User123!
+Email: carlos@servicebilling.local
+Password: Tech123!
 ```
 
-These accounts still use the legacy Help Desk demo values during Phase 1.
+Additional demo accounts are defined in `service-billing-schema.sql`.
 
 ## Current Database State
 
-Backend configuration is unchanged in Phase 1:
+Current backend configuration:
 
 - Server: `localhost`
-- Database: `HelpDeskDB`
+- Database: `ServiceBillingDB` by default
+- Environment override: `DB_NAME`
 - Authentication: Windows Authentication
 
 Current tables used by the application:
 
-- `Tickets`
 - `Users`
 - `Notifications`
 - `PasswordResetRequests`
-
-Planned future tables include:
-
 - `Clients`
 - `Projects`
 - `ServiceRecords`
 - `Invoices`
 - `InvoiceLines`
+- `AppSettings`
+
+Legacy tables and endpoints are not removed during the migration.
 
 ## Current API State
 
-The API remains unchanged in Phase 1.
+The existing API remains available, with the Clients API added in Phase 4.
+
+Clients:
+
+- `GET /api/clients`: returns active clients; supports `?search=` or `?q=`.
+- `GET /api/clients/:id`: returns one active client.
+- `POST /api/clients`: creates a client.
+- `PUT /api/clients/:id`: updates a client.
+- `DELETE /api/clients/:id`: sets `IsActive = 0` without physically deleting the row.
 
 Legacy records:
 
@@ -157,17 +174,76 @@ Reports:
 - `GET /api/reports/tickets/pdf`
 - `GET /api/reports/tickets/excel`
 
-## Phase 1 Scope
+## Phase 4: Clients CRUD
 
-Completed scope for this phase:
+### Permissions
 
-- Project package name changed to Service Billing System.
-- Visible application identity updated.
-- Documentation updated to describe the migration.
-- No database schema changes.
-- No endpoint changes.
-- No module deletion.
-- No changes to login, user management, reports, or legacy ticket logic.
+- Authenticated `Admin`, `Technician`, and current staff users can list and view clients.
+- Only `Admin` users can create, update, or deactivate clients.
+- Deactivation is a soft delete: the API sets `IsActive` to `0`.
+
+### Clients Table
+
+The `dbo.Clients` table includes:
+
+- `ClientID`: identity primary key.
+- `ClientName`: required and unique client name.
+- `ContactName`: primary contact.
+- `Email`: contact email.
+- `Phone`: contact phone number.
+- `BillingName`: legal or billing name.
+- `TaxID`: tax identifier.
+- `AddressLine1`, `AddressLine2`, `City`, `StateProvince`, `PostalCode`, `Country`: address data. The current API exposes `AddressLine1` as `Address`.
+- `IsActive`: controls active or deactivated state.
+- `CreatedAt`, `UpdatedAt`: audit timestamps.
+- `CreatedByUserID`: foreign key to `dbo.Users`.
+
+### API Examples
+
+Log in first so the HTTP client stores the session cookie:
+
+```http
+POST /api/login
+Content-Type: application/json
+
+{
+  "email": "william@servicebilling.local",
+  "password": "Admin123!"
+}
+```
+
+List or search active clients:
+
+```http
+GET /api/clients
+GET /api/clients?search=acme
+GET /api/clients/1
+```
+
+Create a client:
+
+```http
+POST /api/clients
+Content-Type: application/json
+
+{
+  "ClientName": "Example Company",
+  "ContactName": "Ana Perez",
+  "Email": "ana@example.com",
+  "Phone": "787-555-1000",
+  "Address": "100 Main Street",
+  "BillingName": "Example Company LLC",
+  "TaxID": "66-1234567",
+  "IsActive": true
+}
+```
+
+Update or deactivate a client:
+
+```http
+PUT /api/clients/1
+DELETE /api/clients/1
+```
 
 ## Author
 
