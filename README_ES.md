@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 4 de la migracion. La identidad del producto, el nuevo esquema SQL Server, la conexion a la base de datos y la API de Clientes estan disponibles, mientras varios modulos internos y pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
+Este repositorio ha completado la Fase 6 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos y Registros de Servicio estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -16,6 +16,8 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 2: Base de datos ServiceBillingDB ✅
 - Fase 3: Conexion a ServiceBillingDB ✅
 - Fase 4: CRUD de Clientes ✅
+- Fase 5: CRUD de Proyectos ✅
+- Fase 6: CRUD de Registros de Servicio ✅
 
 ## Capacidades Actuales
 
@@ -23,6 +25,8 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Control de acceso por roles `Admin` y `User`.
 - Administracion de usuarios.
 - API CRUD de clientes con desactivacion logica.
+- API CRUD de proyectos relacionados con clientes.
+- API CRUD de registros de servicio con calculo automatico de horas.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -144,6 +148,22 @@ Clientes:
 - `PUT /api/clients/:id`: actualiza un cliente.
 - `DELETE /api/clients/:id`: establece `IsActive = 0` sin borrar fisicamente la fila.
 
+Proyectos:
+
+- `GET /api/projects`: devuelve proyectos activos; permite busqueda y filtro por cliente.
+- `GET /api/projects/:id`: devuelve un proyecto activo.
+- `POST /api/projects`: crea un proyecto para un cliente activo.
+- `PUT /api/projects/:id`: actualiza un proyecto.
+- `DELETE /api/projects/:id`: establece `IsActive = 0` sin borrar fisicamente la fila.
+
+Registros de servicio:
+
+- `GET /api/service-records`: devuelve registros con busqueda y filtros opcionales.
+- `GET /api/service-records/:id`: devuelve un registro.
+- `POST /api/service-records`: crea un registro y calcula `TotalHours`.
+- `PUT /api/service-records/:id`: actualiza un registro y recalcula `TotalHours`.
+- `DELETE /api/service-records/:id`: cambia el estado a `Canceled` sin borrar la fila.
+
 Registros legacy:
 
 - `GET /api/tickets`
@@ -243,6 +263,118 @@ Editar o desactivar un cliente:
 ```http
 PUT /api/clients/1
 DELETE /api/clients/1
+```
+
+## Fase 5: CRUD De Proyectos
+
+Los proyectos pertenecen a clientes mediante `Projects.ClientID`, que referencia `Clients.ClientID`. Cada operacion de creacion o edicion valida que el cliente seleccionado exista y este activo.
+
+### Permisos
+
+- Usuarios autenticados con rol `Admin`, `Technician` y personal actual pueden listar y consultar proyectos.
+- Solo usuarios `Admin` pueden crear, editar o desactivar proyectos.
+- La desactivacion es logica mediante `IsActive = 0`.
+
+### Filtros Disponibles
+
+- Busqueda por `ProjectName`, `ClientName` o `Description` usando `?search=` o `?q=`.
+- Filtro por cliente usando `?clientId=` o `?ClientID=`.
+- Las respuestas GET incluyen `ClientName`.
+
+### Ejemplos De API
+
+```http
+GET /api/projects
+GET /api/projects?search=migracion
+GET /api/projects?clientId=1
+GET /api/projects/1
+```
+
+```http
+POST /api/projects
+Content-Type: application/json
+
+{
+  "ClientID": 1,
+  "ProjectName": "Soporte Mensual",
+  "Description": "Soporte y mantenimiento recurrente",
+  "HourlyRate": 95.50,
+  "IsActive": true
+}
+```
+
+```http
+PUT /api/projects/1
+DELETE /api/projects/1
+```
+
+`HourlyRate` permite decimales y no puede ser negativo.
+
+## Fase 6: CRUD De Registros De Servicio
+
+Cada registro relaciona un tecnico, cliente y proyecto activos mediante `TechnicianUserID`, `ClientID` y `ProjectID`. El proyecto debe estar activo y pertenecer al cliente seleccionado.
+
+### Calculo De TotalHours
+
+La API calcula `TotalHours`; el cliente no envia el valor final. Se suman los intervalos validos de manana y tarde:
+
+```text
+(MorningEnd - MorningStart) + (AfternoonEnd - AfternoonStart)
+```
+
+Las horas aceptan formato `HH:mm` o `HH:mm:ss`. Cada intervalo requiere entrada y salida, y la salida debe ser posterior a la entrada.
+
+### Filtros Disponibles
+
+- Busqueda por descripcion del servicio, tecnico, cliente y proyecto.
+- `TechnicianUserID`
+- `ClientID`
+- `ProjectID`
+- `ServiceDate` en formato `YYYY-MM-DD`
+- `Status`: `Recorded`, `Billed` o `Canceled`
+
+Las respuestas GET incluyen `TechnicianName`, `ClientName` y `ProjectName`.
+
+### Permisos Por Rol
+
+- `Admin`: puede crear, consultar, editar y cancelar registros.
+- `Technician`: puede consultar y crear registros bajo su propio `TechnicianUserID`.
+- Solo `Admin` puede cancelar un registro.
+- La cancelacion establece `Status = 'Canceled'`; no borra fisicamente los datos.
+
+### Ejemplos De API
+
+```http
+GET /api/service-records
+GET /api/service-records?search=mantenimiento
+GET /api/service-records?ClientID=1&Status=Recorded
+GET /api/service-records?TechnicianUserID=3&ServiceDate=2026-06-22
+GET /api/service-records/1
+```
+
+```http
+POST /api/service-records
+Content-Type: application/json
+
+{
+  "TechnicianUserID": 3,
+  "ClientID": 1,
+  "ProjectID": 1,
+  "ServiceDate": "2026-06-22",
+  "MorningStart": "08:30",
+  "MorningEnd": "12:00",
+  "AfternoonStart": "13:00",
+  "AfternoonEnd": "16:30",
+  "ServiceDescription": "Mantenimiento y soporte tecnico",
+  "Status": "Recorded"
+}
+```
+
+El ejemplo produce `TotalHours: 7.00`.
+
+```http
+PUT /api/service-records/1
+DELETE /api/service-records/1
 ```
 
 ## Autor

@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 4 of the migration. The product identity, new SQL Server schema, database connection, and Clients API are available, while several internal modules and frontend screens still use the original ticket-based Help Desk structure.
+This repository has completed Phase 6 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, and Service Records API are available, while the frontend screens still use the original ticket-based Help Desk structure.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -16,6 +16,8 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 2: ServiceBillingDB database ✅
 - Phase 3: ServiceBillingDB connection ✅
 - Phase 4: Clients CRUD ✅
+- Phase 5: Projects CRUD ✅
+- Phase 6: Service Records CRUD ✅
 
 ## Current Capabilities
 
@@ -23,6 +25,8 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Role-based access control for `Admin` and `User`.
 - User administration.
 - Client CRUD API with soft deletion.
+- Project CRUD API linked to clients.
+- Service Records CRUD API with automatic hour calculation.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -144,6 +148,22 @@ Clients:
 - `PUT /api/clients/:id`: updates a client.
 - `DELETE /api/clients/:id`: sets `IsActive = 0` without physically deleting the row.
 
+Projects:
+
+- `GET /api/projects`: returns active projects; supports search and client filtering.
+- `GET /api/projects/:id`: returns one active project.
+- `POST /api/projects`: creates a project for an active client.
+- `PUT /api/projects/:id`: updates a project.
+- `DELETE /api/projects/:id`: sets `IsActive = 0` without physically deleting the row.
+
+Service records:
+
+- `GET /api/service-records`: returns service records with optional search and filters.
+- `GET /api/service-records/:id`: returns one service record.
+- `POST /api/service-records`: creates a record and calculates `TotalHours`.
+- `PUT /api/service-records/:id`: updates a record and recalculates `TotalHours`.
+- `DELETE /api/service-records/:id`: changes the status to `Canceled` without deleting the row.
+
 Legacy records:
 
 - `GET /api/tickets`
@@ -243,6 +263,118 @@ Update or deactivate a client:
 ```http
 PUT /api/clients/1
 DELETE /api/clients/1
+```
+
+## Phase 5: Projects CRUD
+
+Projects belong to clients through `Projects.ClientID`, which references `Clients.ClientID`. Every create or update operation verifies that the selected client exists and is active.
+
+### Permissions
+
+- Authenticated `Admin`, `Technician`, and current staff users can list and view projects.
+- Only `Admin` users can create, update, or deactivate projects.
+- Project deactivation is a soft delete using `IsActive = 0`.
+
+### Available Filters
+
+- Search by `ProjectName`, `ClientName`, or `Description` with `?search=` or `?q=`.
+- Filter by client with `?clientId=` or `?ClientID=`.
+- GET responses include `ClientName`.
+
+### API Examples
+
+```http
+GET /api/projects
+GET /api/projects?search=migration
+GET /api/projects?clientId=1
+GET /api/projects/1
+```
+
+```http
+POST /api/projects
+Content-Type: application/json
+
+{
+  "ClientID": 1,
+  "ProjectName": "Monthly Support",
+  "Description": "Recurring support and maintenance",
+  "HourlyRate": 95.50,
+  "IsActive": true
+}
+```
+
+```http
+PUT /api/projects/1
+DELETE /api/projects/1
+```
+
+`HourlyRate` accepts decimals and cannot be negative.
+
+## Phase 6: Service Records CRUD
+
+Each service record links one active technician, client, and project through `TechnicianUserID`, `ClientID`, and `ProjectID`. The project must be active and belong to the selected client.
+
+### TotalHours Calculation
+
+The API calculates `TotalHours`; clients do not supply the final value. It adds the valid morning and afternoon intervals:
+
+```text
+(MorningEnd - MorningStart) + (AfternoonEnd - AfternoonStart)
+```
+
+Times accept `HH:mm` or `HH:mm:ss`. Each interval requires both start and end, and an end time must be later than its start time.
+
+### Filters
+
+- Full-text search across service description, technician, client, and project.
+- `TechnicianUserID`
+- `ClientID`
+- `ProjectID`
+- `ServiceDate` in `YYYY-MM-DD` format
+- `Status`: `Recorded`, `Billed`, or `Canceled`
+
+GET responses include `TechnicianName`, `ClientName`, and `ProjectName`.
+
+### Role Permissions
+
+- `Admin`: can create, view, edit, and cancel service records.
+- `Technician`: can view records and create records under their own `TechnicianUserID`.
+- Only `Admin` can cancel a record.
+- Cancellation sets `Status = 'Canceled'`; it does not physically delete data.
+
+### API Examples
+
+```http
+GET /api/service-records
+GET /api/service-records?search=maintenance
+GET /api/service-records?ClientID=1&Status=Recorded
+GET /api/service-records?TechnicianUserID=3&ServiceDate=2026-06-22
+GET /api/service-records/1
+```
+
+```http
+POST /api/service-records
+Content-Type: application/json
+
+{
+  "TechnicianUserID": 3,
+  "ClientID": 1,
+  "ProjectID": 1,
+  "ServiceDate": "2026-06-22",
+  "MorningStart": "08:30",
+  "MorningEnd": "12:00",
+  "AfternoonStart": "13:00",
+  "AfternoonEnd": "16:30",
+  "ServiceDescription": "Maintenance and technical support",
+  "Status": "Recorded"
+}
+```
+
+The example produces `TotalHours: 7.00`.
+
+```http
+PUT /api/service-records/1
+DELETE /api/service-records/1
 ```
 
 ## Author
