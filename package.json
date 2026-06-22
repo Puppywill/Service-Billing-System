@@ -1,7 +1,7 @@
 {
-  "name": "helpdesk-ticket-system",
+  "name": "service-billing-system",
   "version": "1.0.0",
-  "description": "Proyecto web creado con HTML, CSS y JavaScript para practicar desarrollo web aplicado a un escenario real de IT Support y Help Desk.",
+  "description": "Sistema web para registrar servicios por hora, consultar registros operativos y preparar reportes de facturacion.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

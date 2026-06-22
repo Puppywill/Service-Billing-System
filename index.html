@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Tickets | Help Desk</title>
+  <title>Service Billing System</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="app-header">
     <div class="header-content">
-      <p class="eyebrow">IT Support Dashboard</p>
-      <h1>Sistema de Tickets Help Desk</h1>
-      <p>Registra, consulta y gestiona solicitudes de soporte tecnico desde el navegador.</p>
+      <p class="eyebrow">Registro de horas y facturacion</p>
+      <h1>Service Billing System</h1>
+      <p>Registra, consulta y prepara informacion de servicios por hora desde el navegador.</p>
       <div class="header-tools">
         <button type="button" id="languageToggle" class="tool-button">English</button>
         <button type="button" id="notificationBell" class="tool-button notification-bell hidden" aria-label="Notificaciones">
@@ -123,14 +123,14 @@
           <path d="M13 16V7"/>
           <path d="M18 16v-4"/>
         </svg>
-        Dashboard
+        Resumen
       </button>
       <button type="button" class="tab-button active" data-tab="tickets">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/>
           <path d="M8 9h8M8 13h5"/>
         </svg>
-        Tickets
+        Registros de Servicio
       </button>
       <button type="button" id="notificationsTabButton" class="tab-button" data-tab="notifications">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -156,7 +156,7 @@
           <path d="M12 16V8"/>
           <path d="M16 16v-3"/>
         </svg>
-        Reportes
+        Reportes / Facturacion
       </button>
     </nav>
 
@@ -166,19 +166,19 @@
           <div class="stat-icon stat-open" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M8 9h8M8 13h5"/></svg>
           </div>
-          <div><span id="dashboardMetricOneLabel">Total Tickets</span><strong id="dashboardMetricOne">0</strong></div>
+          <div><span id="dashboardMetricOneLabel">Total Registros</span><strong id="dashboardMetricOne">0</strong></div>
         </article>
         <article class="stat-card">
           <div class="stat-icon stat-progress" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg>
           </div>
-          <div><span id="dashboardMetricTwoLabel">Tickets Abiertos</span><strong id="dashboardMetricTwo">0</strong></div>
+          <div><span id="dashboardMetricTwoLabel">Registros Abiertos</span><strong id="dashboardMetricTwo">0</strong></div>
         </article>
         <article class="stat-card">
           <div class="stat-icon stat-closed" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
-          <div><span id="dashboardMetricThreeLabel">Tickets Cerrados</span><strong id="dashboardMetricThree">0</strong></div>
+          <div><span id="dashboardMetricThreeLabel">Registros Cerrados</span><strong id="dashboardMetricThree">0</strong></div>
         </article>
         <article class="stat-card">
           <div class="stat-icon stat-open" aria-hidden="true">
@@ -201,23 +201,23 @@
     <section id="ticketsTabPanel" class="tab-panel app-layout">
       <section class="panel form-panel" aria-labelledby="form-title">
         <div class="section-title">
-          <p class="eyebrow">Nuevo caso</p>
-          <h2 id="form-title">Crear ticket</h2>
+          <p class="eyebrow">Nuevo registro</p>
+          <h2 id="form-title">Crear registro de servicio</h2>
         </div>
 
         <form id="ticketForm" class="ticket-form">
           <div class="current-user-card" aria-live="polite">
-            <span id="creatingTicketAsLabel">Creando ticket como:</span>
+            <span id="creatingTicketAsLabel">Creando registro como:</span>
             <strong id="creatingTicketAsName">Usuario autenticado</strong>
           </div>
 
           <div class="form-group">
-            <label for="description">Descripcion del problema</label>
+            <label for="description">Descripcion del servicio</label>
             <textarea
               id="description"
               name="description"
               rows="5"
-              placeholder="Ej. La computadora no conecta a la red Wi-Fi."
+              placeholder="Ej. Servicio tecnico realizado al cliente."
               required
             ></textarea>
           </div>
@@ -239,7 +239,7 @@
                 <option value="En Progreso">En Progreso</option>
                 <option value="Cerrado">Cerrado</option>
               </select>
-              <small id="statusHelp" class="field-help hidden">Los usuarios crean tickets como Abierto.</small>
+              <small id="statusHelp" class="field-help hidden">Los usuarios crean registros como Abierto.</small>
             </div>
           </div>
 
@@ -248,13 +248,13 @@
               <path d="M12 5v14"/>
               <path d="M5 12h14"/>
             </svg>
-            Crear ticket
+            Crear registro
           </button>
         </form>
       </section>
 
       <section class="workspace">
-        <section class="stats-grid" aria-label="Contadores de tickets">
+        <section class="stats-grid" aria-label="Contadores de registros de servicio">
         <article class="stat-card">
           <div class="stat-icon stat-open" aria-hidden="true">
             <svg viewBox="0 0 24 24" role="img">
@@ -295,13 +295,13 @@
       <section class="panel table-panel" aria-labelledby="table-title">
         <div class="table-header">
           <div class="section-title">
-            <p class="eyebrow">Bandeja de soporte</p>
-            <h2 id="table-title">Todos los tickets</h2>
+            <p class="eyebrow">Registro operativo</p>
+            <h2 id="table-title">Todos los registros de servicio</h2>
           </div>
-          <p class="ticket-total"><span id="totalCount">0</span> tickets registrados</p>
+          <p class="ticket-total"><span id="totalCount">0</span> registros de servicio</p>
         </div>
 
-        <div class="ticket-toolbar" aria-label="Filtros de tickets">
+        <div class="ticket-toolbar" aria-label="Filtros de registros de servicio">
           <div class="search-field">
             <label for="searchInput">Buscar</label>
             <input
@@ -337,17 +337,17 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Problema</th>
+                <th>Servicio</th>
                 <th>Prioridad</th>
                 <th>Estado</th>
                 <th>Fecha</th>
-                <th>Reportado por</th>
+                <th>Registrado por</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="ticketTableBody">
               <tr>
-                <td colspan="7" class="empty-state">No hay tickets registrados.</td>
+                <td colspan="7" class="empty-state">No hay registros de servicio.</td>
               </tr>
             </tbody>
           </table>
@@ -513,9 +513,9 @@
         <div class="table-header">
           <div class="section-title">
             <p class="eyebrow">Analitica</p>
-            <h2 id="reportsTitle">Reportes</h2>
+            <h2 id="reportsTitle">Reportes / Facturacion</h2>
           </div>
-          <p class="ticket-total"><span id="reportsTotalCount">0</span> tickets</p>
+          <p class="ticket-total"><span id="reportsTotalCount">0</span> registros</p>
         </div>
 
         <form id="reportsForm" class="report-toolbar">
@@ -563,11 +563,11 @@
             <thead>
               <tr>
                 <th>TicketID</th>
-                <th>Descripcion</th>
+                <th>Servicio</th>
                 <th>Prioridad</th>
                 <th>Estado</th>
                 <th>Fecha</th>
-                <th>Reportado por</th>
+                <th>Registrado por</th>
               </tr>
             </thead>
             <tbody id="reportsTableBody">
@@ -586,7 +586,7 @@
       <div class="table-header">
         <div class="section-title">
           <p class="eyebrow">Administrador</p>
-          <h2 id="edit-title">Editar ticket</h2>
+          <h2 id="edit-title">Editar registro de servicio</h2>
         </div>
         <button type="button" id="closeEditModal" class="icon-button" aria-label="Cerrar editor">
           <svg viewBox="0 0 24 24" aria-hidden="true">
