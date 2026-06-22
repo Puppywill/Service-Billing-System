@@ -295,6 +295,165 @@ function getProjectPayload(body) {
   };
 }
 
+const SERVICE_RECORD_STATUSES = new Set(["Recorded", "Billed", "Canceled"]);
+
+function normalizeServiceTime(value) {
+  if (value === undefined || value === null || value === "") {
+    return { value: null, minutes: null, isValid: true };
+  }
+
+  const match = String(value).trim().match(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/);
+
+  if (!match) {
+    return { value: null, minutes: null, isValid: false };
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3] || 0);
+
+  return {
+    value: `${match[1]}:${match[2]}:${String(seconds).padStart(2, "0")}`,
+    minutes: hours * 60 + minutes + seconds / 60,
+    isValid: true
+  };
+}
+
+function isValidServiceDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
+}
+
+function formatServiceTime(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(11, 19);
+  return String(value).slice(0, 8);
+}
+
+function getServiceRecordPayload(body) {
+  const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
+  const morningStart = normalizeServiceTime(getValue("morningStart", "MorningStart"));
+  const morningEnd = normalizeServiceTime(getValue("morningEnd", "MorningEnd"));
+  const afternoonStart = normalizeServiceTime(getValue("afternoonStart", "AfternoonStart"));
+  const afternoonEnd = normalizeServiceTime(getValue("afternoonEnd", "AfternoonEnd"));
+  const intervals = [
+    { label: "manana", start: morningStart, end: morningEnd },
+    { label: "tarde", start: afternoonStart, end: afternoonEnd }
+  ];
+  let totalMinutes = 0;
+  let timeError = null;
+
+  for (const interval of intervals) {
+    if (!interval.start.isValid || !interval.end.isValid) {
+      timeError = "Las horas deben usar formato HH:mm o HH:mm:ss.";
+      break;
+    }
+
+    if ((interval.start.minutes === null) !== (interval.end.minutes === null)) {
+      timeError = `El horario de ${interval.label} requiere entrada y salida.`;
+      break;
+    }
+
+    if (interval.start.minutes !== null) {
+      if (interval.end.minutes <= interval.start.minutes) {
+        timeError = `La salida de ${interval.label} debe ser posterior a la entrada.`;
+        break;
+      }
+
+      totalMinutes += interval.end.minutes - interval.start.minutes;
+    }
+  }
+
+  if (!timeError && totalMinutes <= 0) {
+    timeError = "Debes registrar al menos un intervalo de horas valido.";
+  }
+
+  const rawStatus = getValue("status", "Status");
+  const description = getValue("serviceDescription", "ServiceDescription");
+
+  return {
+    technicianUserId: Number(getValue("technicianUserId", "TechnicianUserID")),
+    clientId: Number(getValue("clientId", "ClientID")),
+    projectId: Number(getValue("projectId", "ProjectID")),
+    serviceDate: String(getValue("serviceDate", "ServiceDate") || "").trim(),
+    morningStart: morningStart.value,
+    morningEnd: morningEnd.value,
+    afternoonStart: afternoonStart.value,
+    afternoonEnd: afternoonEnd.value,
+    totalHours: Math.round((totalMinutes / 60) * 100) / 100,
+    serviceDescription: description === undefined || description === null ? "" : String(description).trim(),
+    status: rawStatus === undefined || rawStatus === null || rawStatus === "" ? null : String(rawStatus).trim(),
+    timeError
+  };
+}
+
+function getServiceRecordValidationError(serviceRecord) {
+  if (!Number.isInteger(serviceRecord.technicianUserId) || serviceRecord.technicianUserId <= 0) {
+    return "TechnicianUserID es obligatorio y debe ser valido.";
+  }
+
+  if (!Number.isInteger(serviceRecord.clientId) || serviceRecord.clientId <= 0) {
+    return "ClientID es obligatorio y debe ser valido.";
+  }
+
+  if (!Number.isInteger(serviceRecord.projectId) || serviceRecord.projectId <= 0) {
+    return "ProjectID es obligatorio y debe ser valido.";
+  }
+
+  if (!isValidServiceDate(serviceRecord.serviceDate)) {
+    return "ServiceDate es obligatorio y debe usar formato YYYY-MM-DD.";
+  }
+
+  if (!serviceRecord.serviceDescription) {
+    return "ServiceDescription es obligatorio.";
+  }
+
+  if (serviceRecord.timeError) {
+    return serviceRecord.timeError;
+  }
+
+  if (serviceRecord.totalHours < 0 || serviceRecord.totalHours > 24) {
+    return "TotalHours calculado debe estar entre 0 y 24.";
+  }
+
+  if (serviceRecord.status && !SERVICE_RECORD_STATUSES.has(serviceRecord.status)) {
+    return "Status debe ser Recorded, Billed o Canceled.";
+  }
+
+  return null;
+}
+
+function mapServiceRecord(record) {
+  return {
+    ServiceRecordID: record.ServiceRecordID,
+    TechnicianUserID: record.TechnicianUserID,
+    TechnicianName: record.TechnicianName,
+    ClientID: record.ClientID,
+    ClientName: record.ClientName,
+    ProjectID: record.ProjectID,
+    ProjectName: record.ProjectName,
+    ServiceDate: record.ServiceDate instanceof Date
+      ? record.ServiceDate.toISOString().slice(0, 10)
+      : String(record.ServiceDate).slice(0, 10),
+    MorningStart: formatServiceTime(record.MorningStart),
+    MorningEnd: formatServiceTime(record.MorningEnd),
+    AfternoonStart: formatServiceTime(record.AfternoonStart),
+    AfternoonEnd: formatServiceTime(record.AfternoonEnd),
+    TotalHours: Number(record.TotalHours),
+    ServiceDescription: record.ServiceDescription,
+    Status: record.Status,
+    InvoiceID: record.InvoiceID,
+    CreatedAt: record.CreatedAt,
+    UpdatedAt: record.UpdatedAt
+  };
+}
+
 function mapNotification(record) {
   return {
     NotificationID: record.NotificationID,
@@ -338,6 +497,18 @@ function requireAdmin(req, res, next) {
 
   if (req.session.user.Role !== "Admin") {
     return res.status(403).json({ message: "No tienes permisos de administrador." });
+  }
+
+  next();
+}
+
+function requireAdminOrTechnician(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Debes iniciar sesion." });
+  }
+
+  if (!["Admin", "Technician"].includes(req.session.user.Role)) {
+    return res.status(403).json({ message: "No tienes permisos para acceder a registros de servicio." });
   }
 
   next();
@@ -576,6 +747,76 @@ async function getProjectById(pool, projectId, activeOnly = true) {
     `);
 
   return result.recordset[0] ? mapProject(result.recordset[0]) : null;
+}
+
+async function getServiceRecordById(pool, serviceRecordId) {
+  const result = await pool.request()
+    .input("ServiceRecordID", sql.Int, serviceRecordId)
+    .query(`
+      SELECT
+        sr.ServiceRecordID,
+        sr.TechnicianUserID,
+        technician.FullName AS TechnicianName,
+        sr.ClientID,
+        client.ClientName,
+        sr.ProjectID,
+        project.ProjectName,
+        sr.ServiceDate,
+        sr.MorningStart,
+        sr.MorningEnd,
+        sr.AfternoonStart,
+        sr.AfternoonEnd,
+        sr.TotalHours,
+        sr.ServiceDescription,
+        sr.Status,
+        sr.InvoiceID,
+        sr.CreatedAt,
+        sr.UpdatedAt
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+      WHERE sr.ServiceRecordID = @ServiceRecordID
+    `);
+
+  return result.recordset[0] ? mapServiceRecord(result.recordset[0]) : null;
+}
+
+async function validateServiceRecordReferences(pool, serviceRecord) {
+  const result = await pool.request()
+    .input("TechnicianUserID", sql.Int, serviceRecord.technicianUserId)
+    .input("ClientID", sql.Int, serviceRecord.clientId)
+    .input("ProjectID", sql.Int, serviceRecord.projectId)
+    .query(`
+      SELECT
+        CASE WHEN EXISTS (
+          SELECT 1
+          FROM dbo.Users
+          WHERE UserID = @TechnicianUserID
+            AND IsActive = 1
+            AND (IsTechnician = 1 OR Role = N'Technician')
+        ) THEN 1 ELSE 0 END AS TechnicianExists,
+        CASE WHEN EXISTS (
+          SELECT 1
+          FROM dbo.Clients
+          WHERE ClientID = @ClientID
+            AND IsActive = 1
+        ) THEN 1 ELSE 0 END AS ClientExists,
+        CASE WHEN EXISTS (
+          SELECT 1
+          FROM dbo.Projects
+          WHERE ProjectID = @ProjectID
+            AND ClientID = @ClientID
+            AND IsActive = 1
+        ) THEN 1 ELSE 0 END AS ProjectExists
+    `);
+
+  const validation = result.recordset[0];
+
+  if (!validation.TechnicianExists) return "El tecnico no existe o esta inactivo.";
+  if (!validation.ClientExists) return "El cliente no existe o esta inactivo.";
+  if (!validation.ProjectExists) return "El proyecto no existe, esta inactivo o no pertenece al cliente.";
+  return null;
 }
 
 function isValidDateString(value) {
@@ -1583,6 +1824,300 @@ app.delete("/api/projects/:id", requireAdmin, async (req, res) => {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al desactivar el proyecto." });
+  }
+});
+
+app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
+  const search = String(req.query.search || req.query.q || "").trim().slice(0, 300);
+  const rawFilters = {
+    TechnicianUserID: req.query.technicianUserId ?? req.query.TechnicianUserID,
+    ClientID: req.query.clientId ?? req.query.ClientID,
+    ProjectID: req.query.projectId ?? req.query.ProjectID
+  };
+  const numericFilters = {};
+
+  for (const [name, rawValue] of Object.entries(rawFilters)) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
+    const value = Number(rawValue);
+
+    if (!Number.isInteger(value) || value <= 0) {
+      return res.status(400).json({ message: `${name} invalido.` });
+    }
+
+    numericFilters[name] = value;
+  }
+
+  const serviceDate = String(req.query.serviceDate || req.query.ServiceDate || "").trim();
+  const status = String(req.query.status || req.query.Status || "").trim();
+
+  if (serviceDate && !isValidServiceDate(serviceDate)) {
+    return res.status(400).json({ message: "ServiceDate debe usar formato YYYY-MM-DD." });
+  }
+
+  if (status && !SERVICE_RECORD_STATUSES.has(status)) {
+    return res.status(400).json({ message: "Status debe ser Recorded, Billed o Canceled." });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = [];
+
+    if (search) {
+      request.input("Search", sql.NVarChar(620), `%${search}%`);
+      whereClauses.push(`
+        (
+          sr.ServiceDescription LIKE @Search
+          OR technician.FullName LIKE @Search
+          OR client.ClientName LIKE @Search
+          OR project.ProjectName LIKE @Search
+        )
+      `);
+    }
+
+    for (const [name, value] of Object.entries(numericFilters)) {
+      request.input(name, sql.Int, value);
+      whereClauses.push(`sr.${name} = @${name}`);
+    }
+
+    if (serviceDate) {
+      request.input("ServiceDate", sql.Date, serviceDate);
+      whereClauses.push("sr.ServiceDate = @ServiceDate");
+    }
+
+    if (status) {
+      request.input("Status", sql.NVarChar(20), status);
+      whereClauses.push("sr.Status = @Status");
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const result = await request.query(`
+      SELECT
+        sr.ServiceRecordID,
+        sr.TechnicianUserID,
+        technician.FullName AS TechnicianName,
+        sr.ClientID,
+        client.ClientName,
+        sr.ProjectID,
+        project.ProjectName,
+        sr.ServiceDate,
+        sr.MorningStart,
+        sr.MorningEnd,
+        sr.AfternoonStart,
+        sr.AfternoonEnd,
+        sr.TotalHours,
+        sr.ServiceDescription,
+        sr.Status,
+        sr.InvoiceID,
+        sr.CreatedAt,
+        sr.UpdatedAt
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+      ${whereSql}
+      ORDER BY sr.ServiceDate DESC, sr.ServiceRecordID DESC
+    `);
+
+    res.json(result.recordset.map(mapServiceRecord));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener registros de servicio." });
+  }
+});
+
+app.get("/api/service-records/:id", requireAdminOrTechnician, async (req, res) => {
+  const serviceRecordId = Number(req.params.id);
+
+  if (!Number.isInteger(serviceRecordId) || serviceRecordId <= 0) {
+    return res.status(400).json({ message: "ID de registro de servicio invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const serviceRecord = await getServiceRecordById(pool, serviceRecordId);
+
+    if (!serviceRecord) {
+      return res.status(404).json({ message: "Registro de servicio no encontrado." });
+    }
+
+    res.json(serviceRecord);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener el registro de servicio." });
+  }
+});
+
+app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
+  const serviceRecord = getServiceRecordPayload(req.body || {});
+  const validationError = getServiceRecordValidationError(serviceRecord);
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
+
+  if (req.session.user.Role === "Technician"
+    && Number(req.session.user.UserID) !== serviceRecord.technicianUserId) {
+    return res.status(403).json({ message: "Los tecnicos solo pueden crear registros a su propio nombre." });
+  }
+
+  try {
+    const pool = await getPool();
+    const referenceError = await validateServiceRecordReferences(pool, serviceRecord);
+
+    if (referenceError) {
+      return res.status(400).json({ message: referenceError });
+    }
+
+    const result = await pool.request()
+      .input("TechnicianUserID", sql.Int, serviceRecord.technicianUserId)
+      .input("ClientID", sql.Int, serviceRecord.clientId)
+      .input("ProjectID", sql.Int, serviceRecord.projectId)
+      .input("ServiceDate", sql.Date, serviceRecord.serviceDate)
+      .input("MorningStart", sql.VarChar(8), serviceRecord.morningStart)
+      .input("MorningEnd", sql.VarChar(8), serviceRecord.morningEnd)
+      .input("AfternoonStart", sql.VarChar(8), serviceRecord.afternoonStart)
+      .input("AfternoonEnd", sql.VarChar(8), serviceRecord.afternoonEnd)
+      .input("TotalHours", sql.Decimal(6, 2), serviceRecord.totalHours)
+      .input("ServiceDescription", sql.NVarChar(sql.MAX), serviceRecord.serviceDescription)
+      .input("Status", sql.NVarChar(20), serviceRecord.status || "Recorded")
+      .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
+      .query(`
+        INSERT INTO dbo.ServiceRecords (
+          TechnicianUserID,
+          ClientID,
+          ProjectID,
+          ServiceDate,
+          MorningStart,
+          MorningEnd,
+          AfternoonStart,
+          AfternoonEnd,
+          TotalHours,
+          ServiceDescription,
+          Status,
+          CreatedByUserID
+        )
+        OUTPUT inserted.ServiceRecordID
+        VALUES (
+          @TechnicianUserID,
+          @ClientID,
+          @ProjectID,
+          @ServiceDate,
+          @MorningStart,
+          @MorningEnd,
+          @AfternoonStart,
+          @AfternoonEnd,
+          @TotalHours,
+          @ServiceDescription,
+          @Status,
+          @CreatedByUserID
+        )
+      `);
+
+    const createdRecord = await getServiceRecordById(pool, result.recordset[0].ServiceRecordID);
+    res.status(201).json(createdRecord);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al crear el registro de servicio." });
+  }
+});
+
+app.put("/api/service-records/:id", requireAdmin, async (req, res) => {
+  const serviceRecordId = Number(req.params.id);
+  const serviceRecord = getServiceRecordPayload(req.body || {});
+
+  if (!Number.isInteger(serviceRecordId) || serviceRecordId <= 0) {
+    return res.status(400).json({ message: "ID de registro de servicio invalido." });
+  }
+
+  const validationError = getServiceRecordValidationError(serviceRecord);
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
+
+  try {
+    const pool = await getPool();
+    const referenceError = await validateServiceRecordReferences(pool, serviceRecord);
+
+    if (referenceError) {
+      return res.status(400).json({ message: referenceError });
+    }
+
+    const result = await pool.request()
+      .input("ServiceRecordID", sql.Int, serviceRecordId)
+      .input("TechnicianUserID", sql.Int, serviceRecord.technicianUserId)
+      .input("ClientID", sql.Int, serviceRecord.clientId)
+      .input("ProjectID", sql.Int, serviceRecord.projectId)
+      .input("ServiceDate", sql.Date, serviceRecord.serviceDate)
+      .input("MorningStart", sql.VarChar(8), serviceRecord.morningStart)
+      .input("MorningEnd", sql.VarChar(8), serviceRecord.morningEnd)
+      .input("AfternoonStart", sql.VarChar(8), serviceRecord.afternoonStart)
+      .input("AfternoonEnd", sql.VarChar(8), serviceRecord.afternoonEnd)
+      .input("TotalHours", sql.Decimal(6, 2), serviceRecord.totalHours)
+      .input("ServiceDescription", sql.NVarChar(sql.MAX), serviceRecord.serviceDescription)
+      .input("Status", sql.NVarChar(20), serviceRecord.status)
+      .query(`
+        UPDATE dbo.ServiceRecords
+        SET TechnicianUserID = @TechnicianUserID,
+            ClientID = @ClientID,
+            ProjectID = @ProjectID,
+            ServiceDate = @ServiceDate,
+            MorningStart = @MorningStart,
+            MorningEnd = @MorningEnd,
+            AfternoonStart = @AfternoonStart,
+            AfternoonEnd = @AfternoonEnd,
+            TotalHours = @TotalHours,
+            ServiceDescription = @ServiceDescription,
+            Status = COALESCE(@Status, Status),
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ServiceRecordID = @ServiceRecordID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Registro de servicio no encontrado." });
+    }
+
+    const updatedRecord = await getServiceRecordById(pool, serviceRecordId);
+    res.json(updatedRecord);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al editar el registro de servicio." });
+  }
+});
+
+app.delete("/api/service-records/:id", requireAdmin, async (req, res) => {
+  const serviceRecordId = Number(req.params.id);
+
+  if (!Number.isInteger(serviceRecordId) || serviceRecordId <= 0) {
+    return res.status(400).json({ message: "ID de registro de servicio invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ServiceRecordID", sql.Int, serviceRecordId)
+      .query(`
+        UPDATE dbo.ServiceRecords
+        SET Status = N'Canceled',
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ServiceRecordID = @ServiceRecordID
+          AND Status <> N'Canceled'
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Registro activo no encontrado." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al cancelar el registro de servicio." });
   }
 });
 
