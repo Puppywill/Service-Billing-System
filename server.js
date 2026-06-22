@@ -257,6 +257,44 @@ function getClientPayload(body) {
   };
 }
 
+function mapProject(record) {
+  return {
+    ProjectID: record.ProjectID,
+    ClientID: record.ClientID,
+    ClientName: record.ClientName,
+    ProjectName: record.ProjectName,
+    Description: record.Description,
+    HourlyRate: Number(record.HourlyRate),
+    IsActive: Boolean(record.IsActive),
+    CreatedAt: record.CreatedAt,
+    UpdatedAt: record.UpdatedAt
+  };
+}
+
+function getProjectPayload(body) {
+  const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
+  const normalizeOptionalText = (value) => {
+    if (value === undefined || value === null) return null;
+    const normalized = String(value).trim();
+    return normalized || null;
+  };
+
+  const rawClientId = getValue("clientId", "ClientID");
+  const rawHourlyRate = getValue("hourlyRate", "HourlyRate");
+  const rawIsActive = getValue("isActive", "IsActive");
+  const hasHourlyRate = rawHourlyRate !== undefined && rawHourlyRate !== null && rawHourlyRate !== "";
+  const hourlyRate = hasHourlyRate ? Number(rawHourlyRate) : null;
+
+  return {
+    clientId: Number(rawClientId),
+    projectName: normalizeOptionalText(getValue("projectName", "ProjectName")),
+    description: normalizeOptionalText(getValue("description", "Description")),
+    hourlyRate,
+    hourlyRateIsValid: !hasHourlyRate || (Number.isFinite(hourlyRate) && hourlyRate >= 0),
+    isActive: rawIsActive === undefined ? null : Boolean(rawIsActive)
+  };
+}
+
 function mapNotification(record) {
   return {
     NotificationID: record.NotificationID,
@@ -515,6 +553,29 @@ async function getClientById(pool, clientId, activeOnly = true) {
     `);
 
   return result.recordset[0] ? mapClient(result.recordset[0]) : null;
+}
+
+async function getProjectById(pool, projectId, activeOnly = true) {
+  const result = await pool.request()
+    .input("ProjectID", sql.Int, projectId)
+    .query(`
+      SELECT
+        p.ProjectID,
+        p.ClientID,
+        c.ClientName,
+        p.ProjectName,
+        p.Description,
+        p.HourlyRate,
+        p.IsActive,
+        p.CreatedAt,
+        p.UpdatedAt
+      FROM dbo.Projects p
+      INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
+      WHERE p.ProjectID = @ProjectID
+        ${activeOnly ? "AND p.IsActive = 1" : ""}
+    `);
+
+  return result.recordset[0] ? mapProject(result.recordset[0]) : null;
 }
 
 function isValidDateString(value) {
@@ -1284,6 +1345,244 @@ app.delete("/api/clients/:id", requireAdmin, async (req, res) => {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al desactivar el cliente." });
+  }
+});
+
+app.get("/api/projects", requireAuth, async (req, res) => {
+  const search = String(req.query.search || req.query.q || "").trim().slice(0, 180);
+  const rawClientId = req.query.clientId ?? req.query.ClientID;
+  const hasClientFilter = rawClientId !== undefined && rawClientId !== null && rawClientId !== "";
+  const clientId = hasClientFilter ? Number(rawClientId) : null;
+
+  if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
+    return res.status(400).json({ message: "ClientID invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = ["p.IsActive = 1"];
+
+    if (search) {
+      request.input("Search", sql.NVarChar(400), `%${search}%`);
+      whereClauses.push(`
+        (
+          p.ProjectName LIKE @Search
+          OR c.ClientName LIKE @Search
+          OR p.Description LIKE @Search
+        )
+      `);
+    }
+
+    if (hasClientFilter) {
+      request.input("ClientID", sql.Int, clientId);
+      whereClauses.push("p.ClientID = @ClientID");
+    }
+
+    const result = await request.query(`
+      SELECT
+        p.ProjectID,
+        p.ClientID,
+        c.ClientName,
+        p.ProjectName,
+        p.Description,
+        p.HourlyRate,
+        p.IsActive,
+        p.CreatedAt,
+        p.UpdatedAt
+      FROM dbo.Projects p
+      INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
+      WHERE ${whereClauses.join(" AND ")}
+      ORDER BY c.ClientName ASC, p.ProjectName ASC
+    `);
+
+    res.json(result.recordset.map(mapProject));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener proyectos." });
+  }
+});
+
+app.get("/api/projects/:id", requireAuth, async (req, res) => {
+  const projectId = Number(req.params.id);
+
+  if (!Number.isInteger(projectId) || projectId <= 0) {
+    return res.status(400).json({ message: "ID de proyecto invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const project = await getProjectById(pool, projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Proyecto no encontrado." });
+    }
+
+    res.json(project);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener el proyecto." });
+  }
+});
+
+app.post("/api/projects", requireAdmin, async (req, res) => {
+  const project = getProjectPayload(req.body || {});
+
+  if (!Number.isInteger(project.clientId) || project.clientId <= 0) {
+    return res.status(400).json({ message: "ClientID es obligatorio y debe ser valido." });
+  }
+
+  if (!project.projectName) {
+    return res.status(400).json({ message: "ProjectName es obligatorio." });
+  }
+
+  if (!project.hourlyRateIsValid) {
+    return res.status(400).json({ message: "HourlyRate debe ser un decimal no negativo." });
+  }
+
+  try {
+    const pool = await getPool();
+    const activeClient = await getClientById(pool, project.clientId);
+
+    if (!activeClient) {
+      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+    }
+
+    const result = await pool.request()
+      .input("ClientID", sql.Int, project.clientId)
+      .input("ProjectName", sql.NVarChar(160), project.projectName)
+      .input("Description", sql.NVarChar(500), project.description)
+      .input("HourlyRate", sql.Decimal(10, 2), project.hourlyRate ?? 0)
+      .input("IsActive", sql.Bit, project.isActive ?? true)
+      .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
+      .query(`
+        INSERT INTO dbo.Projects (
+          ClientID,
+          ProjectName,
+          Description,
+          HourlyRate,
+          IsActive,
+          CreatedByUserID
+        )
+        OUTPUT inserted.ProjectID
+        VALUES (
+          @ClientID,
+          @ProjectName,
+          @Description,
+          @HourlyRate,
+          @IsActive,
+          @CreatedByUserID
+        )
+      `);
+
+    const createdProject = await getProjectById(pool, result.recordset[0].ProjectID, false);
+    res.status(201).json(createdProject);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe un proyecto con ese nombre para el cliente." });
+    }
+
+    res.status(500).json({ message: "Error al crear el proyecto." });
+  }
+});
+
+app.put("/api/projects/:id", requireAdmin, async (req, res) => {
+  const projectId = Number(req.params.id);
+  const project = getProjectPayload(req.body || {});
+
+  if (!Number.isInteger(projectId) || projectId <= 0) {
+    return res.status(400).json({ message: "ID de proyecto invalido." });
+  }
+
+  if (!Number.isInteger(project.clientId) || project.clientId <= 0) {
+    return res.status(400).json({ message: "ClientID es obligatorio y debe ser valido." });
+  }
+
+  if (!project.projectName) {
+    return res.status(400).json({ message: "ProjectName es obligatorio." });
+  }
+
+  if (!project.hourlyRateIsValid) {
+    return res.status(400).json({ message: "HourlyRate debe ser un decimal no negativo." });
+  }
+
+  try {
+    const pool = await getPool();
+    const activeClient = await getClientById(pool, project.clientId);
+
+    if (!activeClient) {
+      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+    }
+
+    const result = await pool.request()
+      .input("ProjectID", sql.Int, projectId)
+      .input("ClientID", sql.Int, project.clientId)
+      .input("ProjectName", sql.NVarChar(160), project.projectName)
+      .input("Description", sql.NVarChar(500), project.description)
+      .input("HourlyRate", sql.Decimal(10, 2), project.hourlyRate)
+      .input("IsActive", sql.Bit, project.isActive)
+      .query(`
+        UPDATE dbo.Projects
+        SET ClientID = @ClientID,
+            ProjectName = @ProjectName,
+            Description = @Description,
+            HourlyRate = COALESCE(@HourlyRate, HourlyRate),
+            IsActive = COALESCE(@IsActive, IsActive),
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ProjectID = @ProjectID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Proyecto no encontrado." });
+    }
+
+    const updatedProject = await getProjectById(pool, projectId, false);
+    res.json(updatedProject);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe un proyecto con ese nombre para el cliente." });
+    }
+
+    res.status(500).json({ message: "Error al editar el proyecto." });
+  }
+});
+
+app.delete("/api/projects/:id", requireAdmin, async (req, res) => {
+  const projectId = Number(req.params.id);
+
+  if (!Number.isInteger(projectId) || projectId <= 0) {
+    return res.status(400).json({ message: "ID de proyecto invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ProjectID", sql.Int, projectId)
+      .query(`
+        UPDATE dbo.Projects
+        SET IsActive = 0,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ProjectID = @ProjectID
+          AND IsActive = 1
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Proyecto activo no encontrado." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al desactivar el proyecto." });
   }
 });
 
