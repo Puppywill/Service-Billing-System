@@ -217,6 +217,46 @@ function mapUser(record) {
   };
 }
 
+function mapClient(record) {
+  return {
+    ClientID: record.ClientID,
+    ClientName: record.ClientName,
+    ContactName: record.ContactName,
+    Email: record.Email,
+    Phone: record.Phone,
+    Address: record.AddressLine1,
+    BillingName: record.BillingName,
+    TaxID: record.TaxID,
+    IsActive: Boolean(record.IsActive),
+    CreatedAt: record.CreatedAt,
+    UpdatedAt: record.UpdatedAt
+  };
+}
+
+function getClientPayload(body) {
+  const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
+  const normalizeOptionalText = (value) => {
+    if (value === undefined || value === null) return null;
+    const normalized = String(value).trim();
+    return normalized || null;
+  };
+
+  const clientName = normalizeOptionalText(getValue("clientName", "ClientName"));
+  const email = normalizeOptionalText(getValue("email", "Email"));
+  const isActive = getValue("isActive", "IsActive");
+
+  return {
+    clientName,
+    contactName: normalizeOptionalText(getValue("contactName", "ContactName")),
+    email: email ? email.toLowerCase() : null,
+    phone: normalizeOptionalText(getValue("phone", "Phone")),
+    address: normalizeOptionalText(getValue("address", "Address")),
+    billingName: normalizeOptionalText(getValue("billingName", "BillingName")),
+    taxId: normalizeOptionalText(getValue("taxId", "TaxID")),
+    isActive: isActive === undefined ? null : Boolean(isActive)
+  };
+}
+
 function mapNotification(record) {
   return {
     NotificationID: record.NotificationID,
@@ -451,6 +491,30 @@ async function getUserById(pool, userId) {
     `);
 
   return result.recordset[0] ? mapUser(result.recordset[0]) : null;
+}
+
+async function getClientById(pool, clientId, activeOnly = true) {
+  const result = await pool.request()
+    .input("ClientID", sql.Int, clientId)
+    .query(`
+      SELECT
+        ClientID,
+        ClientName,
+        ContactName,
+        Email,
+        Phone,
+        AddressLine1,
+        BillingName,
+        TaxID,
+        IsActive,
+        CreatedAt,
+        UpdatedAt
+      FROM dbo.Clients
+      WHERE ClientID = @ClientID
+        ${activeOnly ? "AND IsActive = 1" : ""}
+    `);
+
+  return result.recordset[0] ? mapClient(result.recordset[0]) : null;
 }
 
 function isValidDateString(value) {
@@ -1005,6 +1069,221 @@ app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al eliminar usuario." });
+  }
+});
+
+app.get("/api/clients", requireAuth, async (req, res) => {
+  const search = String(req.query.search || req.query.q || "").trim().slice(0, 180);
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    let searchClause = "";
+
+    if (search) {
+      request.input("Search", sql.NVarChar(400), `%${search}%`);
+      searchClause = `
+        AND (
+          ClientName LIKE @Search
+          OR Email LIKE @Search
+          OR Phone LIKE @Search
+        )
+      `;
+    }
+
+    const result = await request.query(`
+      SELECT
+        ClientID,
+        ClientName,
+        ContactName,
+        Email,
+        Phone,
+        AddressLine1,
+        BillingName,
+        TaxID,
+        IsActive,
+        CreatedAt,
+        UpdatedAt
+      FROM dbo.Clients
+      WHERE IsActive = 1
+      ${searchClause}
+      ORDER BY ClientName ASC
+    `);
+
+    res.json(result.recordset.map(mapClient));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener clientes." });
+  }
+});
+
+app.get("/api/clients/:id", requireAuth, async (req, res) => {
+  const clientId = Number(req.params.id);
+
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    return res.status(400).json({ message: "ID de cliente invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const client = await getClientById(pool, clientId);
+
+    if (!client) {
+      return res.status(404).json({ message: "Cliente no encontrado." });
+    }
+
+    res.json(client);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener el cliente." });
+  }
+});
+
+app.post("/api/clients", requireAdmin, async (req, res) => {
+  const client = getClientPayload(req.body || {});
+
+  if (!client.clientName) {
+    return res.status(400).json({ message: "ClientName es obligatorio." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ClientName", sql.NVarChar(160), client.clientName)
+      .input("ContactName", sql.NVarChar(120), client.contactName)
+      .input("Email", sql.NVarChar(180), client.email)
+      .input("Phone", sql.NVarChar(40), client.phone)
+      .input("AddressLine1", sql.NVarChar(180), client.address)
+      .input("BillingName", sql.NVarChar(180), client.billingName)
+      .input("TaxID", sql.NVarChar(50), client.taxId)
+      .input("IsActive", sql.Bit, client.isActive ?? true)
+      .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
+      .query(`
+        INSERT INTO dbo.Clients (
+          ClientName,
+          ContactName,
+          Email,
+          Phone,
+          AddressLine1,
+          BillingName,
+          TaxID,
+          IsActive,
+          CreatedByUserID
+        )
+        OUTPUT inserted.ClientID
+        VALUES (
+          @ClientName,
+          @ContactName,
+          @Email,
+          @Phone,
+          @AddressLine1,
+          @BillingName,
+          @TaxID,
+          @IsActive,
+          @CreatedByUserID
+        )
+      `);
+
+    const createdClient = await getClientById(pool, result.recordset[0].ClientID, false);
+    res.status(201).json(createdClient);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe un cliente con ese nombre." });
+    }
+
+    res.status(500).json({ message: "Error al crear el cliente." });
+  }
+});
+
+app.put("/api/clients/:id", requireAdmin, async (req, res) => {
+  const clientId = Number(req.params.id);
+  const client = getClientPayload(req.body || {});
+
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    return res.status(400).json({ message: "ID de cliente invalido." });
+  }
+
+  if (!client.clientName) {
+    return res.status(400).json({ message: "ClientName es obligatorio." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ClientID", sql.Int, clientId)
+      .input("ClientName", sql.NVarChar(160), client.clientName)
+      .input("ContactName", sql.NVarChar(120), client.contactName)
+      .input("Email", sql.NVarChar(180), client.email)
+      .input("Phone", sql.NVarChar(40), client.phone)
+      .input("AddressLine1", sql.NVarChar(180), client.address)
+      .input("BillingName", sql.NVarChar(180), client.billingName)
+      .input("TaxID", sql.NVarChar(50), client.taxId)
+      .input("IsActive", sql.Bit, client.isActive)
+      .query(`
+        UPDATE dbo.Clients
+        SET ClientName = @ClientName,
+            ContactName = @ContactName,
+            Email = @Email,
+            Phone = @Phone,
+            AddressLine1 = @AddressLine1,
+            BillingName = @BillingName,
+            TaxID = @TaxID,
+            IsActive = COALESCE(@IsActive, IsActive),
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ClientID = @ClientID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Cliente no encontrado." });
+    }
+
+    const updatedClient = await getClientById(pool, clientId, false);
+    res.json(updatedClient);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe un cliente con ese nombre." });
+    }
+
+    res.status(500).json({ message: "Error al editar el cliente." });
+  }
+});
+
+app.delete("/api/clients/:id", requireAdmin, async (req, res) => {
+  const clientId = Number(req.params.id);
+
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    return res.status(400).json({ message: "ID de cliente invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ClientID", sql.Int, clientId)
+      .query(`
+        UPDATE dbo.Clients
+        SET IsActive = 0,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ClientID = @ClientID
+          AND IsActive = 1
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Cliente activo no encontrado." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al desactivar el cliente." });
   }
 });
 
