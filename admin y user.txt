@@ -1,0 +1,2 @@
+Admin: admin@helpdesk.local / Admin123!
+User: user@helpdesk.local / User123!

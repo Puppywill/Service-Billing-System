@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Tickets | Help Desk</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-content">
+      <p class="eyebrow">IT Support Dashboard</p>
+      <h1>Sistema de Tickets Help Desk</h1>
+      <p>Registra, consulta y gestiona solicitudes de soporte tecnico desde el navegador.</p>
+      <div class="header-tools">
+        <button type="button" id="languageToggle" class="tool-button">English</button>
+        <button type="button" id="notificationBell" class="tool-button notification-bell hidden" aria-label="Notificaciones">
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="notificationCount" class="notification-count">0</span>
+        </button>
+      </div>
+      <div id="sessionBar" class="session-bar hidden">
+        <div>
+          <span id="sessionName">Usuario</span>
+          <strong id="sessionRole">Rol</strong>
+        </div>
+        <button type="button" id="logoutButton" class="btn session-button">
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10 17l5-5-5-5"/>
+            <path d="M15 12H3"/>
+            <path d="M21 19V5a2 2 0 0 0-2-2h-5"/>
+          </svg>
+          Cerrar sesion
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <section id="loginView" class="login-view">
+    <form id="loginForm" class="panel login-panel">
+      <div class="section-title">
+        <p class="eyebrow">Acceso seguro</p>
+        <h2>Iniciar sesion</h2>
+      </div>
+
+      <div class="form-group">
+        <label for="loginEmail">Email</label>
+        <input
+          type="email"
+          id="loginEmail"
+          placeholder="admin@helpdesk.local"
+          autocomplete="email"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <div class="password-field">
+          <input
+            type="password"
+            id="loginPassword"
+            placeholder="Tu password"
+            autocomplete="current-password"
+            required
+          >
+          <button type="button" class="password-toggle" data-password-toggle="loginPassword" aria-label="Mostrar password">
+            <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg class="password-icon password-icon-eye-off" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 3l18 18"/>
+              <path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/>
+              <path d="M9.9 5.3A9.2 9.2 0 0 1 12 5c6.5 0 10 7 10 7a17.2 17.2 0 0 1-3.1 4.2"/>
+              <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9 9 0 0 0 4.4-1.1"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <p id="loginMessage" class="form-message" aria-live="polite"></p>
+      <button type="button" id="forgotPasswordLink" class="link-button">¿Olvidaste tu contraseña?</button>
+      <button type="submit" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <path d="M10 17l5-5-5-5"/>
+          <path d="M15 12H3"/>
+        </svg>
+        Entrar al sistema
+      </button>
+    </form>
+  </section>
+
+  <section id="forgotPasswordView" class="login-view hidden">
+    <form id="forgotPasswordForm" class="panel login-panel">
+      <div class="section-title">
+        <p class="eyebrow">Acceso seguro</p>
+        <h2 id="forgotPasswordTitle">Recuperar contraseña</h2>
+      </div>
+
+      <div class="form-group">
+        <label for="forgotEmail">Email</label>
+        <input type="email" id="forgotEmail" placeholder="tu@email.com" required>
+      </div>
+
+      <button type="submit" id="requestRecoveryButton" class="btn btn-primary">Solicitar recuperación</button>
+      <button type="button" id="backToLoginButton" class="btn session-button">Volver al Login</button>
+      <p id="forgotPasswordMessage" class="form-message hidden">Contacta a un administrador para restablecer tu contraseña.</p>
+    </form>
+  </section>
+
+  <main id="appView" class="app-shell hidden">
+    <nav class="tabs-nav" aria-label="Navegacion principal">
+      <button type="button" class="tab-button" data-tab="dashboard">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 19V5"/>
+          <path d="M4 19h16"/>
+          <path d="M8 16V9"/>
+          <path d="M13 16V7"/>
+          <path d="M18 16v-4"/>
+        </svg>
+        Dashboard
+      </button>
+      <button type="button" class="tab-button active" data-tab="tickets">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/>
+          <path d="M8 9h8M8 13h5"/>
+        </svg>
+        Tickets
+      </button>
+      <button type="button" id="notificationsTabButton" class="tab-button" data-tab="notifications">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        Notificaciones
+      </button>
+      <button type="button" id="usersTabButton" class="tab-button hidden" data-tab="users">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Usuarios
+      </button>
+      <button type="button" id="reportsTabButton" class="tab-button hidden" data-tab="reports">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 19V5"/>
+          <path d="M4 19h16"/>
+          <path d="M8 16v-5"/>
+          <path d="M12 16V8"/>
+          <path d="M16 16v-3"/>
+        </svg>
+        Reportes
+      </button>
+    </nav>
+
+    <section id="dashboardTabPanel" class="tab-panel hidden">
+      <section class="stats-grid dashboard-grid" aria-label="Resumen ejecutivo">
+        <article class="stat-card">
+          <div class="stat-icon stat-open" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M8 9h8M8 13h5"/></svg>
+          </div>
+          <div><span id="dashboardMetricOneLabel">Total Tickets</span><strong id="dashboardMetricOne">0</strong></div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon stat-progress" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          <div><span id="dashboardMetricTwoLabel">Tickets Abiertos</span><strong id="dashboardMetricTwo">0</strong></div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon stat-closed" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div><span id="dashboardMetricThreeLabel">Tickets Cerrados</span><strong id="dashboardMetricThree">0</strong></div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon stat-open" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
+          </div>
+          <div><span id="dashboardMetricFourLabel">Total Usuarios</span><strong id="dashboardMetricFour">0</strong></div>
+        </article>
+      </section>
+      <section class="panel table-panel dashboard-notifications-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Actividad</p>
+            <h2 id="dashboardNotificationsTitle">Últimas notificaciones</h2>
+          </div>
+        </div>
+        <div id="dashboardNotificationsList" class="notification-list"></div>
+      </section>
+    </section>
+
+    <section id="ticketsTabPanel" class="tab-panel app-layout">
+      <section class="panel form-panel" aria-labelledby="form-title">
+        <div class="section-title">
+          <p class="eyebrow">Nuevo caso</p>
+          <h2 id="form-title">Crear ticket</h2>
+        </div>
+
+        <form id="ticketForm" class="ticket-form">
+          <div class="current-user-card" aria-live="polite">
+            <span id="creatingTicketAsLabel">Creando ticket como:</span>
+            <strong id="creatingTicketAsName">Usuario autenticado</strong>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Descripcion del problema</label>
+            <textarea
+              id="description"
+              name="description"
+              rows="5"
+              placeholder="Ej. La computadora no conecta a la red Wi-Fi."
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="priority">Prioridad</label>
+              <select id="priority" name="priority" required>
+                <option value="Alta">Alta</option>
+                <option value="Media" selected>Media</option>
+                <option value="Baja">Baja</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="status">Estado</label>
+              <select id="status" name="status" required>
+                <option value="Abierto" selected>Abierto</option>
+                <option value="En Progreso">En Progreso</option>
+                <option value="Cerrado">Cerrado</option>
+              </select>
+              <small id="statusHelp" class="field-help hidden">Los usuarios crean tickets como Abierto.</small>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
+            </svg>
+            Crear ticket
+          </button>
+        </form>
+      </section>
+
+      <section class="workspace">
+        <section class="stats-grid" aria-label="Contadores de tickets">
+        <article class="stat-card">
+          <div class="stat-icon stat-open" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/>
+              <path d="M8 9h8M8 13h5"/>
+            </svg>
+          </div>
+          <div>
+            <span>Abiertos</span>
+            <strong id="openCount">0</strong>
+          </div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon stat-progress" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M12 3a9 9 0 1 0 9 9"/>
+              <path d="M12 7v5l3 2"/>
+            </svg>
+          </div>
+          <div>
+            <span>En progreso</span>
+            <strong id="progressCount">0</strong>
+          </div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon stat-closed" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </div>
+          <div>
+            <span>Cerrados</span>
+            <strong id="closedCount">0</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel table-panel" aria-labelledby="table-title">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Bandeja de soporte</p>
+            <h2 id="table-title">Todos los tickets</h2>
+          </div>
+          <p class="ticket-total"><span id="totalCount">0</span> tickets registrados</p>
+        </div>
+
+        <div class="ticket-toolbar" aria-label="Filtros de tickets">
+          <div class="search-field">
+            <label for="searchInput">Buscar</label>
+            <input
+              type="search"
+              id="searchInput"
+              placeholder="Nombre de usuario o descripcion"
+            >
+          </div>
+
+          <div class="filter-field">
+            <label for="statusFilter">Estado</label>
+            <select id="statusFilter">
+              <option value="Todos">Todos</option>
+              <option value="Abierto">Abierto</option>
+              <option value="En Progreso">En Progreso</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="priorityFilter">Prioridad</label>
+            <select id="priorityFilter">
+              <option value="Todas">Todas</option>
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Problema</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Reportado por</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="ticketTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">No hay tickets registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        </section>
+      </section>
+    </section>
+
+    <section id="notificationsTabPanel" class="tab-panel hidden">
+      <section class="panel table-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Actividad</p>
+            <h2 id="notificationsTitle">Notificaciones</h2>
+          </div>
+          <p class="ticket-total"><span id="notificationsTotalCount">0</span> notificaciones</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Mensaje</th>
+                <th>Tipo</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="notificationsTableBody">
+              <tr>
+                <td colspan="5" class="empty-state">No hay notificaciones.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="usersTabPanel" class="tab-panel admin-users hidden">
+      <section class="panel form-panel" aria-labelledby="users-form-title">
+        <div class="section-title">
+          <p class="eyebrow">Administracion</p>
+          <h2 id="users-form-title">Agregar usuario</h2>
+        </div>
+
+        <form id="userForm" class="ticket-form">
+          <div class="form-group">
+            <label for="userFullName">Nombre completo</label>
+            <input type="text" id="userFullName" placeholder="Ej. Maria Lopez" required>
+          </div>
+
+          <div class="form-group">
+            <label for="userEmail">Email</label>
+            <input type="email" id="userEmail" placeholder="usuario@empresa.com" required>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="userPassword">Password</label>
+              <div class="password-field">
+                <input type="password" id="userPassword" placeholder="Password temporal" required>
+                <button type="button" class="password-toggle" data-password-toggle="userPassword" aria-label="Mostrar password">
+                  <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg class="password-icon password-icon-eye-off" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 3l18 18"/>
+                    <path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/>
+                    <path d="M9.9 5.3A9.2 9.2 0 0 1 12 5c6.5 0 10 7 10 7a17.2 17.2 0 0 1-3.1 4.2"/>
+                    <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9 9 0 0 0 4.4-1.1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="userRole">Rol</label>
+              <select id="userRole" required>
+                <option value="User" selected>User</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          <p id="userFormMessage" class="form-message" aria-live="polite"></p>
+          <button type="submit" class="btn btn-primary">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+              <path d="M19 8v6"/>
+              <path d="M16 11h6"/>
+            </svg>
+            Crear usuario
+          </button>
+        </form>
+      </section>
+
+      <section class="panel table-panel" aria-labelledby="users-table-title">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Seguridad</p>
+            <h2 id="users-table-title">Usuarios</h2>
+          </div>
+          <p class="ticket-total"><span id="usersTotalCount">0</span> usuarios registrados</p>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>UserID</th>
+                <th>FullName</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>CreatedAt</th>
+                <th>Creado por</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">No hay usuarios registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel table-panel password-resets-panel" aria-labelledby="password-resets-title">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Seguridad</p>
+            <h2 id="password-resets-title">Solicitudes Forgot Password</h2>
+          </div>
+          <p class="ticket-total"><span id="passwordResetsTotalCount">0</span> solicitudes</p>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="passwordResetsTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">No hay solicitudes de recuperacion.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="reportsTabPanel" class="tab-panel hidden">
+      <section class="panel table-panel reports-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Analitica</p>
+            <h2 id="reportsTitle">Reportes</h2>
+          </div>
+          <p class="ticket-total"><span id="reportsTotalCount">0</span> tickets</p>
+        </div>
+
+        <form id="reportsForm" class="report-toolbar">
+          <div class="filter-field">
+            <label for="reportFrom">Fecha desde</label>
+            <input type="date" id="reportFrom">
+          </div>
+
+          <div class="filter-field">
+            <label for="reportTo">Fecha hasta</label>
+            <input type="date" id="reportTo">
+          </div>
+
+          <div class="filter-field">
+            <label for="reportStatus">Estado</label>
+            <select id="reportStatus">
+              <option value="">Todos</option>
+              <option value="Abierto">Abierto</option>
+              <option value="En Progreso">En Progreso</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="reportPriority">Prioridad</label>
+            <select id="reportPriority">
+              <option value="">Todas</option>
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+            </select>
+          </div>
+
+          <div class="report-actions">
+            <button type="submit" id="generateReportButton" class="btn btn-primary">Generar reporte</button>
+            <button type="button" id="exportPdfButton" class="btn session-button">Exportar PDF</button>
+            <button type="button" id="exportExcelButton" class="btn session-button">Exportar Excel</button>
+          </div>
+        </form>
+
+        <p id="reportsMessage" class="form-message" aria-live="polite"></p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>TicketID</th>
+                <th>Descripcion</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Reportado por</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">Genera un reporte para ver resultados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="editModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <form id="editTicketForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Administrador</p>
+          <h2 id="edit-title">Editar ticket</h2>
+        </div>
+        <button type="button" id="closeEditModal" class="icon-button" aria-label="Cerrar editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="editTicketId">
+
+      <div class="form-group">
+        <label for="editDescription">Descripcion del problema</label>
+        <textarea id="editDescription" rows="5" required></textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="editPriority">Prioridad</label>
+          <select id="editPriority" required>
+            <option value="Alta">Alta</option>
+            <option value="Media">Media</option>
+            <option value="Baja">Baja</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editStatus">Estado</label>
+          <select id="editStatus" required>
+            <option value="Abierto">Abierto</option>
+            <option value="En Progreso">En Progreso</option>
+            <option value="Cerrado">Cerrado</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Guardar cambios
+      </button>
+    </form>
+  </div>
+
+  <div id="editUserModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
+    <form id="editUserForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Administrador</p>
+          <h2 id="edit-user-title">Editar usuario</h2>
+        </div>
+        <button type="button" id="closeEditUserModal" class="icon-button" aria-label="Cerrar editor de usuario">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="editUserId">
+
+      <div class="form-group">
+        <label for="editFullName">Nombre completo</label>
+        <input type="text" id="editFullName" required>
+      </div>
+
+      <div class="form-group">
+        <label for="editEmail">Email</label>
+        <input type="email" id="editEmail" required>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="editPassword">Nuevo password</label>
+          <div class="password-field">
+            <input type="password" id="editPassword" placeholder="Dejar vacio para mantener">
+            <button type="button" class="password-toggle" data-password-toggle="editPassword" aria-label="Mostrar password">
+              <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="password-icon password-icon-eye-off" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18"/>
+                <path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/>
+                <path d="M9.9 5.3A9.2 9.2 0 0 1 12 5c6.5 0 10 7 10 7a17.2 17.2 0 0 1-3.1 4.2"/>
+                <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9 9 0 0 0 4.4-1.1"/>
+              </svg>
+            </button>
+          </div>
+          <button type="button" id="temporaryPasswordButton" class="btn session-button">Asignar password temporal</button>
+        </div>
+
+        <div class="form-group">
+          <label for="editRole">Rol</label>
+          <select id="editRole" required>
+            <option value="User">User</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <p id="editUserMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Guardar usuario
+      </button>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
