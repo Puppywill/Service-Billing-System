@@ -234,27 +234,53 @@
       </section>
     </section>
 
-    <section id="clientsTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="clients-title">
-      <section class="panel foundation-hero">
-        <div class="section-title">
-          <p class="eyebrow">Customer catalog</p>
-          <h2 id="clients-title">Clients</h2>
+    <section id="clientsTabPanel" class="tab-panel hidden" aria-labelledby="clients-title">
+      <section class="panel table-panel clients-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Customer catalog</p>
+            <h2 id="clients-title">Clients</h2>
+          </div>
+          <button type="button" id="addClientButton" class="btn btn-primary">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
+            </svg>
+            Add Client
+          </button>
         </div>
-        <p class="foundation-copy">Client management is ready for the Service Billing workflow. API connection will be added in a later frontend phase.</p>
-      </section>
-      <section class="foundation-grid" aria-label="Client workspace preview">
-        <article class="panel foundation-card">
-          <h3>Client Directory</h3>
-          <p>List active clients, search by contact details, and open each billing profile.</p>
-        </article>
-        <article class="panel foundation-card">
-          <h3>Billing Profile</h3>
-          <p>Review billing name, tax ID, contact person, phone, email, and address.</p>
-        </article>
-        <article class="panel foundation-card">
-          <h3>Client Status</h3>
-          <p>Keep deactivated clients out of daily workflows without losing history.</p>
-        </article>
+
+        <div class="client-toolbar" aria-label="Client filters">
+          <div class="search-field">
+            <label for="clientSearchInput">Search</label>
+            <input type="search" id="clientSearchInput" placeholder="Client, email, or phone">
+          </div>
+          <p class="ticket-total"><span id="clientsTotalCount">0</span> clients</p>
+        </div>
+
+        <p id="clientsMessage" class="form-message" aria-live="polite"></p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ClientName</th>
+                <th>ContactName</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>BillingName</th>
+                <th>TaxID</th>
+                <th>IsActive</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTableBody">
+              <tr>
+                <td colspan="8" class="empty-state">No clients loaded.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </section>
 
@@ -712,6 +738,76 @@
       </section>
     </section>
   </main>
+
+  <div id="clientModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
+    <form id="clientForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Client</p>
+          <h2 id="client-modal-title">Add Client</h2>
+        </div>
+        <button type="button" id="closeClientModal" class="icon-button" aria-label="Close client editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="clientId">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="clientName">ClientName</label>
+          <input type="text" id="clientName" required>
+        </div>
+
+        <div class="form-group">
+          <label for="clientContactName">ContactName</label>
+          <input type="text" id="clientContactName">
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="clientEmail">Email</label>
+          <input type="email" id="clientEmail">
+        </div>
+
+        <div class="form-group">
+          <label for="clientPhone">Phone</label>
+          <input type="tel" id="clientPhone">
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="clientBillingName">BillingName</label>
+          <input type="text" id="clientBillingName">
+        </div>
+
+        <div class="form-group">
+          <label for="clientTaxId">TaxID</label>
+          <input type="text" id="clientTaxId">
+        </div>
+      </div>
+
+      <label class="checkbox-field">
+        <input type="checkbox" id="clientIsActive" checked>
+        <span>IsActive</span>
+      </label>
+
+      <p id="clientFormMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" id="saveClientButton" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Save Client
+      </button>
+    </form>
+  </div>
 
   <div id="editModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-title">
     <form id="editTicketForm" class="panel modal-panel">

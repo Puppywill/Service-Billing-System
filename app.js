@@ -34,6 +34,26 @@ const reportsTabButton = document.querySelector("#reportsTabButton");
 const reportsTabPanel = document.querySelector("#reportsTabPanel");
 const settingsTabPanel = document.querySelector("#settingsTabPanel");
 
+const addClientButton = document.querySelector("#addClientButton");
+const clientSearchInput = document.querySelector("#clientSearchInput");
+const clientsTableBody = document.querySelector("#clientsTableBody");
+const clientsTotalCount = document.querySelector("#clientsTotalCount");
+const clientsMessage = document.querySelector("#clientsMessage");
+const clientModal = document.querySelector("#clientModal");
+const clientForm = document.querySelector("#clientForm");
+const clientModalTitle = document.querySelector("#client-modal-title");
+const closeClientModal = document.querySelector("#closeClientModal");
+const clientId = document.querySelector("#clientId");
+const clientName = document.querySelector("#clientName");
+const clientContactName = document.querySelector("#clientContactName");
+const clientEmail = document.querySelector("#clientEmail");
+const clientPhone = document.querySelector("#clientPhone");
+const clientBillingName = document.querySelector("#clientBillingName");
+const clientTaxId = document.querySelector("#clientTaxId");
+const clientIsActive = document.querySelector("#clientIsActive");
+const clientFormMessage = document.querySelector("#clientFormMessage");
+const saveClientButton = document.querySelector("#saveClientButton");
+
 const ticketForm = document.querySelector("#ticketForm");
 const creatingTicketAsLabel = document.querySelector("#creatingTicketAsLabel");
 const creatingTicketAsName = document.querySelector("#creatingTicketAsName");
@@ -105,6 +125,7 @@ const exportPdfButton = document.querySelector("#exportPdfButton");
 const exportExcelButton = document.querySelector("#exportExcelButton");
 
 let tickets = [];
+let clients = [];
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -128,6 +149,7 @@ function clearTransientStorage() {
 
 function resetClientState({ render = true } = {}) {
   tickets = [];
+  clients = [];
   users = [];
   notifications = [];
   passwordResets = [];
@@ -136,6 +158,7 @@ function resetClientState({ render = true } = {}) {
 
   if (render) {
     renderTickets();
+    renderClients();
     renderUsers();
     renderPasswordResets();
     renderNotifications();
@@ -202,6 +225,23 @@ const translations = {
     invoicesEyebrow: "Area de facturacion",
     settingsEyebrow: "Preferencias del sistema",
     clientsFoundation: "La administracion de clientes esta lista para el flujo de Service Billing. La conexion API se agregara en una fase posterior del frontend.",
+    addClient: "Add Client",
+    editClient: "Edit Client",
+    saveClient: "Save Client",
+    clientSearchPlaceholder: "Cliente, email o telefono",
+    clientsCount: "clientes",
+    noClients: "No hay clientes activos.",
+    noClientMatches: "No hay clientes que coincidan con la busqueda.",
+    loadClientsError: "No se pudieron cargar los clientes.",
+    createClientSuccess: "Cliente creado correctamente.",
+    updateClientSuccess: "Cliente actualizado correctamente.",
+    deleteClientSuccess: "Cliente desactivado correctamente.",
+    clientNameRequired: "ClientName es obligatorio.",
+    clientNotFound: "No se encontro el cliente seleccionado.",
+    deleteClientConfirm: "Seguro que deseas desactivar este cliente?",
+    createClientError: "No se pudo crear el cliente.",
+    updateClientError: "No se pudo actualizar el cliente.",
+    deleteClientError: "No se pudo desactivar el cliente.",
     projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente, descripcion y tarifa por hora antes de registrar servicios.",
     invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas, totales y estados de facturacion.",
     settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de facturacion y controles de migracion en una fase posterior.",
@@ -382,6 +422,23 @@ const translations = {
     invoicesEyebrow: "Billing workspace",
     settingsEyebrow: "System preferences",
     clientsFoundation: "Client management is ready for the Service Billing workflow. API connection will be added in a later frontend phase.",
+    addClient: "Add Client",
+    editClient: "Edit Client",
+    saveClient: "Save Client",
+    clientSearchPlaceholder: "Client, email, or phone",
+    clientsCount: "clients",
+    noClients: "No active clients.",
+    noClientMatches: "No clients match the search.",
+    loadClientsError: "Clients could not be loaded.",
+    createClientSuccess: "Client created successfully.",
+    updateClientSuccess: "Client updated successfully.",
+    deleteClientSuccess: "Client deactivated successfully.",
+    clientNameRequired: "ClientName is required.",
+    clientNotFound: "The selected client was not found.",
+    deleteClientConfirm: "Are you sure you want to deactivate this client?",
+    createClientError: "Could not create the client.",
+    updateClientError: "Could not update the client.",
+    deleteClientError: "Could not deactivate the client.",
     projectsFoundation: "Project management will organize client work, descriptions, and hourly rates before service records are entered.",
     invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.",
     settingsFoundation: "Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.",
@@ -658,6 +715,7 @@ function showLogin() {
   tabButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === "tickets");
   });
+  closeClientEditor();
   closeEditor();
   closeUserEditor();
   applyLanguage();
@@ -710,6 +768,10 @@ async function switchTab(tabName) {
   if (activeTab === "users") {
     await loadUsersIfAdmin();
     await loadPasswordResetsIfAdmin();
+  }
+
+  if (activeTab === "clients") {
+    await loadClients();
   }
 
   if (activeTab === "notifications") {
@@ -790,6 +852,219 @@ async function loadNotifications() {
     updateNotificationCount();
     showNotificationsMessage(t("noNotifications"));
     renderDashboard();
+  }
+}
+
+async function loadClients() {
+  const search = clientSearchInput.value.trim();
+  const params = search ? `?search=${encodeURIComponent(search)}` : "";
+
+  try {
+    const response = await fetch(`/api/clients${params}`, {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (response.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadClientsError"));
+    }
+
+    clients = data;
+    renderClients();
+  } catch (error) {
+    console.error(error);
+    clients = [];
+    renderClients();
+    showClientsMessage(error.message || t("loadClientsError"), "error");
+  }
+}
+
+function renderClients() {
+  if (!clientsTableBody) return;
+
+  const canManageClients = isAdmin();
+  clientsTotalCount.textContent = clients.length;
+  clientsTotalCount.parentElement.lastChild.textContent = ` ${t("clientsCount")}`;
+  addClientButton.classList.toggle("hidden", !canManageClients);
+
+  if (clients.length === 0) {
+    const message = clientSearchInput.value.trim() ? t("noClientMatches") : t("noClients");
+    showClientsTableMessage(message);
+    return;
+  }
+
+  clientsTableBody.innerHTML = clients.map((client) => `
+    <tr>
+      <td>${escapeHTML(client.ClientName || "")}</td>
+      <td>${escapeHTML(client.ContactName || "")}</td>
+      <td>${escapeHTML(client.Email || "")}</td>
+      <td>${escapeHTML(client.Phone || "")}</td>
+      <td>${escapeHTML(client.BillingName || "")}</td>
+      <td>${escapeHTML(client.TaxID || "")}</td>
+      <td><span class="badge ${client.IsActive ? "status-abierto" : "status-cerrado"}">${client.IsActive ? "Active" : "Inactive"}</span></td>
+      <td>
+        ${canManageClients ? `
+          <div class="actions">
+            <button type="button" class="action-btn edit-btn" data-client-action="edit" data-id="${client.ClientID}">${t("edit")}</button>
+            <button type="button" class="action-btn delete-btn" data-client-action="delete" data-id="${client.ClientID}">${t("delete")}</button>
+          </div>
+        ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+      </td>
+    </tr>
+  `).join("");
+}
+
+function showClientsTableMessage(message) {
+  clientsTotalCount.textContent = clients.length;
+  clientsTableBody.innerHTML = `
+    <tr>
+      <td colspan="8" class="empty-state">${escapeHTML(message)}</td>
+    </tr>
+  `;
+}
+
+function showClientsMessage(message, type = "info") {
+  clientsMessage.textContent = message;
+  clientsMessage.classList.toggle("success", type === "success");
+}
+
+function getClientPayloadFromForm() {
+  return {
+    ClientName: clientName.value.trim(),
+    ContactName: clientContactName.value.trim(),
+    Email: clientEmail.value.trim().toLowerCase(),
+    Phone: clientPhone.value.trim(),
+    BillingName: clientBillingName.value.trim(),
+    TaxID: clientTaxId.value.trim(),
+    IsActive: clientIsActive.checked
+  };
+}
+
+function openClientEditor(mode, selectedClient = null) {
+  clientForm.reset();
+  clientFormMessage.textContent = "";
+  clientId.value = selectedClient?.ClientID || "";
+  clientModalTitle.textContent = mode === "edit" ? t("editClient") : t("addClient");
+  clientIsActive.checked = selectedClient?.IsActive ?? true;
+
+  if (selectedClient) {
+    clientName.value = selectedClient.ClientName || "";
+    clientContactName.value = selectedClient.ContactName || "";
+    clientEmail.value = selectedClient.Email || "";
+    clientPhone.value = selectedClient.Phone || "";
+    clientBillingName.value = selectedClient.BillingName || "";
+    clientTaxId.value = selectedClient.TaxID || "";
+  }
+
+  clientModal.classList.remove("hidden");
+  clientName.focus();
+}
+
+function closeClientEditor() {
+  if (!clientModal) return;
+  clientModal.classList.add("hidden");
+  clientForm.reset();
+  clientFormMessage.textContent = "";
+  clientId.value = "";
+}
+
+async function saveClient(event) {
+  event.preventDefault();
+  clientFormMessage.textContent = "";
+
+  if (!isAdmin()) {
+    clientFormMessage.textContent = t("usersAdminOnly");
+    return;
+  }
+
+  const payload = getClientPayloadFromForm();
+
+  if (!payload.ClientName) {
+    clientFormMessage.textContent = t("clientNameRequired");
+    clientName.focus();
+    return;
+  }
+
+  const id = Number(clientId.value);
+  const isEditing = Number.isInteger(id) && id > 0;
+
+  try {
+    const response = await fetch(isEditing ? `/api/clients/${id}` : "/api/clients", {
+      method: isEditing ? "PUT" : "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || (isEditing ? t("updateClientError") : t("createClientError")));
+    }
+
+    closeClientEditor();
+    showClientsMessage(isEditing ? t("updateClientSuccess") : t("createClientSuccess"), "success");
+    await loadClients();
+  } catch (error) {
+    console.error(error);
+    clientFormMessage.textContent = error.message || (isEditing ? t("updateClientError") : t("createClientError"));
+  }
+}
+
+function handleClientsTableClick(event) {
+  const button = event.target.closest("button[data-client-action]");
+
+  if (!button) return;
+
+  const id = Number(button.dataset.id);
+  const action = button.dataset.clientAction;
+
+  if (action === "edit") {
+    const selectedClient = clients.find((client) => Number(client.ClientID) === id);
+
+    if (!selectedClient) {
+      alert(t("clientNotFound"));
+      return;
+    }
+
+    openClientEditor("edit", selectedClient);
+  }
+
+  if (action === "delete") {
+    deactivateClient(id);
+  }
+}
+
+async function deactivateClient(id) {
+  if (!isAdmin()) return;
+
+  const confirmed = confirm(t("deleteClientConfirm"));
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/clients/${id}`, {
+      method: "DELETE",
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("deleteClientError"));
+    }
+
+    showClientsMessage(t("deleteClientSuccess"), "success");
+    await loadClients();
+  } catch (error) {
+    console.error(error);
+    showClientsMessage(error.message || t("deleteClientError"), "error");
   }
 }
 
@@ -1192,6 +1467,17 @@ function applyStaticLanguage() {
   setText("#clientsTabPanel .section-title .eyebrow", t("clientsEyebrow"));
   setText("#clients-title", t("clients"));
   setText("#clientsTabPanel .foundation-copy", t("clientsFoundation"));
+  setText('label[for="clientSearchInput"]', t("search"));
+  setPlaceholder("#clientSearchInput", t("clientSearchPlaceholder"));
+  setText("#clientModal .section-title .eyebrow", t("clients"));
+  setText('label[for="clientName"]', "ClientName");
+  setText('label[for="clientContactName"]', "ContactName");
+  setText('label[for="clientEmail"]', "Email");
+  setText('label[for="clientPhone"]', "Phone");
+  setText('label[for="clientBillingName"]', "BillingName");
+  setText('label[for="clientTaxId"]', "TaxID");
+  setText(".checkbox-field span", "IsActive");
+  setAriaLabel("#closeClientModal", t("closeEditor"));
   setText("#projectsTabPanel .section-title .eyebrow", t("projectsEyebrow"));
   setText("#projects-title", t("projects"));
   setText("#projectsTabPanel .foundation-copy", t("projectsFoundation"));
@@ -1252,6 +1538,7 @@ function applyStaticLanguage() {
   setAriaLabel("#closeEditUserModal", t("closeUserEditor"));
 
   setTableHeaders("#ticketsTabPanel table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
+  setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
@@ -1271,6 +1558,8 @@ function applyLanguage() {
   setButtonText(usersTabButton, t("users"));
   setButtonText(reportsTabButton, t("reports"));
   setButtonText(document.querySelector('[data-tab="settings"]'), t("settings"));
+  setButtonText(addClientButton, t("addClient"));
+  setButtonText(saveClientButton, t("saveClient"));
   setButtonText(logoutButton, t("logout"));
   setButtonText(loginForm.querySelector(".btn-primary"), t("enter"));
   setButtonText(ticketForm.querySelector(".btn-primary"), t("createTicket"));
@@ -1279,6 +1568,7 @@ function applyLanguage() {
   setButtonText(editUserForm.querySelector(".btn-primary"), t("saveUser"));
 
   renderTickets();
+  renderClients();
   renderUsers();
   renderPasswordResets();
   renderNotifications();
@@ -1290,6 +1580,7 @@ function applyLanguage() {
 function setRoleControls() {
   statusInput.disabled = !isAdmin();
   statusHelp.classList.toggle("hidden", isAdmin());
+  addClientButton.classList.toggle("hidden", !isAdmin());
 
   if (!isAdmin()) {
     statusInput.value = "Abierto";
@@ -2138,6 +2429,16 @@ backToLoginButton.addEventListener("click", () => {
 notificationBell.addEventListener("click", () => switchTab("notifications"));
 tabButtons.forEach((button) => {
   button.addEventListener("click", () => switchTab(button.dataset.tab));
+});
+addClientButton.addEventListener("click", () => openClientEditor("create"));
+clientSearchInput.addEventListener("input", loadClients);
+clientsTableBody.addEventListener("click", handleClientsTableClick);
+clientForm.addEventListener("submit", saveClient);
+closeClientModal.addEventListener("click", closeClientEditor);
+clientModal.addEventListener("click", (event) => {
+  if (event.target === clientModal) {
+    closeClientEditor();
+  }
 });
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);

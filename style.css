@@ -463,6 +463,26 @@ button,
   gap: 8px;
 }
 
+.checkbox-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 13, 24, 0.46);
+  color: #d8e1ef;
+  font-weight: 800;
+  padding: 10px 12px;
+}
+
+.checkbox-field input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #38bdf8;
+}
+
 label {
   color: #d8e1ef;
   font-size: 0.92rem;
@@ -728,7 +748,8 @@ textarea:focus {
   white-space: nowrap;
 }
 
-.ticket-toolbar {
+.ticket-toolbar,
+.client-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(150px, 190px) minmax(150px, 190px);
   gap: 12px;
@@ -737,6 +758,11 @@ textarea:focus {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(7, 13, 24, 0.46);
+}
+
+.client-toolbar {
+  grid-template-columns: minmax(240px, 1fr) auto;
+  align-items: end;
 }
 
 .report-toolbar {
@@ -769,6 +795,7 @@ textarea:focus {
 }
 
 .ticket-toolbar label,
+.client-toolbar label,
 .report-toolbar label {
   color: #aebcd0;
   font-size: 0.78rem;
@@ -1089,7 +1116,8 @@ tbody tr:last-child td {
     scroll-snap-align: start;
   }
 
-  .ticket-toolbar {
+  .ticket-toolbar,
+  .client-toolbar {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1097,7 +1125,8 @@ tbody tr:last-child td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .ticket-toolbar .search-field {
+  .ticket-toolbar .search-field,
+  .client-toolbar .search-field {
     grid-column: 1 / -1;
   }
 
@@ -1254,7 +1283,8 @@ tbody tr:last-child td {
     width: 100%;
   }
 
-  .ticket-toolbar {
+  .ticket-toolbar,
+  .client-toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -1363,6 +1393,7 @@ tbody tr:last-child td {
   .stat-card,
   .table-wrapper,
   .ticket-toolbar,
+  .client-toolbar,
   .report-toolbar {
     border-radius: 8px;
   }
