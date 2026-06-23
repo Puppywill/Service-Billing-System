@@ -557,6 +557,41 @@ function mapReportGroupRow(record, keyName, valueName = "TotalHours") {
   };
 }
 
+function mapDashboardServiceRecord(record) {
+  return {
+    ServiceRecordID: record.ServiceRecordID,
+    TechnicianName: record.TechnicianName,
+    ClientName: record.ClientName,
+    ProjectName: record.ProjectName,
+    ServiceDate: toDateOnly(record.ServiceDate),
+    TotalHours: Number(record.TotalHours),
+    ServiceDescription: record.ServiceDescription,
+    Status: record.Status,
+    CreatedAt: record.CreatedAt
+  };
+}
+
+function mapDashboardClient(record) {
+  return {
+    ClientID: record.ClientID,
+    ClientName: record.ClientName,
+    ContactName: record.ContactName,
+    Email: record.Email,
+    Phone: record.Phone,
+    CreatedAt: record.CreatedAt
+  };
+}
+
+function mapDashboardProject(record) {
+  return {
+    ProjectID: record.ProjectID,
+    ProjectName: record.ProjectName,
+    ClientName: record.ClientName,
+    HourlyRate: Number(record.HourlyRate),
+    CreatedAt: record.CreatedAt
+  };
+}
+
 function getInvoicePayload(body) {
   const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
   const normalizeOptionalText = (value) => {
@@ -3336,6 +3371,274 @@ app.get("/api/reports/invoices/summary", requireAuth, requireInvoiceReadAccess, 
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al obtener resumen de facturas." });
+  }
+});
+
+app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => {
+  const isTechnician = req.session.user.Role === "Technician";
+  const technicianUserId = Number(req.session.user.UserID);
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const serviceRecordWhere = isTechnician ? "WHERE sr.TechnicianUserID = @TechnicianUserID" : "";
+    const invoiceWhere = isTechnician
+      ? `WHERE EXISTS (
+          SELECT 1
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = i.InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )`
+      : "";
+
+    if (isTechnician) {
+      request.input("TechnicianUserID", sql.Int, technicianUserId);
+    }
+
+    const result = await request.query(`
+      SELECT
+        ${isTechnician ? `
+        (SELECT COUNT(DISTINCT sr.ClientID) FROM dbo.ServiceRecords sr WHERE sr.TechnicianUserID = @TechnicianUserID) AS TotalClients,
+        (SELECT COUNT(DISTINCT sr.ProjectID) FROM dbo.ServiceRecords sr WHERE sr.TechnicianUserID = @TechnicianUserID) AS TotalProjects,
+        ` : `
+        (SELECT COUNT(*) FROM dbo.Clients WHERE IsActive = 1) AS TotalClients,
+        (SELECT COUNT(*) FROM dbo.Projects WHERE IsActive = 1) AS TotalProjects,
+        `}
+        (SELECT COUNT(*) FROM dbo.ServiceRecords sr ${serviceRecordWhere}) AS TotalServiceRecords,
+        (SELECT COUNT(*) FROM dbo.Invoices i ${invoiceWhere}) AS TotalInvoices,
+        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr ${serviceRecordWhere}) AS TotalHours,
+        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr ${serviceRecordWhere ? `${serviceRecordWhere} AND` : "WHERE"} sr.Status = N'Recorded') AS UnbilledHours,
+        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr ${serviceRecordWhere ? `${serviceRecordWhere} AND` : "WHERE"} sr.Status = N'Billed') AS BilledHours,
+        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i ${invoiceWhere ? `${invoiceWhere} AND` : "WHERE"} i.Status <> N'Canceled') AS TotalBilledAmount,
+        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i ${invoiceWhere ? `${invoiceWhere} AND` : "WHERE"} i.Status IN (N'Draft', N'Issued')) AS PendingInvoiceAmount,
+        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i ${invoiceWhere ? `${invoiceWhere} AND` : "WHERE"} i.Status = N'Paid') AS PaidAmount
+    `);
+    const summary = result.recordset[0];
+
+    res.json({
+      TotalClients: Number(summary.TotalClients),
+      TotalProjects: Number(summary.TotalProjects),
+      TotalServiceRecords: Number(summary.TotalServiceRecords),
+      TotalInvoices: Number(summary.TotalInvoices),
+      TotalHours: Number(summary.TotalHours),
+      UnbilledHours: Number(summary.UnbilledHours),
+      BilledHours: Number(summary.BilledHours),
+      TotalBilledAmount: Number(summary.TotalBilledAmount),
+      PendingInvoiceAmount: Number(summary.PendingInvoiceAmount),
+      PaidAmount: Number(summary.PaidAmount)
+    });
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener resumen del dashboard." });
+  }
+});
+
+app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
+  const isTechnician = req.session.user.Role === "Technician";
+  const technicianUserId = Number(req.session.user.UserID);
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const serviceRecordWhere = isTechnician ? "WHERE sr.TechnicianUserID = @TechnicianUserID" : "";
+    const invoiceWhere = isTechnician
+      ? `WHERE EXISTS (
+          SELECT 1
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = i.InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )`
+      : "";
+
+    if (isTechnician) {
+      request.input("TechnicianUserID", sql.Int, technicianUserId);
+    }
+
+    const result = await request.query(`
+      SELECT
+        CONVERT(CHAR(7), sr.ServiceDate, 120) AS Month,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      ${serviceRecordWhere}
+      GROUP BY CONVERT(CHAR(7), sr.ServiceDate, 120)
+      ORDER BY Month ASC;
+
+      SELECT
+        CONVERT(CHAR(7), i.InvoiceDate, 120) AS Month,
+        COALESCE(SUM(i.TotalAmount), 0) AS TotalAmount
+      FROM dbo.Invoices i
+      ${invoiceWhere}
+      GROUP BY CONVERT(CHAR(7), i.InvoiceDate, 120)
+      ORDER BY Month ASC;
+
+      SELECT
+        c.ClientName,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Clients c ON c.ClientID = sr.ClientID
+      ${serviceRecordWhere}
+      GROUP BY c.ClientName
+      ORDER BY TotalHours DESC, c.ClientName ASC;
+
+      SELECT
+        p.ProjectName,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Projects p ON p.ProjectID = sr.ProjectID
+      ${serviceRecordWhere}
+      GROUP BY p.ProjectName
+      ORDER BY TotalHours DESC, p.ProjectName ASC;
+
+      SELECT
+        u.FullName AS TechnicianName,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users u ON u.UserID = sr.TechnicianUserID
+      ${serviceRecordWhere}
+      GROUP BY u.FullName
+      ORDER BY TotalHours DESC, u.FullName ASC;
+
+      SELECT
+        i.Status,
+        COUNT(*) AS TotalInvoices
+      FROM dbo.Invoices i
+      ${invoiceWhere}
+      GROUP BY i.Status
+      ORDER BY i.Status ASC;
+    `);
+
+    res.json({
+      HoursByMonth: result.recordsets[0].map((row) => mapReportGroupRow(row, "Month")),
+      BillingByMonth: result.recordsets[1].map((row) => mapReportGroupRow(row, "Month", "TotalAmount")),
+      HoursByClient: result.recordsets[2].map((row) => mapReportGroupRow(row, "ClientName")),
+      HoursByProject: result.recordsets[3].map((row) => mapReportGroupRow(row, "ProjectName")),
+      HoursByTechnician: result.recordsets[4].map((row) => mapReportGroupRow(row, "TechnicianName")),
+      InvoicesByStatus: result.recordsets[5].map((row) => mapReportGroupRow(row, "Status", "TotalInvoices"))
+    });
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener graficas del dashboard." });
+  }
+});
+
+app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, res) => {
+  const isTechnician = req.session.user.Role === "Technician";
+  const technicianUserId = Number(req.session.user.UserID);
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const serviceRecordWhere = isTechnician ? "WHERE sr.TechnicianUserID = @TechnicianUserID" : "";
+    const invoiceWhere = isTechnician
+      ? `WHERE EXISTS (
+          SELECT 1
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = i.InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )`
+      : "";
+    const relatedClientWhere = isTechnician
+      ? `WHERE EXISTS (
+          SELECT 1
+          FROM dbo.ServiceRecords sr
+          WHERE sr.ClientID = c.ClientID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )`
+      : "WHERE c.IsActive = 1";
+    const relatedProjectWhere = isTechnician
+      ? `WHERE EXISTS (
+          SELECT 1
+          FROM dbo.ServiceRecords sr
+          WHERE sr.ProjectID = p.ProjectID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )`
+      : "WHERE p.IsActive = 1";
+
+    if (isTechnician) {
+      request.input("TechnicianUserID", sql.Int, technicianUserId);
+    }
+
+    const result = await request.query(`
+      SELECT TOP 10
+        sr.ServiceRecordID,
+        u.FullName AS TechnicianName,
+        c.ClientName,
+        p.ProjectName,
+        sr.ServiceDate,
+        sr.TotalHours,
+        sr.ServiceDescription,
+        sr.Status,
+        sr.CreatedAt
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users u ON u.UserID = sr.TechnicianUserID
+      INNER JOIN dbo.Clients c ON c.ClientID = sr.ClientID
+      INNER JOIN dbo.Projects p ON p.ProjectID = sr.ProjectID
+      ${serviceRecordWhere}
+      ORDER BY sr.CreatedAt DESC, sr.ServiceRecordID DESC;
+
+      SELECT TOP 10
+        i.InvoiceID,
+        i.InvoiceNumber,
+        i.ClientID,
+        c.ClientName,
+        i.InvoiceDate,
+        i.PeriodFrom,
+        i.PeriodTo,
+        i.Subtotal,
+        i.TaxRate,
+        i.TaxAmount,
+        i.TotalAmount,
+        i.Status,
+        i.Notes,
+        i.IsActive,
+        i.CreatedAt,
+        i.UpdatedAt,
+        i.CreatedByUserID,
+        creator.FullName AS CreatedByName
+      FROM dbo.Invoices i
+      INNER JOIN dbo.Clients c ON c.ClientID = i.ClientID
+      LEFT JOIN dbo.Users creator ON creator.UserID = i.CreatedByUserID
+      ${invoiceWhere}
+      ORDER BY i.CreatedAt DESC, i.InvoiceID DESC;
+
+      SELECT TOP 10
+        c.ClientID,
+        c.ClientName,
+        c.ContactName,
+        c.Email,
+        c.Phone,
+        c.CreatedAt
+      FROM dbo.Clients c
+      ${relatedClientWhere}
+      ORDER BY c.CreatedAt DESC, c.ClientID DESC;
+
+      SELECT TOP 10
+        p.ProjectID,
+        p.ProjectName,
+        c.ClientName,
+        p.HourlyRate,
+        p.CreatedAt
+      FROM dbo.Projects p
+      INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
+      ${relatedProjectWhere}
+      ORDER BY p.CreatedAt DESC, p.ProjectID DESC;
+    `);
+
+    res.json({
+      ServiceRecords: result.recordsets[0].map(mapDashboardServiceRecord),
+      Invoices: result.recordsets[1].map((invoice) => mapInvoice(invoice)),
+      Clients: result.recordsets[2].map(mapDashboardClient),
+      Projects: result.recordsets[3].map(mapDashboardProject)
+    });
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener actividad reciente del dashboard." });
   }
 });
 
