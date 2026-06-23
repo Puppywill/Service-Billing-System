@@ -23,12 +23,16 @@ const requestRecoveryButton = document.querySelector("#requestRecoveryButton");
 const backToLoginButton = document.querySelector("#backToLoginButton");
 const tabButtons = document.querySelectorAll(".tab-button");
 const dashboardTabPanel = document.querySelector("#dashboardTabPanel");
+const clientsTabPanel = document.querySelector("#clientsTabPanel");
+const projectsTabPanel = document.querySelector("#projectsTabPanel");
 const ticketsTabPanel = document.querySelector("#ticketsTabPanel");
+const invoicesTabPanel = document.querySelector("#invoicesTabPanel");
 const notificationsTabPanel = document.querySelector("#notificationsTabPanel");
 const usersTabButton = document.querySelector("#usersTabButton");
 const usersTabPanel = document.querySelector("#usersTabPanel");
 const reportsTabButton = document.querySelector("#reportsTabButton");
 const reportsTabPanel = document.querySelector("#reportsTabPanel");
+const settingsTabPanel = document.querySelector("#settingsTabPanel");
 
 const ticketForm = document.querySelector("#ticketForm");
 const creatingTicketAsLabel = document.querySelector("#creatingTicketAsLabel");
@@ -184,11 +188,23 @@ const translations = {
     login: "Iniciar sesion",
     password: "Password",
     passwordPlaceholder: "Tu password",
-    tickets: "Registros de Servicio",
-    users: "Usuarios",
+    tickets: "Service Records",
+    users: "Users",
     notifications: "Notificaciones",
-    dashboard: "Resumen",
-    reports: "Reportes / Facturacion",
+    dashboard: "Dashboard",
+    reports: "Reports",
+    clients: "Clients",
+    projects: "Projects",
+    invoices: "Invoices",
+    settings: "Settings",
+    clientsEyebrow: "Catalogo de clientes",
+    projectsEyebrow: "Catalogo de trabajo",
+    invoicesEyebrow: "Area de facturacion",
+    settingsEyebrow: "Preferencias del sistema",
+    clientsFoundation: "La administracion de clientes esta lista para el flujo de Service Billing. La conexion API se agregara en una fase posterior del frontend.",
+    projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente, descripcion y tarifa por hora antes de registrar servicios.",
+    invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas, totales y estados de facturacion.",
+    settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de facturacion y controles de migracion en una fase posterior.",
     createTicket: "Crear registro",
     addUser: "Agregar usuario",
     createUser: "Crear usuario",
@@ -356,7 +372,19 @@ const translations = {
     users: "Users",
     notifications: "Notifications",
     dashboard: "Summary",
-    reports: "Reports / Billing",
+    reports: "Reports",
+    clients: "Clients",
+    projects: "Projects",
+    invoices: "Invoices",
+    settings: "Settings",
+    clientsEyebrow: "Customer catalog",
+    projectsEyebrow: "Work catalog",
+    invoicesEyebrow: "Billing workspace",
+    settingsEyebrow: "System preferences",
+    clientsFoundation: "Client management is ready for the Service Billing workflow. API connection will be added in a later frontend phase.",
+    projectsFoundation: "Project management will organize client work, descriptions, and hourly rates before service records are entered.",
+    invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.",
+    settingsFoundation: "Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.",
     createTicket: "Create record",
     addUser: "Add user",
     createUser: "Create user",
@@ -601,7 +629,7 @@ function setAuthenticatedUser(user, options = {}) {
   notificationBell.classList.remove("hidden");
   setRoleControls();
   usersTabButton.classList.toggle("hidden", !isAdmin());
-  reportsTabButton.classList.toggle("hidden", !isAdmin());
+  reportsTabButton.classList.remove("hidden");
   if (switchToTickets) {
     switchTab("tickets");
   }
@@ -616,13 +644,17 @@ function showLogin() {
   loginView.classList.remove("hidden");
   notificationBell.classList.add("hidden");
   usersTabButton.classList.add("hidden");
-  reportsTabButton.classList.add("hidden");
+  reportsTabButton.classList.remove("hidden");
   activeTab = "tickets";
   dashboardTabPanel.classList.add("hidden");
+  clientsTabPanel.classList.add("hidden");
+  projectsTabPanel.classList.add("hidden");
   ticketsTabPanel.classList.remove("hidden");
+  invoicesTabPanel.classList.add("hidden");
   notificationsTabPanel.classList.add("hidden");
   usersTabPanel.classList.add("hidden");
   reportsTabPanel.classList.add("hidden");
+  settingsTabPanel.classList.add("hidden");
   tabButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === "tickets");
   });
@@ -656,16 +688,20 @@ async function loadPasswordResetsIfAdmin() {
 }
 
 async function switchTab(tabName) {
-  if ((tabName === "users" || tabName === "reports") && !isAdmin()) {
+  if (tabName === "users" && !isAdmin()) {
     tabName = "tickets";
   }
 
   activeTab = tabName;
   dashboardTabPanel.classList.toggle("hidden", activeTab !== "dashboard");
+  clientsTabPanel.classList.toggle("hidden", activeTab !== "clients");
+  projectsTabPanel.classList.toggle("hidden", activeTab !== "projects");
   ticketsTabPanel.classList.toggle("hidden", activeTab !== "tickets");
+  invoicesTabPanel.classList.toggle("hidden", activeTab !== "invoices");
   notificationsTabPanel.classList.toggle("hidden", activeTab !== "notifications");
   usersTabPanel.classList.toggle("hidden", activeTab !== "users");
   reportsTabPanel.classList.toggle("hidden", activeTab !== "reports");
+  settingsTabPanel.classList.toggle("hidden", activeTab !== "settings");
 
   tabButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === activeTab);
@@ -1153,6 +1189,19 @@ function applyStaticLanguage() {
   setText("#dashboardTabPanel .section-title .eyebrow", t("activity"));
   setText("#dashboardNotificationsTitle", t("latestNotifications"));
 
+  setText("#clientsTabPanel .section-title .eyebrow", t("clientsEyebrow"));
+  setText("#clients-title", t("clients"));
+  setText("#clientsTabPanel .foundation-copy", t("clientsFoundation"));
+  setText("#projectsTabPanel .section-title .eyebrow", t("projectsEyebrow"));
+  setText("#projects-title", t("projects"));
+  setText("#projectsTabPanel .foundation-copy", t("projectsFoundation"));
+  setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
+  setText("#invoices-title", t("invoices"));
+  setText("#invoicesTabPanel .foundation-copy", t("invoicesFoundation"));
+  setText("#settingsTabPanel .section-title .eyebrow", t("settingsEyebrow"));
+  setText("#settings-title", t("settings"));
+  setText("#settingsTabPanel .foundation-copy", t("settingsFoundation"));
+
   setText("#notificationsTabPanel .section-title .eyebrow", t("activity"));
   setText("#notificationsTitle", t("notifications"));
   notificationsTotalCount.parentElement.lastChild.textContent = ` ${t("notificationsCount")}`;
@@ -1214,10 +1263,14 @@ function applyLanguage() {
   applyStaticLanguage();
   applySelectTranslations();
   setButtonText(document.querySelector('[data-tab="dashboard"]'), t("dashboard"));
+  setButtonText(document.querySelector('[data-tab="clients"]'), t("clients"));
+  setButtonText(document.querySelector('[data-tab="projects"]'), t("projects"));
   setButtonText(document.querySelector('[data-tab="tickets"]'), t("tickets"));
+  setButtonText(document.querySelector('[data-tab="invoices"]'), t("invoices"));
   setButtonText(document.querySelector('[data-tab="notifications"]'), t("notifications"));
   setButtonText(usersTabButton, t("users"));
   setButtonText(reportsTabButton, t("reports"));
+  setButtonText(document.querySelector('[data-tab="settings"]'), t("settings"));
   setButtonText(logoutButton, t("logout"));
   setButtonText(loginForm.querySelector(".btn-primary"), t("enter"));
   setButtonText(ticketForm.querySelector(".btn-primary"), t("createTicket"));

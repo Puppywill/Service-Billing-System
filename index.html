@@ -123,16 +123,55 @@
           <path d="M13 16V7"/>
           <path d="M18 16v-4"/>
         </svg>
-        Resumen
+        Dashboard
+      </button>
+      <button type="button" class="tab-button" data-tab="clients">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 21h18"/>
+          <path d="M5 21V7l8-4v18"/>
+          <path d="M19 21V11l-6-4"/>
+          <path d="M9 9h1M9 13h1M9 17h1M16 14h1M16 18h1"/>
+        </svg>
+        Clients
+      </button>
+      <button type="button" class="tab-button" data-tab="projects">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6h18"/>
+          <path d="M7 12h10"/>
+          <path d="M10 18h4"/>
+          <path d="M6 6v6"/>
+          <path d="M12 12v6"/>
+          <path d="M18 6v6"/>
+        </svg>
+        Projects
       </button>
       <button type="button" class="tab-button active" data-tab="tickets">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/>
           <path d="M8 9h8M8 13h5"/>
         </svg>
-        Registros de Servicio
+        Service Records
       </button>
-      <button type="button" id="notificationsTabButton" class="tab-button" data-tab="notifications">
+      <button type="button" class="tab-button" data-tab="invoices">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 3h10l2 2v16l-3-2-3 2-3-2-3 2V3Z"/>
+          <path d="M9 8h6"/>
+          <path d="M9 12h6"/>
+          <path d="M9 16h4"/>
+        </svg>
+        Invoices
+      </button>
+      <button type="button" id="reportsTabButton" class="tab-button" data-tab="reports">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 19V5"/>
+          <path d="M4 19h16"/>
+          <path d="M8 16v-5"/>
+          <path d="M12 16V8"/>
+          <path d="M16 16v-3"/>
+        </svg>
+        Reports
+      </button>
+      <button type="button" id="notificationsTabButton" class="tab-button legacy-nav hidden" data-tab="notifications">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -146,17 +185,14 @@
           <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
-        Usuarios
+        Users
       </button>
-      <button type="button" id="reportsTabButton" class="tab-button hidden" data-tab="reports">
+      <button type="button" class="tab-button" data-tab="settings">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 19V5"/>
-          <path d="M4 19h16"/>
-          <path d="M8 16v-5"/>
-          <path d="M12 16V8"/>
-          <path d="M16 16v-3"/>
+          <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/>
+          <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.1 2.1 0 0 1-2.97 2.97l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.66V21a2.1 2.1 0 0 1-4.2 0v-.06a1.8 1.8 0 0 0-1.1-1.66 1.8 1.8 0 0 0-1.98.36l-.04.04a2.1 2.1 0 1 1-2.97-2.97l.04-.04A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.66-1.1H2.9a2.1 2.1 0 0 1 0-4.2h.06A1.8 1.8 0 0 0 4.62 8a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2.1 2.1 0 1 1 2.97-2.97l.04.04A1.8 1.8 0 0 0 9.2 3.4h.02A1.8 1.8 0 0 0 10.3 1.8V1.7a2.1 2.1 0 0 1 4.2 0v.06A1.8 1.8 0 0 0 15.6 3.4a1.8 1.8 0 0 0 1.98-.36l.04-.04a2.1 2.1 0 1 1 2.97 2.97l-.04.04A1.8 1.8 0 0 0 19.4 8a1.8 1.8 0 0 0 1.66 1.1h.04a2.1 2.1 0 0 1 0 4.2h-.06A1.8 1.8 0 0 0 19.4 15Z"/>
         </svg>
-        Reportes / Facturacion
+        Settings
       </button>
     </nav>
 
@@ -195,6 +231,54 @@
           </div>
         </div>
         <div id="dashboardNotificationsList" class="notification-list"></div>
+      </section>
+    </section>
+
+    <section id="clientsTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="clients-title">
+      <section class="panel foundation-hero">
+        <div class="section-title">
+          <p class="eyebrow">Customer catalog</p>
+          <h2 id="clients-title">Clients</h2>
+        </div>
+        <p class="foundation-copy">Client management is ready for the Service Billing workflow. API connection will be added in a later frontend phase.</p>
+      </section>
+      <section class="foundation-grid" aria-label="Client workspace preview">
+        <article class="panel foundation-card">
+          <h3>Client Directory</h3>
+          <p>List active clients, search by contact details, and open each billing profile.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Billing Profile</h3>
+          <p>Review billing name, tax ID, contact person, phone, email, and address.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Client Status</h3>
+          <p>Keep deactivated clients out of daily workflows without losing history.</p>
+        </article>
+      </section>
+    </section>
+
+    <section id="projectsTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="projects-title">
+      <section class="panel foundation-hero">
+        <div class="section-title">
+          <p class="eyebrow">Work catalog</p>
+          <h2 id="projects-title">Projects</h2>
+        </div>
+        <p class="foundation-copy">Project management will organize client work, descriptions, and hourly rates before service records are entered.</p>
+      </section>
+      <section class="foundation-grid" aria-label="Project workspace preview">
+        <article class="panel foundation-card">
+          <h3>Client Projects</h3>
+          <p>Group work by client and keep each project tied to its billing relationship.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Hourly Rates</h3>
+          <p>Prepare project-specific rates that invoice generation can use later.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Project Filters</h3>
+          <p>Search by project, client, or description when the API is connected.</p>
+        </article>
       </section>
     </section>
 
@@ -356,6 +440,30 @@
       </section>
     </section>
 
+    <section id="invoicesTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="invoices-title">
+      <section class="panel foundation-hero">
+        <div class="section-title">
+          <p class="eyebrow">Billing workspace</p>
+          <h2 id="invoices-title">Invoices</h2>
+        </div>
+        <p class="foundation-copy">Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.</p>
+      </section>
+      <section class="foundation-grid" aria-label="Invoice workspace preview">
+        <article class="panel foundation-card">
+          <h3>Invoice List</h3>
+          <p>Track draft, issued, paid, and canceled invoices in one billing view.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Invoice Lines</h3>
+          <p>Show service records, project rates, hours, and line totals per invoice.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Generate Invoice</h3>
+          <p>Select a client and date range to prepare billing from recorded hours.</p>
+        </article>
+      </section>
+    </section>
+
     <section id="notificationsTabPanel" class="tab-panel hidden">
       <section class="panel table-panel">
         <div class="table-header">
@@ -383,6 +491,30 @@
             </tbody>
           </table>
         </div>
+      </section>
+    </section>
+
+    <section id="settingsTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="settings-title">
+      <section class="panel foundation-hero">
+        <div class="section-title">
+          <p class="eyebrow">System preferences</p>
+          <h2 id="settings-title">Settings</h2>
+        </div>
+        <p class="foundation-copy">Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.</p>
+      </section>
+      <section class="foundation-grid" aria-label="Settings workspace preview">
+        <article class="panel foundation-card">
+          <h3>Account</h3>
+          <p>Review session details and password workflow options.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Notifications</h3>
+          <p>Keep administrative alerts available while the new modules are introduced.</p>
+        </article>
+        <article class="panel foundation-card">
+          <h3>Billing Defaults</h3>
+          <p>Prepare defaults such as tax rate and invoice numbering for future screens.</p>
+        </article>
       </section>
     </section>
 
