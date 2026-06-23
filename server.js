@@ -518,6 +518,45 @@ function mapInvoiceLine(record) {
   };
 }
 
+function mapServiceHoursReport(record) {
+  return {
+    ServiceRecordID: record.ServiceRecordID,
+    TechnicianName: record.TechnicianName,
+    ClientName: record.ClientName,
+    ProjectName: record.ProjectName,
+    ServiceDate: toDateOnly(record.ServiceDate),
+    MorningStart: formatServiceTime(record.MorningStart),
+    MorningEnd: formatServiceTime(record.MorningEnd),
+    AfternoonStart: formatServiceTime(record.AfternoonStart),
+    AfternoonEnd: formatServiceTime(record.AfternoonEnd),
+    TotalHours: Number(record.TotalHours),
+    ServiceDescription: record.ServiceDescription,
+    Status: record.Status
+  };
+}
+
+function mapInvoiceReport(record) {
+  return {
+    InvoiceID: record.InvoiceID,
+    InvoiceNumber: record.InvoiceNumber,
+    ClientName: record.ClientName,
+    InvoiceDate: toDateOnly(record.InvoiceDate),
+    PeriodFrom: toDateOnly(record.PeriodFrom),
+    PeriodTo: toDateOnly(record.PeriodTo),
+    Subtotal: Number(record.Subtotal),
+    TaxAmount: Number(record.TaxAmount),
+    TotalAmount: Number(record.TotalAmount),
+    Status: record.Status
+  };
+}
+
+function mapReportGroupRow(record, keyName, valueName = "TotalHours") {
+  return {
+    [keyName]: record[keyName],
+    [valueName]: Number(record[valueName])
+  };
+}
+
 function getInvoicePayload(body) {
   const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
   const normalizeOptionalText = (value) => {
@@ -2868,6 +2907,435 @@ app.delete("/api/invoices/:id", requireAdmin, async (req, res) => {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al cancelar la factura." });
+  }
+});
+
+app.get("/api/reports/service-hours", requireAdminOrTechnician, async (req, res) => {
+  const from = String(req.query.from || "").trim();
+  const to = String(req.query.to || "").trim();
+  const status = String(req.query.status || "").trim();
+  const rawFilters = {
+    TechnicianUserID: req.query.technicianUserId,
+    ClientID: req.query.clientId,
+    ProjectID: req.query.projectId
+  };
+  const numericFilters = {};
+
+  if ((from && !isValidServiceDate(from)) || (to && !isValidServiceDate(to))) {
+    return res.status(400).json({ message: "from y to deben usar formato YYYY-MM-DD." });
+  }
+
+  if (from && to && from > to) {
+    return res.status(400).json({ message: "from no puede ser posterior a to." });
+  }
+
+  if (status && !SERVICE_RECORD_STATUSES.has(status)) {
+    return res.status(400).json({ message: "status debe ser Recorded, Billed o Canceled." });
+  }
+
+  for (const [name, rawValue] of Object.entries(rawFilters)) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
+    const value = Number(rawValue);
+
+    if (!Number.isInteger(value) || value <= 0) {
+      return res.status(400).json({ message: `${name} invalido.` });
+    }
+
+    numericFilters[name] = value;
+  }
+
+  if (req.session.user.Role === "Technician") {
+    const sessionUserId = Number(req.session.user.UserID);
+
+    if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
+      return res.status(403).json({ message: "Los tecnicos solo pueden ver sus propios registros." });
+    }
+
+    numericFilters.TechnicianUserID = sessionUserId;
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = [];
+
+    if (from) {
+      request.input("FromDate", sql.Date, from);
+      whereClauses.push("sr.ServiceDate >= @FromDate");
+    }
+
+    if (to) {
+      request.input("ToDate", sql.Date, to);
+      whereClauses.push("sr.ServiceDate <= @ToDate");
+    }
+
+    if (status) {
+      request.input("Status", sql.NVarChar(20), status);
+      whereClauses.push("sr.Status = @Status");
+    }
+
+    for (const [name, value] of Object.entries(numericFilters)) {
+      request.input(name, sql.Int, value);
+      whereClauses.push(`sr.${name} = @${name}`);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const result = await request.query(`
+      SELECT
+        sr.ServiceRecordID,
+        technician.FullName AS TechnicianName,
+        client.ClientName,
+        project.ProjectName,
+        sr.ServiceDate,
+        sr.MorningStart,
+        sr.MorningEnd,
+        sr.AfternoonStart,
+        sr.AfternoonEnd,
+        sr.TotalHours,
+        sr.ServiceDescription,
+        sr.Status
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+      ${whereSql}
+      ORDER BY sr.ServiceDate DESC, sr.ServiceRecordID DESC
+    `);
+
+    res.json(result.recordset.map(mapServiceHoursReport));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener reporte de horas de servicio." });
+  }
+});
+
+app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (req, res) => {
+  const from = String(req.query.from || "").trim();
+  const to = String(req.query.to || "").trim();
+  const status = String(req.query.status || "").trim();
+  const rawFilters = {
+    TechnicianUserID: req.query.technicianUserId,
+    ClientID: req.query.clientId,
+    ProjectID: req.query.projectId
+  };
+  const numericFilters = {};
+
+  if ((from && !isValidServiceDate(from)) || (to && !isValidServiceDate(to))) {
+    return res.status(400).json({ message: "from y to deben usar formato YYYY-MM-DD." });
+  }
+
+  if (from && to && from > to) {
+    return res.status(400).json({ message: "from no puede ser posterior a to." });
+  }
+
+  if (status && !SERVICE_RECORD_STATUSES.has(status)) {
+    return res.status(400).json({ message: "status debe ser Recorded, Billed o Canceled." });
+  }
+
+  for (const [name, rawValue] of Object.entries(rawFilters)) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
+    const value = Number(rawValue);
+
+    if (!Number.isInteger(value) || value <= 0) {
+      return res.status(400).json({ message: `${name} invalido.` });
+    }
+
+    numericFilters[name] = value;
+  }
+
+  if (req.session.user.Role === "Technician") {
+    const sessionUserId = Number(req.session.user.UserID);
+
+    if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
+      return res.status(403).json({ message: "Los tecnicos solo pueden ver sus propios registros." });
+    }
+
+    numericFilters.TechnicianUserID = sessionUserId;
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = [];
+
+    if (from) {
+      request.input("FromDate", sql.Date, from);
+      whereClauses.push("sr.ServiceDate >= @FromDate");
+    }
+
+    if (to) {
+      request.input("ToDate", sql.Date, to);
+      whereClauses.push("sr.ServiceDate <= @ToDate");
+    }
+
+    if (status) {
+      request.input("Status", sql.NVarChar(20), status);
+      whereClauses.push("sr.Status = @Status");
+    }
+
+    for (const [name, value] of Object.entries(numericFilters)) {
+      request.input(name, sql.Int, value);
+      whereClauses.push(`sr.${name} = @${name}`);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const summaryResult = await request.query(`
+      SELECT
+        COUNT(*) AS TotalRecords,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours,
+        COALESCE(SUM(CASE WHEN sr.Status = N'Billed' THEN sr.TotalHours ELSE 0 END), 0) AS BilledHours,
+        COALESCE(SUM(CASE WHEN sr.Status = N'Recorded' THEN sr.TotalHours ELSE 0 END), 0) AS UnbilledHours,
+        COALESCE(SUM(CASE WHEN sr.Status = N'Canceled' THEN sr.TotalHours ELSE 0 END), 0) AS CanceledHours
+      FROM dbo.ServiceRecords sr
+      ${whereSql};
+
+      SELECT
+        technician.FullName AS TechnicianName,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+      ${whereSql}
+      GROUP BY technician.FullName
+      ORDER BY technician.FullName ASC;
+
+      SELECT
+        client.ClientName,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+      ${whereSql}
+      GROUP BY client.ClientName
+      ORDER BY client.ClientName ASC;
+
+      SELECT
+        project.ProjectName,
+        COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+      ${whereSql}
+      GROUP BY project.ProjectName
+      ORDER BY project.ProjectName ASC;
+    `);
+    const summary = summaryResult.recordsets[0][0];
+
+    res.json({
+      TotalRecords: Number(summary.TotalRecords),
+      TotalHours: Number(summary.TotalHours),
+      BilledHours: Number(summary.BilledHours),
+      UnbilledHours: Number(summary.UnbilledHours),
+      CanceledHours: Number(summary.CanceledHours),
+      HoursByTechnician: summaryResult.recordsets[1].map((row) => mapReportGroupRow(row, "TechnicianName")),
+      HoursByClient: summaryResult.recordsets[2].map((row) => mapReportGroupRow(row, "ClientName")),
+      HoursByProject: summaryResult.recordsets[3].map((row) => mapReportGroupRow(row, "ProjectName"))
+    });
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener resumen de horas de servicio." });
+  }
+});
+
+app.get("/api/reports/invoices", requireAuth, requireInvoiceReadAccess, async (req, res) => {
+  const from = String(req.query.from || "").trim();
+  const to = String(req.query.to || "").trim();
+  const status = String(req.query.status || "").trim();
+  const rawClientId = req.query.clientId;
+  const hasClientFilter = rawClientId !== undefined && rawClientId !== null && rawClientId !== "";
+  const clientId = hasClientFilter ? Number(rawClientId) : null;
+
+  if ((from && !isValidServiceDate(from)) || (to && !isValidServiceDate(to))) {
+    return res.status(400).json({ message: "from y to deben usar formato YYYY-MM-DD." });
+  }
+
+  if (from && to && from > to) {
+    return res.status(400).json({ message: "from no puede ser posterior a to." });
+  }
+
+  if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
+    return res.status(400).json({ message: "clientId invalido." });
+  }
+
+  if (status && !INVOICE_STATUSES.has(status)) {
+    return res.status(400).json({ message: "status debe ser Draft, Issued, Paid o Canceled." });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = [];
+
+    if (from) {
+      request.input("FromDate", sql.Date, from);
+      whereClauses.push("i.InvoiceDate >= @FromDate");
+    }
+
+    if (to) {
+      request.input("ToDate", sql.Date, to);
+      whereClauses.push("i.InvoiceDate <= @ToDate");
+    }
+
+    if (hasClientFilter) {
+      request.input("ClientID", sql.Int, clientId);
+      whereClauses.push("i.ClientID = @ClientID");
+    }
+
+    if (status) {
+      request.input("Status", sql.NVarChar(20), status);
+      whereClauses.push("i.Status = @Status");
+    }
+
+    if (req.session.user.Role === "Technician") {
+      request.input("TechnicianUserID", sql.Int, Number(req.session.user.UserID));
+      whereClauses.push(`
+        EXISTS (
+          SELECT 1
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = i.InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )
+      `);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const result = await request.query(`
+      SELECT
+        i.InvoiceID,
+        i.InvoiceNumber,
+        c.ClientName,
+        i.InvoiceDate,
+        i.PeriodFrom,
+        i.PeriodTo,
+        i.Subtotal,
+        i.TaxAmount,
+        i.TotalAmount,
+        i.Status
+      FROM dbo.Invoices i
+      INNER JOIN dbo.Clients c ON c.ClientID = i.ClientID
+      ${whereSql}
+      ORDER BY i.InvoiceDate DESC, i.InvoiceID DESC
+    `);
+
+    res.json(result.recordset.map(mapInvoiceReport));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener reporte de facturas." });
+  }
+});
+
+app.get("/api/reports/invoices/summary", requireAuth, requireInvoiceReadAccess, async (req, res) => {
+  const from = String(req.query.from || "").trim();
+  const to = String(req.query.to || "").trim();
+  const status = String(req.query.status || "").trim();
+  const rawClientId = req.query.clientId;
+  const hasClientFilter = rawClientId !== undefined && rawClientId !== null && rawClientId !== "";
+  const clientId = hasClientFilter ? Number(rawClientId) : null;
+
+  if ((from && !isValidServiceDate(from)) || (to && !isValidServiceDate(to))) {
+    return res.status(400).json({ message: "from y to deben usar formato YYYY-MM-DD." });
+  }
+
+  if (from && to && from > to) {
+    return res.status(400).json({ message: "from no puede ser posterior a to." });
+  }
+
+  if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
+    return res.status(400).json({ message: "clientId invalido." });
+  }
+
+  if (status && !INVOICE_STATUSES.has(status)) {
+    return res.status(400).json({ message: "status debe ser Draft, Issued, Paid o Canceled." });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = [];
+
+    if (from) {
+      request.input("FromDate", sql.Date, from);
+      whereClauses.push("i.InvoiceDate >= @FromDate");
+    }
+
+    if (to) {
+      request.input("ToDate", sql.Date, to);
+      whereClauses.push("i.InvoiceDate <= @ToDate");
+    }
+
+    if (hasClientFilter) {
+      request.input("ClientID", sql.Int, clientId);
+      whereClauses.push("i.ClientID = @ClientID");
+    }
+
+    if (status) {
+      request.input("Status", sql.NVarChar(20), status);
+      whereClauses.push("i.Status = @Status");
+    }
+
+    if (req.session.user.Role === "Technician") {
+      request.input("TechnicianUserID", sql.Int, Number(req.session.user.UserID));
+      whereClauses.push(`
+        EXISTS (
+          SELECT 1
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = i.InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )
+      `);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const summaryResult = await request.query(`
+      SELECT
+        COUNT(*) AS TotalInvoices,
+        COALESCE(SUM(CASE WHEN i.Status = N'Draft' THEN 1 ELSE 0 END), 0) AS DraftInvoices,
+        COALESCE(SUM(CASE WHEN i.Status = N'Issued' THEN 1 ELSE 0 END), 0) AS IssuedInvoices,
+        COALESCE(SUM(CASE WHEN i.Status = N'Paid' THEN 1 ELSE 0 END), 0) AS PaidInvoices,
+        COALESCE(SUM(CASE WHEN i.Status = N'Canceled' THEN 1 ELSE 0 END), 0) AS CanceledInvoices,
+        COALESCE(SUM(i.Subtotal), 0) AS TotalSubtotal,
+        COALESCE(SUM(i.TaxAmount), 0) AS TotalTax,
+        COALESCE(SUM(i.TotalAmount), 0) AS TotalAmount
+      FROM dbo.Invoices i
+      ${whereSql};
+
+      SELECT
+        c.ClientName,
+        COALESCE(SUM(i.TotalAmount), 0) AS TotalAmount
+      FROM dbo.Invoices i
+      INNER JOIN dbo.Clients c ON c.ClientID = i.ClientID
+      ${whereSql}
+      GROUP BY c.ClientName
+      ORDER BY c.ClientName ASC;
+
+      SELECT
+        i.Status,
+        COALESCE(SUM(i.TotalAmount), 0) AS TotalAmount
+      FROM dbo.Invoices i
+      ${whereSql}
+      GROUP BY i.Status
+      ORDER BY i.Status ASC;
+    `);
+    const summary = summaryResult.recordsets[0][0];
+
+    res.json({
+      TotalInvoices: Number(summary.TotalInvoices),
+      DraftInvoices: Number(summary.DraftInvoices),
+      IssuedInvoices: Number(summary.IssuedInvoices),
+      PaidInvoices: Number(summary.PaidInvoices),
+      CanceledInvoices: Number(summary.CanceledInvoices),
+      TotalSubtotal: Number(summary.TotalSubtotal),
+      TotalTax: Number(summary.TotalTax),
+      TotalAmount: Number(summary.TotalAmount),
+      AmountByClient: summaryResult.recordsets[1].map((row) => mapReportGroupRow(row, "ClientName", "TotalAmount")),
+      AmountByStatus: summaryResult.recordsets[2].map((row) => mapReportGroupRow(row, "Status", "TotalAmount"))
+    });
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener resumen de facturas." });
   }
 });
 
