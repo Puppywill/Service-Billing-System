@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 8 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos, Registros de Servicio, Facturas y Reportes estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
+Este repositorio ha completado la Fase 9 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos, Registros de Servicio, Facturas, Reportes y Dashboard estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -20,6 +20,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 6: CRUD de Registros de Servicio ✅
 - Fase 7: CRUD de Facturas y generacion desde registros ✅
 - Fase 8: Reportes de horas y facturacion ✅
+- Fase 9: Dashboard API ✅
 
 ## Capacidades Actuales
 
@@ -31,6 +32,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - API CRUD de registros de servicio con calculo automatico de horas.
 - API CRUD de facturas con lineas de factura y generacion desde registros facturables.
 - API de reportes de horas de servicio y facturacion con resumenes y filtros.
+- API de dashboard con resumen, graficas y actividad reciente.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -210,6 +212,12 @@ Reportes:
 - `GET /api/reports/tickets`
 - `GET /api/reports/tickets/pdf`
 - `GET /api/reports/tickets/excel`
+
+Dashboard:
+
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/charts`
+- `GET /api/dashboard/recent-activity`
 
 ## Fase 4: CRUD De Clientes
 
@@ -578,6 +586,83 @@ GET /api/reports/invoices?from=2026-06-01&to=2026-06-30
 GET /api/reports/invoices?clientId=1&status=Issued
 GET /api/reports/invoices/summary
 GET /api/reports/invoices/summary?from=2026-06-01&to=2026-06-30
+```
+
+## Fase 9: Dashboard API
+
+La Fase 9 agrega endpoints backend para alimentar un dashboard moderno del Service Billing System. Estos endpoints estan pensados para tarjetas de resumen, graficas y paneles de actividad reciente sin modificar todavia el frontend.
+
+### Dashboard Summary
+
+`GET /api/dashboard/summary` devuelve:
+
+- `TotalClients`
+- `TotalProjects`
+- `TotalServiceRecords`
+- `TotalInvoices`
+- `TotalHours`
+- `UnbilledHours`
+- `BilledHours`
+- `TotalBilledAmount`
+- `PendingInvoiceAmount`
+- `PaidAmount`
+
+### Dashboard Charts
+
+`GET /api/dashboard/charts` devuelve:
+
+- `HoursByMonth`
+- `BillingByMonth`
+- `HoursByClient`
+- `HoursByProject`
+- `HoursByTechnician`
+- `InvoicesByStatus`
+
+### Recent Activity
+
+`GET /api/dashboard/recent-activity` devuelve los ultimos:
+
+- `ServiceRecords`
+- `Invoices`
+- `Clients`
+- `Projects`
+
+### Permisos
+
+- `Admin`: puede ver todos los datos del dashboard.
+- `Technician`: solo puede ver sus propios registros de servicio y datos relacionados con esos registros.
+- Los datos de facturas para `Technician` se limitan mediante `InvoiceLines` relacionados con sus `ServiceRecords`.
+
+### Ejemplos De API
+
+```http
+GET /api/dashboard/summary
+GET /api/dashboard/charts
+GET /api/dashboard/recent-activity
+```
+
+Probar como administrador:
+
+```http
+POST /api/login
+Content-Type: application/json
+
+{
+  "email": "william@servicebilling.local",
+  "password": "Admin123!"
+}
+```
+
+Probar como tecnico:
+
+```http
+POST /api/login
+Content-Type: application/json
+
+{
+  "email": "carlos@servicebilling.local",
+  "password": "Tech123!"
+}
 ```
 
 ## Autor

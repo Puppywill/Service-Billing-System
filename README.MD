@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 8 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, Service Records API, Invoices API, and service billing reporting API are available, while the frontend screens still use the original ticket-based Help Desk structure.
+This repository has completed Phase 9 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, Service Records API, Invoices API, reporting API, and dashboard API are available, while the frontend screens still use the original ticket-based Help Desk structure.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -20,6 +20,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 6: Service Records CRUD ✅
 - Phase 7: Invoices CRUD and invoice generation ✅
 - Phase 8: Service hours and billing reports ✅
+- Phase 9: Dashboard API ✅
 
 ## Current Capabilities
 
@@ -31,6 +32,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Service Records CRUD API with automatic hour calculation.
 - Invoices CRUD API with invoice lines and generation from billable service records.
 - Service hours and invoice reporting APIs with summaries and filters.
+- Dashboard API with summary cards, chart data, and recent activity.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -210,6 +212,12 @@ Reports:
 - `GET /api/reports/tickets`
 - `GET /api/reports/tickets/pdf`
 - `GET /api/reports/tickets/excel`
+
+Dashboard:
+
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/charts`
+- `GET /api/dashboard/recent-activity`
 
 ## Phase 4: Clients CRUD
 
@@ -578,6 +586,83 @@ GET /api/reports/invoices?from=2026-06-01&to=2026-06-30
 GET /api/reports/invoices?clientId=1&status=Issued
 GET /api/reports/invoices/summary
 GET /api/reports/invoices/summary?from=2026-06-01&to=2026-06-30
+```
+
+## Phase 9: Dashboard API
+
+Phase 9 adds backend endpoints for a modern Service Billing dashboard. These endpoints are designed to feed summary cards, charts, and recent activity panels without changing the frontend yet.
+
+### Dashboard Summary
+
+`GET /api/dashboard/summary` returns:
+
+- `TotalClients`
+- `TotalProjects`
+- `TotalServiceRecords`
+- `TotalInvoices`
+- `TotalHours`
+- `UnbilledHours`
+- `BilledHours`
+- `TotalBilledAmount`
+- `PendingInvoiceAmount`
+- `PaidAmount`
+
+### Dashboard Charts
+
+`GET /api/dashboard/charts` returns:
+
+- `HoursByMonth`
+- `BillingByMonth`
+- `HoursByClient`
+- `HoursByProject`
+- `HoursByTechnician`
+- `InvoicesByStatus`
+
+### Recent Activity
+
+`GET /api/dashboard/recent-activity` returns the latest:
+
+- `ServiceRecords`
+- `Invoices`
+- `Clients`
+- `Projects`
+
+### Permissions
+
+- `Admin`: can view all dashboard data.
+- `Technician`: can view only their own service records and data related to those records.
+- Technician invoice data is limited through `InvoiceLines` linked to their `ServiceRecords`.
+
+### API Examples
+
+```http
+GET /api/dashboard/summary
+GET /api/dashboard/charts
+GET /api/dashboard/recent-activity
+```
+
+Test as an admin:
+
+```http
+POST /api/login
+Content-Type: application/json
+
+{
+  "email": "william@servicebilling.local",
+  "password": "Admin123!"
+}
+```
+
+Test as a technician:
+
+```http
+POST /api/login
+Content-Type: application/json
+
+{
+  "email": "carlos@servicebilling.local",
+  "password": "Tech123!"
+}
 ```
 
 ## Author
