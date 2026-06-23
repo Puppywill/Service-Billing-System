@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 10 of the migration. The product identity, SQL Server schema, database connection, backend APIs, dashboard API, and initial Service Billing frontend foundation are available while legacy modules remain in place for a safe migration.
+This repository has completed Phase 11 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients frontend are available while legacy modules remain in place for a safe migration.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -22,6 +22,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 8: Service hours and billing reports ✅
 - Phase 9: Dashboard API ✅
 - Phase 10: Frontend Foundation ✅
+- Phase 11: Clients Frontend ✅
 
 ## Current Capabilities
 
@@ -35,6 +36,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Service hours and invoice reporting APIs with summaries and filters.
 - Dashboard API with summary cards, chart data, and recent activity.
 - Frontend foundation with Service Billing branding, navigation, and initial module screens.
+- Connected Clients frontend with search, create, edit, and logical deactivation.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -703,6 +705,56 @@ The main navigation now includes:
 - `Reports`: reporting area retained for billing/report workflows.
 - `Users`: existing administrative user management.
 - `Settings`: initial workspace for account, notifications, and billing defaults.
+
+## Phase 11: Clients Frontend
+
+Phase 11 connects the `Clients` screen to the real backend API. The screen now loads live client data and supports role-aware client management while leaving Projects, Service Records, Invoices, and legacy ticket logic untouched.
+
+### Completed Clients Frontend
+
+- Loads the client list with `GET /api/clients`.
+- Adds client search using the backend search query.
+- Adds an `Add Client` button for administrators.
+- Adds a modal form to create clients.
+- Adds a modal form to edit clients.
+- Supports logical client deactivation through `DELETE /api/clients/:id`.
+- Shows `ClientName`, `ContactName`, `Email`, `Phone`, `BillingName`, `TaxID`, and `IsActive`.
+- Uses the current session role to control available actions.
+- Keeps the Clients screen responsive.
+
+### Validation
+
+- `ClientName` is required.
+- `Email` is optional and normalized visually in the form.
+- Deactivation requires confirmation before calling the API.
+- Success and error messages are shown in the Clients screen or modal.
+
+### Role Permissions
+
+- `Admin`: can create, edit, and deactivate clients.
+- `Technician` / staff users: read-only access to the client list.
+
+### API Usage
+
+The frontend uses:
+
+```http
+GET /api/clients
+GET /api/clients?search=acme
+POST /api/clients
+PUT /api/clients/:id
+DELETE /api/clients/:id
+```
+
+### Test Flow
+
+1. Sign in as an admin.
+2. Open `Clients`.
+3. Search for an existing client.
+4. Create a new client with `ClientName`.
+5. Edit contact, billing, phone, email, or tax fields.
+6. Deactivate a client and confirm the prompt.
+7. Sign in as a technician and verify the client list is read-only.
 
 ## Author
 

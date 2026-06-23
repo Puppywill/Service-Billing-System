@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 10 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos, las APIs backend, la API de dashboard y la base inicial del frontend de Service Billing estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
+Este repositorio ha completado la Fase 11 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y la pantalla Clients conectada al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -22,6 +22,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 8: Reportes de horas y facturacion ✅
 - Fase 9: Dashboard API ✅
 - Fase 10: Frontend Foundation ✅
+- Fase 11: Clients Frontend ✅
 
 ## Capacidades Actuales
 
@@ -35,6 +36,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - API de reportes de horas de servicio y facturacion con resumenes y filtros.
 - API de dashboard con resumen, graficas y actividad reciente.
 - Frontend Foundation con branding Service Billing, nueva navegacion y pantallas iniciales.
+- Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -703,6 +705,56 @@ La navegacion principal ahora incluye:
 - `Reports`: area de reportes conservada para flujos de facturacion y analitica.
 - `Users`: administracion de usuarios existente.
 - `Settings`: area inicial para cuenta, notificaciones y valores por defecto de facturacion.
+
+## Fase 11: Clients Frontend
+
+La Fase 11 conecta la pantalla `Clients` al backend real. La pantalla ahora carga clientes reales y permite administracion por rol, sin tocar Projects, Service Records, Invoices ni la logica legacy de tickets.
+
+### Clients Frontend Completado
+
+- Carga la lista de clientes con `GET /api/clients`.
+- Agrega busqueda de clientes usando el query de busqueda del backend.
+- Agrega boton `Add Client` para administradores.
+- Agrega modal para crear cliente.
+- Agrega modal para editar cliente.
+- Soporta desactivacion logica con `DELETE /api/clients/:id`.
+- Muestra `ClientName`, `ContactName`, `Email`, `Phone`, `BillingName`, `TaxID` e `IsActive`.
+- Usa la sesion actual para controlar acciones por rol.
+- Mantiene diseno responsive en la pantalla Clients.
+
+### Validaciones
+
+- `ClientName` es requerido.
+- `Email` es opcional y se muestra limpio en el formulario.
+- La desactivacion pide confirmacion antes de llamar la API.
+- Se muestran mensajes de exito y error en la pantalla Clients o en el modal.
+
+### Permisos Por Rol
+
+- `Admin`: puede crear, editar y desactivar clientes.
+- `Technician` / staff: solo lectura en la lista de clientes.
+
+### Uso De API
+
+El frontend usa:
+
+```http
+GET /api/clients
+GET /api/clients?search=acme
+POST /api/clients
+PUT /api/clients/:id
+DELETE /api/clients/:id
+```
+
+### Flujo De Prueba
+
+1. Iniciar sesion como administrador.
+2. Abrir `Clients`.
+3. Buscar un cliente existente.
+4. Crear un cliente nuevo con `ClientName`.
+5. Editar contacto, facturacion, telefono, email o tax ID.
+6. Desactivar un cliente y confirmar el mensaje.
+7. Iniciar sesion como tecnico y verificar que la lista sea solo lectura.
 
 ## Autor
 
