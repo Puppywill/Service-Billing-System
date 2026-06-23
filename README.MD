@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 7 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, Service Records API, and Invoices API are available, while the frontend screens still use the original ticket-based Help Desk structure.
+This repository has completed Phase 8 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, Service Records API, Invoices API, and service billing reporting API are available, while the frontend screens still use the original ticket-based Help Desk structure.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -19,6 +19,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 5: Projects CRUD ✅
 - Phase 6: Service Records CRUD ✅
 - Phase 7: Invoices CRUD and invoice generation ✅
+- Phase 8: Service hours and billing reports ✅
 
 ## Current Capabilities
 
@@ -29,6 +30,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Project CRUD API linked to clients.
 - Service Records CRUD API with automatic hour calculation.
 - Invoices CRUD API with invoice lines and generation from billable service records.
+- Service hours and invoice reporting APIs with summaries and filters.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -201,6 +203,10 @@ Authentication and recovery:
 
 Reports:
 
+- `GET /api/reports/service-hours`
+- `GET /api/reports/service-hours/summary`
+- `GET /api/reports/invoices`
+- `GET /api/reports/invoices/summary`
 - `GET /api/reports/tickets`
 - `GET /api/reports/tickets/pdf`
 - `GET /api/reports/tickets/excel`
@@ -469,6 +475,109 @@ Update or cancel an invoice:
 ```http
 PUT /api/invoices/1
 DELETE /api/invoices/1
+```
+
+## Phase 8: Reports
+
+Phase 8 adds backend reporting endpoints for service hours and billing. These reports use the current Service Billing tables: `Users`, `Clients`, `Projects`, `ServiceRecords`, `Invoices`, and `InvoiceLines`.
+
+### Service Hours Report
+
+`GET /api/reports/service-hours` returns service records with:
+
+- `ServiceRecordID`
+- `TechnicianName`
+- `ClientName`
+- `ProjectName`
+- `ServiceDate`
+- `MorningStart`, `MorningEnd`
+- `AfternoonStart`, `AfternoonEnd`
+- `TotalHours`
+- `ServiceDescription`
+- `Status`
+
+Available filters:
+
+- `from`
+- `to`
+- `technicianUserId`
+- `clientId`
+- `projectId`
+- `status`: `Recorded`, `Billed`, or `Canceled`
+
+### Service Hours Summary
+
+`GET /api/reports/service-hours/summary` returns:
+
+- `TotalRecords`
+- `TotalHours`
+- `BilledHours`
+- `UnbilledHours`
+- `CanceledHours`
+- `HoursByTechnician`
+- `HoursByClient`
+- `HoursByProject`
+
+### Invoice Report
+
+`GET /api/reports/invoices` returns invoices with:
+
+- `InvoiceID`
+- `InvoiceNumber`
+- `ClientName`
+- `InvoiceDate`
+- `PeriodFrom`
+- `PeriodTo`
+- `Subtotal`
+- `TaxAmount`
+- `TotalAmount`
+- `Status`
+
+Available filters:
+
+- `from`
+- `to`
+- `clientId`
+- `status`: `Draft`, `Issued`, `Paid`, or `Canceled`
+
+### Invoice Summary
+
+`GET /api/reports/invoices/summary` returns:
+
+- `TotalInvoices`
+- `DraftInvoices`
+- `IssuedInvoices`
+- `PaidInvoices`
+- `CanceledInvoices`
+- `TotalSubtotal`
+- `TotalTax`
+- `TotalAmount`
+- `AmountByClient`
+- `AmountByStatus`
+
+### Permissions
+
+- `Admin`: can view all service hour and invoice reports.
+- `Technician`: can view only their own service records.
+- `Technician`: can view only invoices related to their service records through `InvoiceLines`.
+
+### API Examples
+
+```http
+GET /api/reports/service-hours
+GET /api/reports/service-hours?from=2026-06-01&to=2026-06-30
+GET /api/reports/service-hours?technicianUserId=3&status=Billed
+GET /api/reports/service-hours?clientId=1&projectId=1
+GET /api/reports/service-hours/summary
+GET /api/reports/service-hours/summary?from=2026-06-01&to=2026-06-30&clientId=1
+```
+
+```http
+GET /api/reports/invoices
+GET /api/reports/invoices?from=2026-06-01&to=2026-06-30
+GET /api/reports/invoices?clientId=1&status=Issued
+GET /api/reports/invoices/summary
+GET /api/reports/invoices/summary?from=2026-06-01&to=2026-06-30
 ```
 
 ## Author

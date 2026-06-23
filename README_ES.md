@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 7 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos, Registros de Servicio y Facturas estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
+Este repositorio ha completado la Fase 8 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos, Registros de Servicio, Facturas y Reportes estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -19,6 +19,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 5: CRUD de Proyectos ✅
 - Fase 6: CRUD de Registros de Servicio ✅
 - Fase 7: CRUD de Facturas y generacion desde registros ✅
+- Fase 8: Reportes de horas y facturacion ✅
 
 ## Capacidades Actuales
 
@@ -29,6 +30,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - API CRUD de proyectos relacionados con clientes.
 - API CRUD de registros de servicio con calculo automatico de horas.
 - API CRUD de facturas con lineas de factura y generacion desde registros facturables.
+- API de reportes de horas de servicio y facturacion con resumenes y filtros.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -201,6 +203,10 @@ Autenticacion y recuperacion:
 
 Reportes:
 
+- `GET /api/reports/service-hours`
+- `GET /api/reports/service-hours/summary`
+- `GET /api/reports/invoices`
+- `GET /api/reports/invoices/summary`
 - `GET /api/reports/tickets`
 - `GET /api/reports/tickets/pdf`
 - `GET /api/reports/tickets/excel`
@@ -469,6 +475,109 @@ Editar o cancelar una factura:
 ```http
 PUT /api/invoices/1
 DELETE /api/invoices/1
+```
+
+## Fase 8: Reportes
+
+La Fase 8 agrega endpoints backend para reportes de horas de servicio y facturacion. Estos reportes usan las tablas actuales de Service Billing: `Users`, `Clients`, `Projects`, `ServiceRecords`, `Invoices` e `InvoiceLines`.
+
+### Reporte De Horas De Servicio
+
+`GET /api/reports/service-hours` devuelve registros de servicio con:
+
+- `ServiceRecordID`
+- `TechnicianName`
+- `ClientName`
+- `ProjectName`
+- `ServiceDate`
+- `MorningStart`, `MorningEnd`
+- `AfternoonStart`, `AfternoonEnd`
+- `TotalHours`
+- `ServiceDescription`
+- `Status`
+
+Filtros disponibles:
+
+- `from`
+- `to`
+- `technicianUserId`
+- `clientId`
+- `projectId`
+- `status`: `Recorded`, `Billed` o `Canceled`
+
+### Resumen De Horas
+
+`GET /api/reports/service-hours/summary` devuelve:
+
+- `TotalRecords`
+- `TotalHours`
+- `BilledHours`
+- `UnbilledHours`
+- `CanceledHours`
+- `HoursByTechnician`
+- `HoursByClient`
+- `HoursByProject`
+
+### Reporte De Facturas
+
+`GET /api/reports/invoices` devuelve facturas con:
+
+- `InvoiceID`
+- `InvoiceNumber`
+- `ClientName`
+- `InvoiceDate`
+- `PeriodFrom`
+- `PeriodTo`
+- `Subtotal`
+- `TaxAmount`
+- `TotalAmount`
+- `Status`
+
+Filtros disponibles:
+
+- `from`
+- `to`
+- `clientId`
+- `status`: `Draft`, `Issued`, `Paid` o `Canceled`
+
+### Resumen De Facturacion
+
+`GET /api/reports/invoices/summary` devuelve:
+
+- `TotalInvoices`
+- `DraftInvoices`
+- `IssuedInvoices`
+- `PaidInvoices`
+- `CanceledInvoices`
+- `TotalSubtotal`
+- `TotalTax`
+- `TotalAmount`
+- `AmountByClient`
+- `AmountByStatus`
+
+### Permisos
+
+- `Admin`: puede ver todos los reportes de horas y facturas.
+- `Technician`: solo puede ver sus propios registros de servicio.
+- `Technician`: solo puede ver facturas relacionadas con sus registros mediante `InvoiceLines`.
+
+### Ejemplos De API
+
+```http
+GET /api/reports/service-hours
+GET /api/reports/service-hours?from=2026-06-01&to=2026-06-30
+GET /api/reports/service-hours?technicianUserId=3&status=Billed
+GET /api/reports/service-hours?clientId=1&projectId=1
+GET /api/reports/service-hours/summary
+GET /api/reports/service-hours/summary?from=2026-06-01&to=2026-06-30&clientId=1
+```
+
+```http
+GET /api/reports/invoices
+GET /api/reports/invoices?from=2026-06-01&to=2026-06-30
+GET /api/reports/invoices?clientId=1&status=Issued
+GET /api/reports/invoices/summary
+GET /api/reports/invoices/summary?from=2026-06-01&to=2026-06-30
 ```
 
 ## Autor
