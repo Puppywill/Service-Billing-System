@@ -296,6 +296,7 @@ function getProjectPayload(body) {
 }
 
 const SERVICE_RECORD_STATUSES = new Set(["Recorded", "Billed", "Canceled"]);
+const INVOICE_STATUSES = new Set(["Draft", "Issued", "Paid", "Canceled"]);
 
 function normalizeServiceTime(value) {
   if (value === undefined || value === null || value === "") {
@@ -454,6 +455,127 @@ function mapServiceRecord(record) {
   };
 }
 
+function toDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function parseOptionalBoolean(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (["true", "1", "yes", "si"].includes(normalized)) return true;
+  if (["false", "0", "no"].includes(normalized)) return false;
+  return null;
+}
+
+function mapInvoice(record, lines = undefined) {
+  const invoice = {
+    InvoiceID: record.InvoiceID,
+    InvoiceNumber: record.InvoiceNumber,
+    ClientID: record.ClientID,
+    ClientName: record.ClientName,
+    InvoiceDate: toDateOnly(record.InvoiceDate),
+    PeriodFrom: toDateOnly(record.PeriodFrom),
+    PeriodTo: toDateOnly(record.PeriodTo),
+    Subtotal: Number(record.Subtotal),
+    TaxRate: Number(record.TaxRate),
+    TaxAmount: Number(record.TaxAmount),
+    TotalAmount: Number(record.TotalAmount),
+    Status: record.Status,
+    Notes: record.Notes,
+    IsActive: Boolean(record.IsActive),
+    CreatedAt: record.CreatedAt,
+    UpdatedAt: record.UpdatedAt,
+    CreatedByUserID: record.CreatedByUserID,
+    CreatedByName: record.CreatedByName
+  };
+
+  if (lines !== undefined) {
+    invoice.Lines = lines;
+  }
+
+  return invoice;
+}
+
+function mapInvoiceLine(record) {
+  return {
+    InvoiceLineID: record.InvoiceLineID,
+    InvoiceID: record.InvoiceID,
+    ServiceRecordID: record.ServiceRecordID,
+    ProjectID: record.ProjectID,
+    ProjectName: record.ProjectName,
+    Description: record.Description,
+    ServiceDate: toDateOnly(record.ServiceDate),
+    Hours: Number(record.Hours),
+    HourlyRate: Number(record.HourlyRate),
+    LineTotal: Number(record.LineTotal),
+    CreatedAt: record.CreatedAt,
+    UpdatedAt: record.UpdatedAt
+  };
+}
+
+function getInvoicePayload(body) {
+  const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
+  const normalizeOptionalText = (value) => {
+    if (value === undefined || value === null) return null;
+    const normalized = String(value).trim();
+    return normalized || null;
+  };
+  const rawTaxRate = getValue("taxRate", "TaxRate");
+  const hasTaxRate = rawTaxRate !== undefined && rawTaxRate !== null && rawTaxRate !== "";
+  const taxRate = hasTaxRate ? Number(rawTaxRate) : null;
+  const rawStatus = getValue("status", "Status");
+
+  return {
+    invoiceNumber: normalizeOptionalText(getValue("invoiceNumber", "InvoiceNumber")),
+    clientId: Number(getValue("clientId", "ClientID")),
+    invoiceDate: normalizeOptionalText(getValue("invoiceDate", "InvoiceDate")),
+    periodFrom: normalizeOptionalText(getValue("periodFrom", "PeriodFrom")),
+    periodTo: normalizeOptionalText(getValue("periodTo", "PeriodTo")),
+    taxRate,
+    taxRateIsValid: !hasTaxRate || (Number.isFinite(taxRate) && taxRate >= 0),
+    status: rawStatus === undefined || rawStatus === null || rawStatus === "" ? null : String(rawStatus).trim(),
+    notes: normalizeOptionalText(getValue("notes", "Notes")),
+    isActive: parseOptionalBoolean(getValue("isActive", "IsActive"))
+  };
+}
+
+function getInvoiceValidationError(invoice, requireInvoiceNumber = true) {
+  if (requireInvoiceNumber && !invoice.invoiceNumber) {
+    return "InvoiceNumber es obligatorio.";
+  }
+
+  if (!Number.isInteger(invoice.clientId) || invoice.clientId <= 0) {
+    return "ClientID es obligatorio y debe ser valido.";
+  }
+
+  if (!isValidServiceDate(invoice.invoiceDate)) {
+    return "InvoiceDate es obligatorio y debe usar formato YYYY-MM-DD.";
+  }
+
+  if (!isValidServiceDate(invoice.periodFrom) || !isValidServiceDate(invoice.periodTo)) {
+    return "PeriodFrom y PeriodTo son obligatorios y deben usar formato YYYY-MM-DD.";
+  }
+
+  if (invoice.periodFrom > invoice.periodTo) {
+    return "PeriodFrom no puede ser posterior a PeriodTo.";
+  }
+
+  if (!invoice.taxRateIsValid) {
+    return "TaxRate debe ser un decimal no negativo.";
+  }
+
+  if (invoice.status && !INVOICE_STATUSES.has(invoice.status)) {
+    return "Status debe ser Draft, Issued, Paid o Canceled.";
+  }
+
+  return null;
+}
+
 function mapNotification(record) {
   return {
     NotificationID: record.NotificationID,
@@ -509,6 +631,14 @@ function requireAdminOrTechnician(req, res, next) {
 
   if (!["Admin", "Technician"].includes(req.session.user.Role)) {
     return res.status(403).json({ message: "No tienes permisos para acceder a registros de servicio." });
+  }
+
+  next();
+}
+
+function requireInvoiceReadAccess(req, res, next) {
+  if (!["Admin", "Technician"].includes(req.session.user.Role)) {
+    return res.status(403).json({ message: "No tienes permisos para consultar facturas." });
   }
 
   next();
@@ -780,6 +910,81 @@ async function getServiceRecordById(pool, serviceRecordId) {
     `);
 
   return result.recordset[0] ? mapServiceRecord(result.recordset[0]) : null;
+}
+
+async function getInvoiceLines(pool, invoiceId) {
+  const result = await pool.request()
+    .input("InvoiceID", sql.Int, invoiceId)
+    .query(`
+      SELECT
+        il.InvoiceLineID,
+        il.InvoiceID,
+        il.ServiceRecordID,
+        il.ProjectID,
+        p.ProjectName,
+        il.Description,
+        il.ServiceDate,
+        il.Hours,
+        il.HourlyRate,
+        il.LineTotal,
+        il.CreatedAt,
+        il.UpdatedAt
+      FROM dbo.InvoiceLines il
+      INNER JOIN dbo.Projects p ON p.ProjectID = il.ProjectID
+      WHERE il.InvoiceID = @InvoiceID
+      ORDER BY il.ServiceDate ASC, il.InvoiceLineID ASC
+    `);
+
+  return result.recordset.map(mapInvoiceLine);
+}
+
+async function getInvoiceById(pool, invoiceId, includeLines = false) {
+  const result = await pool.request()
+    .input("InvoiceID", sql.Int, invoiceId)
+    .query(`
+      SELECT
+        i.InvoiceID,
+        i.InvoiceNumber,
+        i.ClientID,
+        c.ClientName,
+        i.InvoiceDate,
+        i.PeriodFrom,
+        i.PeriodTo,
+        i.Subtotal,
+        i.TaxRate,
+        i.TaxAmount,
+        i.TotalAmount,
+        i.Status,
+        i.Notes,
+        i.IsActive,
+        i.CreatedAt,
+        i.UpdatedAt,
+        i.CreatedByUserID,
+        creator.FullName AS CreatedByName
+      FROM dbo.Invoices i
+      INNER JOIN dbo.Clients c ON c.ClientID = i.ClientID
+      LEFT JOIN dbo.Users creator ON creator.UserID = i.CreatedByUserID
+      WHERE i.InvoiceID = @InvoiceID
+    `);
+
+  if (!result.recordset[0]) return null;
+
+  const lines = includeLines ? await getInvoiceLines(pool, invoiceId) : undefined;
+  return mapInvoice(result.recordset[0], lines);
+}
+
+async function getNextInvoiceNumber(pool) {
+  const prefix = `INV-${new Date().getUTCFullYear()}-`;
+  const result = await pool.request()
+    .input("Prefix", sql.NVarChar(20), `${prefix}%`)
+    .query(`
+      SELECT MAX(TRY_CONVERT(INT, RIGHT(InvoiceNumber, 5))) AS LastSequence
+      FROM dbo.Invoices
+      WHERE InvoiceNumber LIKE @Prefix
+    `);
+  const nextSequence = Number(result.recordset[0]?.LastSequence || 0) + 1;
+
+  return `${prefix}${String(nextSequence).padStart(5, "0")}`;
 }
 
 async function validateServiceRecordReferences(pool, serviceRecord) {
@@ -2118,6 +2323,551 @@ app.delete("/api/service-records/:id", requireAdmin, async (req, res) => {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al cancelar el registro de servicio." });
+  }
+});
+
+app.get("/api/invoices", requireAuth, requireInvoiceReadAccess, async (req, res) => {
+  const search = String(req.query.search || req.query.q || "").trim().slice(0, 180);
+  const rawClientId = req.query.clientId ?? req.query.ClientID;
+  const hasClientFilter = rawClientId !== undefined && rawClientId !== null && rawClientId !== "";
+  const clientId = hasClientFilter ? Number(rawClientId) : null;
+  const status = String(req.query.status || req.query.Status || "").trim();
+  const periodFrom = String(req.query.periodFrom || req.query.PeriodFrom || "").trim();
+  const periodTo = String(req.query.periodTo || req.query.PeriodTo || "").trim();
+
+  if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
+    return res.status(400).json({ message: "ClientID invalido." });
+  }
+
+  if (status && !INVOICE_STATUSES.has(status)) {
+    return res.status(400).json({ message: "Status debe ser Draft, Issued, Paid o Canceled." });
+  }
+
+  if ((periodFrom && !isValidServiceDate(periodFrom)) || (periodTo && !isValidServiceDate(periodTo))) {
+    return res.status(400).json({ message: "PeriodFrom y PeriodTo deben usar formato YYYY-MM-DD." });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    const whereClauses = [];
+
+    if (search) {
+      request.input("Search", sql.NVarChar(400), `%${search}%`);
+      whereClauses.push(`
+        (
+          i.InvoiceNumber LIKE @Search
+          OR c.ClientName LIKE @Search
+          OR i.Notes LIKE @Search
+        )
+      `);
+    }
+
+    if (hasClientFilter) {
+      request.input("ClientID", sql.Int, clientId);
+      whereClauses.push("i.ClientID = @ClientID");
+    }
+
+    if (status) {
+      request.input("Status", sql.NVarChar(20), status);
+      whereClauses.push("i.Status = @Status");
+    }
+
+    if (periodFrom) {
+      request.input("PeriodFrom", sql.Date, periodFrom);
+      whereClauses.push("i.PeriodTo >= @PeriodFrom");
+    }
+
+    if (periodTo) {
+      request.input("PeriodTo", sql.Date, periodTo);
+      whereClauses.push("i.PeriodFrom <= @PeriodTo");
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const result = await request.query(`
+      SELECT
+        i.InvoiceID,
+        i.InvoiceNumber,
+        i.ClientID,
+        c.ClientName,
+        i.InvoiceDate,
+        i.PeriodFrom,
+        i.PeriodTo,
+        i.Subtotal,
+        i.TaxRate,
+        i.TaxAmount,
+        i.TotalAmount,
+        i.Status,
+        i.Notes,
+        i.IsActive,
+        i.CreatedAt,
+        i.UpdatedAt,
+        i.CreatedByUserID,
+        creator.FullName AS CreatedByName
+      FROM dbo.Invoices i
+      INNER JOIN dbo.Clients c ON c.ClientID = i.ClientID
+      LEFT JOIN dbo.Users creator ON creator.UserID = i.CreatedByUserID
+      ${whereSql}
+      ORDER BY i.InvoiceDate DESC, i.InvoiceID DESC
+    `);
+
+    res.json(result.recordset.map((invoice) => mapInvoice(invoice)));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener facturas." });
+  }
+});
+
+app.post("/api/invoices/generate", requireAdmin, async (req, res) => {
+  const invoice = getInvoicePayload(req.body || {});
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (!invoice.invoiceDate) invoice.invoiceDate = today;
+  if (!invoice.status) invoice.status = "Issued";
+  if (invoice.taxRate === null) invoice.taxRate = 0;
+
+  const validationError = getInvoiceValidationError(invoice, false);
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
+
+  try {
+    const pool = await getPool();
+    const activeClient = await getClientById(pool, invoice.clientId);
+
+    if (!activeClient) {
+      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+    }
+
+    const billableResult = await pool.request()
+      .input("ClientID", sql.Int, invoice.clientId)
+      .input("PeriodFrom", sql.Date, invoice.periodFrom)
+      .input("PeriodTo", sql.Date, invoice.periodTo)
+      .query(`
+        SELECT
+          sr.ServiceRecordID,
+          sr.ProjectID,
+          sr.ServiceDate,
+          sr.TotalHours,
+          sr.ServiceDescription,
+          p.HourlyRate
+        FROM dbo.ServiceRecords sr
+        INNER JOIN dbo.Projects p ON p.ProjectID = sr.ProjectID
+        WHERE sr.ClientID = @ClientID
+          AND sr.ServiceDate BETWEEN @PeriodFrom AND @PeriodTo
+          AND sr.Status = N'Recorded'
+          AND sr.InvoiceID IS NULL
+          AND sr.IsActive = 1
+        ORDER BY sr.ServiceDate ASC, sr.ServiceRecordID ASC
+      `);
+    const billableRecords = billableResult.recordset;
+
+    if (billableRecords.length === 0) {
+      return res.status(400).json({
+        message: "No hay registros Recorded sin facturar para ese cliente y rango de fechas."
+      });
+    }
+
+    const subtotal = Math.round(billableRecords.reduce((sum, record) => {
+      return sum + (Number(record.TotalHours) * Number(record.HourlyRate));
+    }, 0) * 100) / 100;
+    const taxAmount = Math.round(subtotal * invoice.taxRate * 100) / 100;
+    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+    const invoiceNumber = invoice.invoiceNumber || await getNextInvoiceNumber(pool);
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin();
+
+    try {
+      const invoiceResult = await new sql.Request(transaction)
+        .input("InvoiceNumber", sql.NVarChar(40), invoiceNumber)
+        .input("ClientID", sql.Int, invoice.clientId)
+        .input("InvoiceDate", sql.Date, invoice.invoiceDate)
+        .input("PeriodFrom", sql.Date, invoice.periodFrom)
+        .input("PeriodTo", sql.Date, invoice.periodTo)
+        .input("Subtotal", sql.Decimal(12, 2), subtotal)
+        .input("TaxRate", sql.Decimal(7, 4), invoice.taxRate)
+        .input("TaxAmount", sql.Decimal(12, 2), taxAmount)
+        .input("TotalAmount", sql.Decimal(12, 2), totalAmount)
+        .input("Status", sql.NVarChar(20), invoice.status)
+        .input("Notes", sql.NVarChar(500), invoice.notes)
+        .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
+        .query(`
+          INSERT INTO dbo.Invoices (
+            InvoiceNumber,
+            ClientID,
+            InvoiceDate,
+            PeriodFrom,
+            PeriodTo,
+            Subtotal,
+            TaxRate,
+            TaxAmount,
+            TotalAmount,
+            Status,
+            Notes,
+            CreatedByUserID
+          )
+          OUTPUT inserted.InvoiceID
+          VALUES (
+            @InvoiceNumber,
+            @ClientID,
+            @InvoiceDate,
+            @PeriodFrom,
+            @PeriodTo,
+            @Subtotal,
+            @TaxRate,
+            @TaxAmount,
+            @TotalAmount,
+            @Status,
+            @Notes,
+            @CreatedByUserID
+          )
+        `);
+      const invoiceId = invoiceResult.recordset[0].InvoiceID;
+
+      for (const record of billableRecords) {
+        const hours = Number(record.TotalHours);
+        const hourlyRate = Number(record.HourlyRate);
+        const lineTotal = Math.round(hours * hourlyRate * 100) / 100;
+
+        await new sql.Request(transaction)
+          .input("InvoiceID", sql.Int, invoiceId)
+          .input("ServiceRecordID", sql.Int, record.ServiceRecordID)
+          .input("ProjectID", sql.Int, record.ProjectID)
+          .input("Description", sql.NVarChar(500), String(record.ServiceDescription).slice(0, 500))
+          .input("ServiceDate", sql.Date, record.ServiceDate)
+          .input("Hours", sql.Decimal(6, 2), hours)
+          .input("HourlyRate", sql.Decimal(10, 2), hourlyRate)
+          .input("LineTotal", sql.Decimal(12, 2), lineTotal)
+          .query(`
+            INSERT INTO dbo.InvoiceLines (
+              InvoiceID,
+              ServiceRecordID,
+              ProjectID,
+              Description,
+              ServiceDate,
+              Hours,
+              HourlyRate,
+              LineTotal
+            )
+            VALUES (
+              @InvoiceID,
+              @ServiceRecordID,
+              @ProjectID,
+              @Description,
+              @ServiceDate,
+              @Hours,
+              @HourlyRate,
+              @LineTotal
+            )
+          `);
+      }
+
+      const updateRequest = new sql.Request(transaction)
+        .input("InvoiceID", sql.Int, invoiceId);
+      const serviceRecordPlaceholders = billableRecords.map((record, index) => {
+        const inputName = `ServiceRecordID${index}`;
+        updateRequest.input(inputName, sql.Int, record.ServiceRecordID);
+        return `@${inputName}`;
+      });
+      const billedResult = await updateRequest.query(`
+        UPDATE dbo.ServiceRecords
+        SET Status = N'Billed',
+            InvoiceID = @InvoiceID,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ServiceRecordID IN (${serviceRecordPlaceholders.join(", ")})
+          AND Status = N'Recorded'
+          AND InvoiceID IS NULL
+          AND IsActive = 1
+      `);
+
+      if (billedResult.rowsAffected[0] !== billableRecords.length) {
+        throw new Error("Algunos registros ya no estan disponibles para facturar.");
+      }
+
+      await transaction.commit();
+
+      const createdInvoice = await getInvoiceById(pool, invoiceId, true);
+      res.status(201).json(createdInvoice);
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe una factura con ese numero." });
+    }
+
+    res.status(500).json({ message: "Error al generar la factura." });
+  }
+});
+
+app.get("/api/invoices/:id", requireAuth, requireInvoiceReadAccess, async (req, res) => {
+  const invoiceId = Number(req.params.id);
+
+  if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
+    return res.status(400).json({ message: "ID de factura invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const invoice = await getInvoiceById(pool, invoiceId, true);
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Factura no encontrada." });
+    }
+
+    res.json(invoice);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener la factura." });
+  }
+});
+
+app.post("/api/invoices", requireAdmin, async (req, res) => {
+  const invoice = getInvoicePayload(req.body || {});
+
+  if (!invoice.status) invoice.status = "Draft";
+  if (invoice.taxRate === null) invoice.taxRate = 0;
+
+  const validationError = getInvoiceValidationError(invoice);
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
+
+  try {
+    const pool = await getPool();
+    const activeClient = await getClientById(pool, invoice.clientId);
+
+    if (!activeClient) {
+      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+    }
+
+    const result = await pool.request()
+      .input("InvoiceNumber", sql.NVarChar(40), invoice.invoiceNumber)
+      .input("ClientID", sql.Int, invoice.clientId)
+      .input("InvoiceDate", sql.Date, invoice.invoiceDate)
+      .input("PeriodFrom", sql.Date, invoice.periodFrom)
+      .input("PeriodTo", sql.Date, invoice.periodTo)
+      .input("TaxRate", sql.Decimal(7, 4), invoice.taxRate)
+      .input("Status", sql.NVarChar(20), invoice.status)
+      .input("Notes", sql.NVarChar(500), invoice.notes)
+      .input("IsActive", sql.Bit, invoice.isActive ?? true)
+      .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
+      .query(`
+        INSERT INTO dbo.Invoices (
+          InvoiceNumber,
+          ClientID,
+          InvoiceDate,
+          PeriodFrom,
+          PeriodTo,
+          TaxRate,
+          Status,
+          Notes,
+          IsActive,
+          CreatedByUserID
+        )
+        OUTPUT inserted.InvoiceID
+        VALUES (
+          @InvoiceNumber,
+          @ClientID,
+          @InvoiceDate,
+          @PeriodFrom,
+          @PeriodTo,
+          @TaxRate,
+          @Status,
+          @Notes,
+          @IsActive,
+          @CreatedByUserID
+        )
+      `);
+
+    const createdInvoice = await getInvoiceById(pool, result.recordset[0].InvoiceID, true);
+    res.status(201).json(createdInvoice);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe una factura con ese numero." });
+    }
+
+    res.status(500).json({ message: "Error al crear la factura." });
+  }
+});
+
+app.put("/api/invoices/:id", requireAdmin, async (req, res) => {
+  const invoiceId = Number(req.params.id);
+  const invoice = getInvoicePayload(req.body || {});
+
+  if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
+    return res.status(400).json({ message: "ID de factura invalido." });
+  }
+
+  const validationError = getInvoiceValidationError(invoice);
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
+
+  try {
+    const pool = await getPool();
+    const existingInvoice = await getInvoiceById(pool, invoiceId);
+
+    if (!existingInvoice) {
+      return res.status(404).json({ message: "Factura no encontrada." });
+    }
+
+    const activeClient = await getClientById(pool, invoice.clientId);
+
+    if (!activeClient) {
+      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+    }
+
+    const subtotalResult = await pool.request()
+      .input("InvoiceID", sql.Int, invoiceId)
+      .query(`
+        SELECT COALESCE(SUM(LineTotal), 0) AS Subtotal
+        FROM dbo.InvoiceLines
+        WHERE InvoiceID = @InvoiceID
+    `);
+    const subtotal = Math.round(Number(subtotalResult.recordset[0].Subtotal || 0) * 100) / 100;
+    const taxRate = invoice.taxRate ?? Number(existingInvoice.TaxRate);
+    const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
+    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin();
+
+    try {
+      const result = await new sql.Request(transaction)
+        .input("InvoiceID", sql.Int, invoiceId)
+        .input("InvoiceNumber", sql.NVarChar(40), invoice.invoiceNumber)
+        .input("ClientID", sql.Int, invoice.clientId)
+        .input("InvoiceDate", sql.Date, invoice.invoiceDate)
+        .input("PeriodFrom", sql.Date, invoice.periodFrom)
+        .input("PeriodTo", sql.Date, invoice.periodTo)
+        .input("Subtotal", sql.Decimal(12, 2), subtotal)
+        .input("TaxRate", sql.Decimal(7, 4), taxRate)
+        .input("TaxAmount", sql.Decimal(12, 2), taxAmount)
+        .input("TotalAmount", sql.Decimal(12, 2), totalAmount)
+        .input("Status", sql.NVarChar(20), invoice.status)
+        .input("Notes", sql.NVarChar(500), invoice.notes)
+        .input("IsActive", sql.Bit, invoice.isActive)
+        .query(`
+          UPDATE dbo.Invoices
+          SET InvoiceNumber = @InvoiceNumber,
+              ClientID = @ClientID,
+              InvoiceDate = @InvoiceDate,
+              PeriodFrom = @PeriodFrom,
+              PeriodTo = @PeriodTo,
+              Subtotal = @Subtotal,
+              TaxRate = @TaxRate,
+              TaxAmount = @TaxAmount,
+              TotalAmount = @TotalAmount,
+              Status = COALESCE(@Status, Status),
+              Notes = @Notes,
+              IsActive = COALESCE(@IsActive, IsActive),
+              UpdatedAt = SYSUTCDATETIME()
+          WHERE InvoiceID = @InvoiceID
+        `);
+
+      if (result.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return res.status(404).json({ message: "Factura no encontrada." });
+      }
+
+      if (invoice.status === "Canceled") {
+        await new sql.Request(transaction)
+          .input("InvoiceID", sql.Int, invoiceId)
+          .query(`
+            UPDATE dbo.ServiceRecords
+            SET Status = N'Recorded',
+                InvoiceID = NULL,
+                UpdatedAt = SYSUTCDATETIME()
+            WHERE InvoiceID = @InvoiceID
+              AND Status = N'Billed'
+          `);
+      }
+
+      await transaction.commit();
+
+      const updatedInvoice = await getInvoiceById(pool, invoiceId, true);
+      res.json(updatedInvoice);
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Ya existe una factura con ese numero." });
+    }
+
+    res.status(500).json({ message: "Error al editar la factura." });
+  }
+});
+
+app.delete("/api/invoices/:id", requireAdmin, async (req, res) => {
+  const invoiceId = Number(req.params.id);
+
+  if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
+    return res.status(400).json({ message: "ID de factura invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin();
+
+    try {
+      const result = await new sql.Request(transaction)
+        .input("InvoiceID", sql.Int, invoiceId)
+        .query(`
+          UPDATE dbo.Invoices
+          SET Status = N'Canceled',
+              IsActive = 0,
+              UpdatedAt = SYSUTCDATETIME()
+          WHERE InvoiceID = @InvoiceID
+            AND Status <> N'Canceled'
+        `);
+
+      if (result.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return res.status(404).json({ message: "Factura activa no encontrada." });
+      }
+
+      await new sql.Request(transaction)
+        .input("InvoiceID", sql.Int, invoiceId)
+        .query(`
+          UPDATE dbo.ServiceRecords
+          SET Status = N'Recorded',
+              InvoiceID = NULL,
+              UpdatedAt = SYSUTCDATETIME()
+          WHERE InvoiceID = @InvoiceID
+            AND Status = N'Billed'
+        `);
+
+      await transaction.commit();
+      res.status(204).send();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al cancelar la factura." });
   }
 });
 
