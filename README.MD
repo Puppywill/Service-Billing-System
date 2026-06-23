@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 6 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, and Service Records API are available, while the frontend screens still use the original ticket-based Help Desk structure.
+This repository has completed Phase 7 of the migration. The product identity, SQL Server schema, database connection, Clients API, Projects API, Service Records API, and Invoices API are available, while the frontend screens still use the original ticket-based Help Desk structure.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -18,6 +18,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 4: Clients CRUD ✅
 - Phase 5: Projects CRUD ✅
 - Phase 6: Service Records CRUD ✅
+- Phase 7: Invoices CRUD and invoice generation ✅
 
 ## Current Capabilities
 
@@ -27,6 +28,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Client CRUD API with soft deletion.
 - Project CRUD API linked to clients.
 - Service Records CRUD API with automatic hour calculation.
+- Invoices CRUD API with invoice lines and generation from billable service records.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -163,6 +165,15 @@ Service records:
 - `POST /api/service-records`: creates a record and calculates `TotalHours`.
 - `PUT /api/service-records/:id`: updates a record and recalculates `TotalHours`.
 - `DELETE /api/service-records/:id`: changes the status to `Canceled` without deleting the row.
+
+Invoices:
+
+- `GET /api/invoices`: returns invoices with optional search and filters.
+- `GET /api/invoices/:id`: returns one invoice with its invoice lines.
+- `POST /api/invoices`: creates a manual invoice header.
+- `PUT /api/invoices/:id`: updates an invoice header and recalculates totals from its lines.
+- `DELETE /api/invoices/:id`: cancels the invoice without physically deleting the row.
+- `POST /api/invoices/generate`: generates an invoice from recorded service records.
 
 Legacy records:
 
@@ -375,6 +386,89 @@ The example produces `TotalHours: 7.00`.
 ```http
 PUT /api/service-records/1
 DELETE /api/service-records/1
+```
+
+## Phase 7: Invoices CRUD
+
+Invoices use the `dbo.Invoices` table for invoice headers and `dbo.InvoiceLines` for line details. Generated lines are linked back to `ServiceRecords` through `ServiceRecordID`, preserving traceability between recorded work and billing.
+
+### Invoice Generation
+
+`POST /api/invoices/generate` creates an invoice from billable service records:
+
+- Selects records by `ClientID`, `PeriodFrom`, and `PeriodTo`.
+- Includes only records with `Status = 'Recorded'`.
+- Excludes canceled records and records that already have an `InvoiceID`.
+- Creates one invoice header in `Invoices`.
+- Creates one line per service record in `InvoiceLines`.
+- Calculates `Subtotal`, `TaxAmount`, and `TotalAmount`.
+- Updates the included `ServiceRecords` from `Recorded` to `Billed`.
+- Saves the generated `InvoiceID` in each billed service record.
+
+### Invoice Statuses
+
+Allowed invoice statuses are:
+
+- `Draft`
+- `Issued`
+- `Paid`
+- `Canceled`
+
+Canceling an invoice sets `Status = 'Canceled'` and `IsActive = 0`; it does not physically delete invoice data.
+
+### Permissions
+
+- `Admin`: can create, view, edit, cancel, and generate invoices.
+- `Technician`: can view invoices.
+- Generating invoices is restricted to `Admin`.
+
+### API Examples
+
+```http
+GET /api/invoices
+GET /api/invoices?ClientID=1&Status=Issued
+GET /api/invoices?periodFrom=2026-06-01&periodTo=2026-06-30
+GET /api/invoices/1
+```
+
+Generate an invoice from service records:
+
+```http
+POST /api/invoices/generate
+Content-Type: application/json
+
+{
+  "ClientID": 1,
+  "PeriodFrom": "2026-06-01",
+  "PeriodTo": "2026-06-30",
+  "TaxRate": 0.18,
+  "Notes": "Invoice generated from recorded service work"
+}
+```
+
+Create a manual invoice header:
+
+```http
+POST /api/invoices
+Content-Type: application/json
+
+{
+  "InvoiceNumber": "INV-2026-00099",
+  "ClientID": 1,
+  "InvoiceDate": "2026-06-30",
+  "PeriodFrom": "2026-06-01",
+  "PeriodTo": "2026-06-30",
+  "TaxRate": 0.18,
+  "Status": "Draft",
+  "Notes": "Manual invoice header"
+}
+```
+
+Update or cancel an invoice:
+
+```http
+PUT /api/invoices/1
+DELETE /api/invoices/1
 ```
 
 ## Author

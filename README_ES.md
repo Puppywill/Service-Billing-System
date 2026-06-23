@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 6 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos y Registros de Servicio estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
+Este repositorio ha completado la Fase 7 de la migracion. La identidad del producto, el esquema SQL Server, la conexion a la base de datos y las API de Clientes, Proyectos, Registros de Servicio y Facturas estan disponibles, mientras las pantallas frontend todavia usan la estructura original basada en tickets del sistema Help Desk.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -18,6 +18,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 4: CRUD de Clientes ✅
 - Fase 5: CRUD de Proyectos ✅
 - Fase 6: CRUD de Registros de Servicio ✅
+- Fase 7: CRUD de Facturas y generacion desde registros ✅
 
 ## Capacidades Actuales
 
@@ -27,6 +28,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - API CRUD de clientes con desactivacion logica.
 - API CRUD de proyectos relacionados con clientes.
 - API CRUD de registros de servicio con calculo automatico de horas.
+- API CRUD de facturas con lineas de factura y generacion desde registros facturables.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -163,6 +165,15 @@ Registros de servicio:
 - `POST /api/service-records`: crea un registro y calcula `TotalHours`.
 - `PUT /api/service-records/:id`: actualiza un registro y recalcula `TotalHours`.
 - `DELETE /api/service-records/:id`: cambia el estado a `Canceled` sin borrar la fila.
+
+Facturas:
+
+- `GET /api/invoices`: devuelve facturas con busqueda y filtros opcionales.
+- `GET /api/invoices/:id`: devuelve una factura con sus lineas.
+- `POST /api/invoices`: crea un encabezado de factura manual.
+- `PUT /api/invoices/:id`: actualiza el encabezado de factura y recalcula totales desde sus lineas.
+- `DELETE /api/invoices/:id`: cancela la factura sin borrar fisicamente la fila.
+- `POST /api/invoices/generate`: genera una factura desde registros de servicio en estado `Recorded`.
 
 Registros legacy:
 
@@ -375,6 +386,89 @@ El ejemplo produce `TotalHours: 7.00`.
 ```http
 PUT /api/service-records/1
 DELETE /api/service-records/1
+```
+
+## Fase 7: CRUD De Facturas
+
+Las facturas usan la tabla `dbo.Invoices` para los encabezados y `dbo.InvoiceLines` para los detalles. Las lineas generadas se relacionan nuevamente con `ServiceRecords` mediante `ServiceRecordID`, conservando trazabilidad entre el trabajo registrado y la facturacion.
+
+### Generacion De Facturas
+
+`POST /api/invoices/generate` crea una factura desde registros de servicio facturables:
+
+- Selecciona registros por `ClientID`, `PeriodFrom` y `PeriodTo`.
+- Incluye solo registros con `Status = 'Recorded'`.
+- Excluye registros cancelados y registros que ya tengan `InvoiceID`.
+- Crea un encabezado en `Invoices`.
+- Crea una linea por cada registro de servicio en `InvoiceLines`.
+- Calcula `Subtotal`, `TaxAmount` y `TotalAmount`.
+- Actualiza los `ServiceRecords` incluidos de `Recorded` a `Billed`.
+- Guarda el `InvoiceID` generado en cada registro facturado.
+
+### Estados De Factura
+
+Los estados permitidos de factura son:
+
+- `Draft`
+- `Issued`
+- `Paid`
+- `Canceled`
+
+Cancelar una factura establece `Status = 'Canceled'` e `IsActive = 0`; no borra fisicamente los datos de facturacion.
+
+### Permisos
+
+- `Admin`: puede crear, consultar, editar, cancelar y generar facturas.
+- `Technician`: puede consultar facturas.
+- La generacion de facturas esta restringida a `Admin`.
+
+### Ejemplos De API
+
+```http
+GET /api/invoices
+GET /api/invoices?ClientID=1&Status=Issued
+GET /api/invoices?periodFrom=2026-06-01&periodTo=2026-06-30
+GET /api/invoices/1
+```
+
+Generar una factura desde registros de servicio:
+
+```http
+POST /api/invoices/generate
+Content-Type: application/json
+
+{
+  "ClientID": 1,
+  "PeriodFrom": "2026-06-01",
+  "PeriodTo": "2026-06-30",
+  "TaxRate": 0.18,
+  "Notes": "Factura generada desde registros de servicio"
+}
+```
+
+Crear un encabezado de factura manual:
+
+```http
+POST /api/invoices
+Content-Type: application/json
+
+{
+  "InvoiceNumber": "INV-2026-00099",
+  "ClientID": 1,
+  "InvoiceDate": "2026-06-30",
+  "PeriodFrom": "2026-06-01",
+  "PeriodTo": "2026-06-30",
+  "TaxRate": 0.18,
+  "Status": "Draft",
+  "Notes": "Encabezado de factura manual"
+}
+```
+
+Editar o cancelar una factura:
+
+```http
+PUT /api/invoices/1
+DELETE /api/invoices/1
 ```
 
 ## Autor
