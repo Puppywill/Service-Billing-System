@@ -338,7 +338,91 @@
       </section>
     </section>
 
-    <section id="ticketsTabPanel" class="tab-panel app-layout">
+    <section id="ticketsTabPanel" class="tab-panel">
+      <section class="panel table-panel service-records-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Service log</p>
+            <h2 id="service-records-title">Service Records</h2>
+          </div>
+          <button type="button" id="addServiceRecordButton" class="btn btn-primary">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
+            </svg>
+            Add Service Record
+          </button>
+        </div>
+
+        <div class="service-record-toolbar" aria-label="Service record filters">
+          <div class="search-field">
+            <label for="serviceRecordSearchInput">Search</label>
+            <input type="search" id="serviceRecordSearchInput" placeholder="Technician, client, project, or description">
+          </div>
+          <div class="filter-field">
+            <label for="serviceRecordTechnicianFilter">Technician</label>
+            <select id="serviceRecordTechnicianFilter">
+              <option value="">All technicians</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="serviceRecordClientFilter">Client</label>
+            <select id="serviceRecordClientFilter">
+              <option value="">All clients</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="serviceRecordProjectFilter">Project</label>
+            <select id="serviceRecordProjectFilter">
+              <option value="">All projects</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="serviceRecordDateFilter">ServiceDate</label>
+            <input type="date" id="serviceRecordDateFilter">
+          </div>
+          <div class="filter-field">
+            <label for="serviceRecordStatusFilter">Status</label>
+            <select id="serviceRecordStatusFilter">
+              <option value="">All statuses</option>
+              <option value="Recorded">Recorded</option>
+              <option value="Billed">Billed</option>
+              <option value="Canceled">Canceled</option>
+            </select>
+          </div>
+          <p class="ticket-total"><span id="serviceRecordsTotalCount">0</span> records</p>
+        </div>
+
+        <p id="serviceRecordsMessage" class="form-message" aria-live="polite"></p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>TechnicianName</th>
+                <th>ClientName</th>
+                <th>ProjectName</th>
+                <th>ServiceDate</th>
+                <th>MorningStart</th>
+                <th>MorningEnd</th>
+                <th>AfternoonStart</th>
+                <th>AfternoonEnd</th>
+                <th>TotalHours</th>
+                <th>ServiceDescription</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="serviceRecordsTableBody">
+              <tr>
+                <td colspan="12" class="empty-state">No service records loaded.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div id="legacyTicketsWorkspace" class="hidden app-layout">
       <section class="panel form-panel" aria-labelledby="form-title">
         <div class="section-title">
           <p class="eyebrow">Nuevo registro</p>
@@ -494,6 +578,7 @@
         </div>
         </section>
       </section>
+      </div>
     </section>
 
     <section id="invoicesTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="invoices-title">
@@ -893,6 +978,99 @@
           <path d="M7 3v5h8"/>
         </svg>
         Save Project
+      </button>
+    </form>
+  </div>
+
+  <div id="serviceRecordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="service-record-modal-title">
+    <form id="serviceRecordForm" class="panel modal-panel wide-modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Service Record</p>
+          <h2 id="service-record-modal-title">Add Service Record</h2>
+        </div>
+        <button type="button" id="closeServiceRecordModal" class="icon-button" aria-label="Close service record editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="serviceRecordId">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="serviceRecordTechnicianId">TechnicianUserID</label>
+          <select id="serviceRecordTechnicianId" required></select>
+        </div>
+
+        <div class="form-group">
+          <label for="serviceRecordDate">ServiceDate</label>
+          <input type="date" id="serviceRecordDate" required>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="serviceRecordClientId">ClientID</label>
+          <select id="serviceRecordClientId" required></select>
+        </div>
+
+        <div class="form-group">
+          <label for="serviceRecordProjectId">ProjectID</label>
+          <select id="serviceRecordProjectId" required></select>
+        </div>
+      </div>
+
+      <div class="form-grid time-grid">
+        <div class="form-group">
+          <label for="morningStart">MorningStart</label>
+          <input type="time" id="morningStart">
+        </div>
+        <div class="form-group">
+          <label for="morningEnd">MorningEnd</label>
+          <input type="time" id="morningEnd">
+        </div>
+        <div class="form-group">
+          <label for="afternoonStart">AfternoonStart</label>
+          <input type="time" id="afternoonStart">
+        </div>
+        <div class="form-group">
+          <label for="afternoonEnd">AfternoonEnd</label>
+          <input type="time" id="afternoonEnd">
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="serviceRecordStatus">Status</label>
+          <select id="serviceRecordStatus">
+            <option value="Recorded">Recorded</option>
+            <option value="Billed">Billed</option>
+            <option value="Canceled">Canceled</option>
+          </select>
+        </div>
+
+        <div class="current-user-card">
+          <span>TotalHours</span>
+          <strong id="serviceRecordTotalPreview">0.00</strong>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="serviceDescription">ServiceDescription</label>
+        <textarea id="serviceDescription" rows="5" required></textarea>
+      </div>
+
+      <p id="serviceRecordFormMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" id="saveServiceRecordButton" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Save Service Record
       </button>
     </form>
   </div>

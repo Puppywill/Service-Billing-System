@@ -73,6 +73,35 @@ const projectIsActive = document.querySelector("#projectIsActive");
 const projectFormMessage = document.querySelector("#projectFormMessage");
 const saveProjectButton = document.querySelector("#saveProjectButton");
 
+const addServiceRecordButton = document.querySelector("#addServiceRecordButton");
+const serviceRecordSearchInput = document.querySelector("#serviceRecordSearchInput");
+const serviceRecordTechnicianFilter = document.querySelector("#serviceRecordTechnicianFilter");
+const serviceRecordClientFilter = document.querySelector("#serviceRecordClientFilter");
+const serviceRecordProjectFilter = document.querySelector("#serviceRecordProjectFilter");
+const serviceRecordDateFilter = document.querySelector("#serviceRecordDateFilter");
+const serviceRecordStatusFilter = document.querySelector("#serviceRecordStatusFilter");
+const serviceRecordsTableBody = document.querySelector("#serviceRecordsTableBody");
+const serviceRecordsTotalCount = document.querySelector("#serviceRecordsTotalCount");
+const serviceRecordsMessage = document.querySelector("#serviceRecordsMessage");
+const serviceRecordModal = document.querySelector("#serviceRecordModal");
+const serviceRecordForm = document.querySelector("#serviceRecordForm");
+const serviceRecordModalTitle = document.querySelector("#service-record-modal-title");
+const closeServiceRecordModal = document.querySelector("#closeServiceRecordModal");
+const serviceRecordId = document.querySelector("#serviceRecordId");
+const serviceRecordTechnicianId = document.querySelector("#serviceRecordTechnicianId");
+const serviceRecordDate = document.querySelector("#serviceRecordDate");
+const serviceRecordClientId = document.querySelector("#serviceRecordClientId");
+const serviceRecordProjectId = document.querySelector("#serviceRecordProjectId");
+const morningStart = document.querySelector("#morningStart");
+const morningEnd = document.querySelector("#morningEnd");
+const afternoonStart = document.querySelector("#afternoonStart");
+const afternoonEnd = document.querySelector("#afternoonEnd");
+const serviceRecordStatus = document.querySelector("#serviceRecordStatus");
+const serviceRecordTotalPreview = document.querySelector("#serviceRecordTotalPreview");
+const serviceDescription = document.querySelector("#serviceDescription");
+const serviceRecordFormMessage = document.querySelector("#serviceRecordFormMessage");
+const saveServiceRecordButton = document.querySelector("#saveServiceRecordButton");
+
 const ticketForm = document.querySelector("#ticketForm");
 const creatingTicketAsLabel = document.querySelector("#creatingTicketAsLabel");
 const creatingTicketAsName = document.querySelector("#creatingTicketAsName");
@@ -147,6 +176,10 @@ let tickets = [];
 let clients = [];
 let projectClients = [];
 let projects = [];
+let serviceRecords = [];
+let serviceRecordTechnicians = [];
+let serviceRecordClients = [];
+let serviceRecordProjects = [];
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -173,6 +206,10 @@ function resetClientState({ render = true } = {}) {
   clients = [];
   projectClients = [];
   projects = [];
+  serviceRecords = [];
+  serviceRecordTechnicians = [];
+  serviceRecordClients = [];
+  serviceRecordProjects = [];
   users = [];
   notifications = [];
   passwordResets = [];
@@ -183,6 +220,7 @@ function resetClientState({ render = true } = {}) {
     renderTickets();
     renderClients();
     renderProjects();
+    renderServiceRecords();
     renderUsers();
     renderPasswordResets();
     renderNotifications();
@@ -290,6 +328,33 @@ const translations = {
     createProjectError: "No se pudo crear el proyecto.",
     updateProjectError: "No se pudo actualizar el proyecto.",
     deleteProjectError: "No se pudo desactivar el proyecto.",
+    addServiceRecord: "Add Service Record",
+    editServiceRecord: "Edit Service Record",
+    saveServiceRecord: "Save Service Record",
+    serviceRecordSearchPlaceholder: "Tecnico, cliente, proyecto o descripcion",
+    allTechnicians: "Todos los tecnicos",
+    allProjects: "Todos los proyectos",
+    allStatuses: "Todos los estados",
+    serviceRecordsCount: "registros",
+    noServiceRecords: "No hay registros de servicio.",
+    noServiceRecordMatches: "No hay registros que coincidan con los filtros.",
+    loadServiceRecordsError: "No se pudieron cargar los registros de servicio.",
+    loadServiceRecordLookupsError: "No se pudieron cargar los datos del formulario.",
+    createServiceRecordSuccess: "Registro de servicio creado correctamente.",
+    updateServiceRecordSuccess: "Registro de servicio actualizado correctamente.",
+    cancelServiceRecordSuccess: "Registro de servicio cancelado correctamente.",
+    serviceRecordTechnicianRequired: "TechnicianUserID es obligatorio.",
+    serviceRecordClientRequired: "ClientID es obligatorio.",
+    serviceRecordProjectRequired: "ProjectID es obligatorio.",
+    serviceRecordDateRequired: "ServiceDate es obligatorio.",
+    serviceRecordDescriptionRequired: "ServiceDescription es obligatorio.",
+    serviceRecordTimeError: "Las horas deben tener entrada y salida, y no pueden ser negativas.",
+    serviceRecordStatusInvalid: "Status debe ser Recorded, Billed o Canceled.",
+    serviceRecordNotFound: "No se encontro el registro seleccionado.",
+    cancelServiceRecordConfirm: "Seguro que deseas cancelar este registro de servicio?",
+    createServiceRecordError: "No se pudo crear el registro de servicio.",
+    updateServiceRecordError: "No se pudo actualizar el registro de servicio.",
+    cancelServiceRecordError: "No se pudo cancelar el registro de servicio.",
     invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas, totales y estados de facturacion.",
     settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de facturacion y controles de migracion en una fase posterior.",
     createTicket: "Crear registro",
@@ -510,6 +575,33 @@ const translations = {
     createProjectError: "Could not create the project.",
     updateProjectError: "Could not update the project.",
     deleteProjectError: "Could not deactivate the project.",
+    addServiceRecord: "Add Service Record",
+    editServiceRecord: "Edit Service Record",
+    saveServiceRecord: "Save Service Record",
+    serviceRecordSearchPlaceholder: "Technician, client, project, or description",
+    allTechnicians: "All technicians",
+    allProjects: "All projects",
+    allStatuses: "All statuses",
+    serviceRecordsCount: "records",
+    noServiceRecords: "No service records.",
+    noServiceRecordMatches: "No service records match the filters.",
+    loadServiceRecordsError: "Service records could not be loaded.",
+    loadServiceRecordLookupsError: "Form data could not be loaded.",
+    createServiceRecordSuccess: "Service record created successfully.",
+    updateServiceRecordSuccess: "Service record updated successfully.",
+    cancelServiceRecordSuccess: "Service record canceled successfully.",
+    serviceRecordTechnicianRequired: "TechnicianUserID is required.",
+    serviceRecordClientRequired: "ClientID is required.",
+    serviceRecordProjectRequired: "ProjectID is required.",
+    serviceRecordDateRequired: "ServiceDate is required.",
+    serviceRecordDescriptionRequired: "ServiceDescription is required.",
+    serviceRecordTimeError: "Time ranges require start and end values, and cannot be negative.",
+    serviceRecordStatusInvalid: "Status must be Recorded, Billed, or Canceled.",
+    serviceRecordNotFound: "The selected service record was not found.",
+    cancelServiceRecordConfirm: "Are you sure you want to cancel this service record?",
+    createServiceRecordError: "Could not create the service record.",
+    updateServiceRecordError: "Could not update the service record.",
+    cancelServiceRecordError: "Could not cancel the service record.",
     invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.",
     settingsFoundation: "Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.",
     createTicket: "Create record",
@@ -796,6 +888,14 @@ function isAdmin() {
   return currentUser?.Role === "Admin";
 }
 
+function isTechnician() {
+  return currentUser?.Role === "Technician";
+}
+
+function canCreateServiceRecords() {
+  return isAdmin() || isTechnician();
+}
+
 async function loadUsersIfAdmin() {
   if (!isAdmin()) {
     users = [];
@@ -848,6 +948,11 @@ async function switchTab(tabName) {
   if (activeTab === "projects") {
     await loadProjectClients();
     await loadProjects();
+  }
+
+  if (activeTab === "tickets") {
+    await loadServiceRecordLookups();
+    await loadServiceRecords();
   }
 
   if (activeTab === "notifications") {
@@ -1409,6 +1514,384 @@ async function deactivateProject(id) {
   }
 }
 
+async function loadServiceRecordLookups() {
+  try {
+    const [clientsResponse, projectsResponse] = await Promise.all([
+      fetch("/api/clients", { cache: "no-store" }),
+      fetch("/api/projects", { cache: "no-store" })
+    ]);
+    const clientsData = await parseJsonResponse(clientsResponse);
+    const projectsData = await parseJsonResponse(projectsResponse);
+
+    if (clientsResponse.status === 401 || projectsResponse.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!clientsResponse.ok) {
+      throw new Error(translateServerMessage(clientsData.message) || t("loadClientsError"));
+    }
+
+    if (!projectsResponse.ok) {
+      throw new Error(translateServerMessage(projectsData.message) || t("loadProjectsError"));
+    }
+
+    serviceRecordClients = clientsData.filter((client) => client.IsActive !== false);
+    serviceRecordProjects = projectsData.filter((project) => project.IsActive !== false);
+
+    if (isAdmin()) {
+      if (users.length === 0) {
+        await loadUsers();
+      }
+
+      serviceRecordTechnicians = users.filter((user) => user.Role === "Technician");
+    } else {
+      serviceRecordTechnicians = currentUser ? [currentUser] : [];
+    }
+
+    renderServiceRecordOptions();
+  } catch (error) {
+    console.error(error);
+    serviceRecordClients = [];
+    serviceRecordProjects = [];
+    serviceRecordTechnicians = currentUser ? [currentUser] : [];
+    showServiceRecordsMessage(error.message || t("loadServiceRecordLookupsError"), "error");
+    renderServiceRecordOptions();
+  }
+}
+
+function renderServiceRecordOptions() {
+  if (!serviceRecordClientFilter || !serviceRecordProjectFilter) return;
+
+  const technicianFilterValue = serviceRecordTechnicianFilter.value;
+  const clientFilterValue = serviceRecordClientFilter.value;
+  const projectFilterValue = serviceRecordProjectFilter.value;
+  const modalTechnicianValue = serviceRecordTechnicianId.value;
+  const modalClientValue = serviceRecordClientId.value;
+  const modalProjectValue = serviceRecordProjectId.value;
+
+  serviceRecordTechnicianFilter.innerHTML = `
+    <option value="">${t("allTechnicians")}</option>
+    ${serviceRecordTechnicians.map((user) => `
+      <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
+    `).join("")}
+  `;
+  serviceRecordTechnicianFilter.value = !isAdmin() && currentUser ? String(currentUser.UserID) : technicianFilterValue;
+  serviceRecordTechnicianFilter.disabled = !isAdmin();
+
+  serviceRecordClientFilter.innerHTML = `
+    <option value="">${t("allClients")}</option>
+    ${serviceRecordClients.map((client) => `
+      <option value="${client.ClientID}">${escapeHTML(client.ClientName || `#${client.ClientID}`)}</option>
+    `).join("")}
+  `;
+  serviceRecordClientFilter.value = clientFilterValue;
+
+  const visibleFilterProjects = clientFilterValue
+    ? serviceRecordProjects.filter((project) => Number(project.ClientID) === Number(clientFilterValue))
+    : serviceRecordProjects;
+  serviceRecordProjectFilter.innerHTML = `
+    <option value="">${t("allProjects")}</option>
+    ${visibleFilterProjects.map((project) => `
+      <option value="${project.ProjectID}">${escapeHTML(project.ProjectName || `#${project.ProjectID}`)}</option>
+    `).join("")}
+  `;
+  serviceRecordProjectFilter.value = visibleFilterProjects.some((project) => String(project.ProjectID) === projectFilterValue)
+    ? projectFilterValue
+    : "";
+
+  serviceRecordTechnicianId.innerHTML = `
+    <option value="">${t("allTechnicians")}</option>
+    ${serviceRecordTechnicians.map((user) => `
+      <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
+    `).join("")}
+  `;
+  serviceRecordTechnicianId.value = modalTechnicianValue || (!isAdmin() && currentUser ? String(currentUser.UserID) : "");
+
+  serviceRecordClientId.innerHTML = `
+    <option value="">${t("allClients")}</option>
+    ${serviceRecordClients.map((client) => `
+      <option value="${client.ClientID}">${escapeHTML(client.ClientName || `#${client.ClientID}`)}</option>
+    `).join("")}
+  `;
+  serviceRecordClientId.value = modalClientValue;
+
+  const visibleModalProjects = modalClientValue
+    ? serviceRecordProjects.filter((project) => Number(project.ClientID) === Number(modalClientValue))
+    : serviceRecordProjects;
+  serviceRecordProjectId.innerHTML = `
+    <option value="">${t("allProjects")}</option>
+    ${visibleModalProjects.map((project) => `
+      <option value="${project.ProjectID}">${escapeHTML(project.ProjectName || `#${project.ProjectID}`)}</option>
+    `).join("")}
+  `;
+  serviceRecordProjectId.value = visibleModalProjects.some((project) => String(project.ProjectID) === modalProjectValue)
+    ? modalProjectValue
+    : "";
+}
+
+async function loadServiceRecords() {
+  const params = new URLSearchParams();
+  const search = serviceRecordSearchInput.value.trim();
+
+  if (search) params.set("search", search);
+  if (serviceRecordTechnicianFilter.value) params.set("technicianUserId", serviceRecordTechnicianFilter.value);
+  if (serviceRecordClientFilter.value) params.set("clientId", serviceRecordClientFilter.value);
+  if (serviceRecordProjectFilter.value) params.set("projectId", serviceRecordProjectFilter.value);
+  if (serviceRecordDateFilter.value) params.set("serviceDate", serviceRecordDateFilter.value);
+  if (serviceRecordStatusFilter.value) params.set("status", serviceRecordStatusFilter.value);
+
+  try {
+    const response = await fetch(`/api/service-records?${params.toString()}`, {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (response.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadServiceRecordsError"));
+    }
+
+    serviceRecords = data;
+    renderServiceRecords();
+  } catch (error) {
+    console.error(error);
+    serviceRecords = [];
+    showServiceRecordsTableMessage(t("loadServiceRecordsError"));
+    showServiceRecordsMessage(error.message || t("loadServiceRecordsError"), "error");
+  }
+}
+
+function renderServiceRecords() {
+  if (!serviceRecordsTableBody) return;
+
+  serviceRecordsTotalCount.textContent = serviceRecords.length;
+  serviceRecordsTotalCount.parentElement.lastChild.textContent = ` ${t("serviceRecordsCount")}`;
+  addServiceRecordButton.classList.toggle("hidden", !canCreateServiceRecords());
+
+  if (serviceRecords.length === 0) {
+    const hasFilters = serviceRecordSearchInput.value.trim()
+      || serviceRecordTechnicianFilter.value
+      || serviceRecordClientFilter.value
+      || serviceRecordProjectFilter.value
+      || serviceRecordDateFilter.value
+      || serviceRecordStatusFilter.value;
+    showServiceRecordsTableMessage(hasFilters ? t("noServiceRecordMatches") : t("noServiceRecords"));
+    return;
+  }
+
+  serviceRecordsTableBody.innerHTML = serviceRecords.map((record) => {
+    const canEdit = isAdmin();
+    const canCancel = isAdmin() && record.Status !== "Canceled";
+
+    return `
+      <tr>
+        <td>${escapeHTML(record.TechnicianName || "")}</td>
+        <td>${escapeHTML(record.ClientName || "")}</td>
+        <td>${escapeHTML(record.ProjectName || "")}</td>
+        <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+        <td>${escapeHTML(formatServiceRecordTime(record.MorningStart))}</td>
+        <td>${escapeHTML(formatServiceRecordTime(record.MorningEnd))}</td>
+        <td>${escapeHTML(formatServiceRecordTime(record.AfternoonStart))}</td>
+        <td>${escapeHTML(formatServiceRecordTime(record.AfternoonEnd))}</td>
+        <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+        <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+        <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+        <td>
+          ${canEdit ? `
+            <div class="actions">
+              <button type="button" class="action-btn edit-btn" data-service-record-action="edit" data-id="${record.ServiceRecordID}">${t("edit")}</button>
+              ${canCancel ? `<button type="button" class="action-btn delete-btn" data-service-record-action="cancel" data-id="${record.ServiceRecordID}">${currentLanguage === "es" ? "Cancelar" : "Cancel"}</button>` : ""}
+            </div>
+          ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function showServiceRecordsTableMessage(message) {
+  serviceRecordsTotalCount.textContent = serviceRecords.length;
+  serviceRecordsTableBody.innerHTML = `
+    <tr>
+      <td colspan="12" class="empty-state">${escapeHTML(message)}</td>
+    </tr>
+  `;
+}
+
+function showServiceRecordsMessage(message, type = "info") {
+  serviceRecordsMessage.textContent = message;
+  serviceRecordsMessage.classList.toggle("success", type === "success");
+}
+
+function getServiceRecordPayloadFromForm() {
+  return {
+    TechnicianUserID: Number(serviceRecordTechnicianId.value),
+    ClientID: Number(serviceRecordClientId.value),
+    ProjectID: Number(serviceRecordProjectId.value),
+    ServiceDate: serviceRecordDate.value,
+    MorningStart: morningStart.value || null,
+    MorningEnd: morningEnd.value || null,
+    AfternoonStart: afternoonStart.value || null,
+    AfternoonEnd: afternoonEnd.value || null,
+    ServiceDescription: serviceDescription.value.trim(),
+    Status: isAdmin() ? serviceRecordStatus.value : "Recorded"
+  };
+}
+
+async function openServiceRecordEditor(mode, selectedRecord = null) {
+  if (serviceRecordClients.length === 0 || serviceRecordProjects.length === 0 || serviceRecordTechnicians.length === 0) {
+    await loadServiceRecordLookups();
+  }
+
+  serviceRecordForm.reset();
+  serviceRecordFormMessage.textContent = "";
+  serviceRecordId.value = selectedRecord?.ServiceRecordID || "";
+  serviceRecordModalTitle.textContent = mode === "edit" ? t("editServiceRecord") : t("addServiceRecord");
+  serviceRecordStatus.value = selectedRecord?.Status || "Recorded";
+  serviceRecordStatus.disabled = !isAdmin();
+  serviceRecordTechnicianId.disabled = !isAdmin();
+
+  if (selectedRecord) {
+    serviceRecordTechnicianId.value = selectedRecord.TechnicianUserID || "";
+    serviceRecordDate.value = formatDateOnly(selectedRecord.ServiceDate);
+    serviceRecordClientId.value = selectedRecord.ClientID || "";
+    serviceRecordProjectId.value = selectedRecord.ProjectID || "";
+    morningStart.value = normalizeTimeInput(selectedRecord.MorningStart);
+    morningEnd.value = normalizeTimeInput(selectedRecord.MorningEnd);
+    afternoonStart.value = normalizeTimeInput(selectedRecord.AfternoonStart);
+    afternoonEnd.value = normalizeTimeInput(selectedRecord.AfternoonEnd);
+    serviceDescription.value = selectedRecord.ServiceDescription || "";
+  } else if (!isAdmin() && currentUser) {
+    serviceRecordTechnicianId.value = currentUser.UserID;
+  }
+
+  renderServiceRecordOptions();
+  updateServiceRecordTotalPreview();
+  serviceRecordModal.classList.remove("hidden");
+  (isAdmin() ? serviceRecordTechnicianId : serviceRecordDate).focus();
+}
+
+function closeServiceRecordEditor() {
+  if (!serviceRecordModal) return;
+  serviceRecordModal.classList.add("hidden");
+  serviceRecordForm.reset();
+  serviceRecordFormMessage.textContent = "";
+  serviceRecordId.value = "";
+  updateServiceRecordTotalPreview();
+}
+
+async function saveServiceRecord(event) {
+  event.preventDefault();
+  serviceRecordFormMessage.textContent = "";
+
+  const payload = getServiceRecordPayloadFromForm();
+  const validationMessage = getServiceRecordValidationMessage(payload);
+
+  if (validationMessage) {
+    serviceRecordFormMessage.textContent = validationMessage;
+    return;
+  }
+
+  const editingId = serviceRecordId.value;
+  const method = editingId ? "PUT" : "POST";
+  const url = editingId ? `/api/service-records/${editingId}` : "/api/service-records";
+
+  try {
+    const response = await fetch(url, {
+      method,
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || (editingId ? t("updateServiceRecordError") : t("createServiceRecordError")));
+    }
+
+    closeServiceRecordEditor();
+    showServiceRecordsMessage(editingId ? t("updateServiceRecordSuccess") : t("createServiceRecordSuccess"), "success");
+    await loadServiceRecords();
+  } catch (error) {
+    console.error(error);
+    serviceRecordFormMessage.textContent = error.message || (editingId ? t("updateServiceRecordError") : t("createServiceRecordError"));
+  }
+}
+
+function getServiceRecordValidationMessage(payload) {
+  const allowedStatuses = new Set(["Recorded", "Billed", "Canceled"]);
+  const timeResult = calculateServiceRecordHours(payload);
+
+  if (!Number.isInteger(payload.TechnicianUserID) || payload.TechnicianUserID <= 0) return t("serviceRecordTechnicianRequired");
+  if (!Number.isInteger(payload.ClientID) || payload.ClientID <= 0) return t("serviceRecordClientRequired");
+  if (!Number.isInteger(payload.ProjectID) || payload.ProjectID <= 0) return t("serviceRecordProjectRequired");
+  if (!payload.ServiceDate) return t("serviceRecordDateRequired");
+  if (!payload.ServiceDescription) return t("serviceRecordDescriptionRequired");
+  if (!allowedStatuses.has(payload.Status)) return t("serviceRecordStatusInvalid");
+  if (timeResult.error) return timeResult.error;
+
+  return "";
+}
+
+function handleServiceRecordsTableClick(event) {
+  const button = event.target.closest("button[data-service-record-action]");
+
+  if (!button) return;
+
+  const id = Number(button.dataset.id);
+  const action = button.dataset.serviceRecordAction;
+
+  if (action === "edit") {
+    const selectedRecord = serviceRecords.find((record) => Number(record.ServiceRecordID) === id);
+
+    if (!selectedRecord) {
+      alert(t("serviceRecordNotFound"));
+      return;
+    }
+
+    openServiceRecordEditor("edit", selectedRecord);
+  }
+
+  if (action === "cancel") {
+    cancelServiceRecord(id);
+  }
+}
+
+async function cancelServiceRecord(id) {
+  if (!isAdmin()) return;
+
+  const confirmed = confirm(t("cancelServiceRecordConfirm"));
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/service-records/${id}`, {
+      method: "DELETE",
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("cancelServiceRecordError"));
+    }
+
+    showServiceRecordsMessage(t("cancelServiceRecordSuccess"), "success");
+    await loadServiceRecords();
+  } catch (error) {
+    console.error(error);
+    showServiceRecordsMessage(error.message || t("cancelServiceRecordError"), "error");
+  }
+}
+
 function renderNotifications() {
   notificationsTotalCount.textContent = notifications.length;
 
@@ -1791,10 +2274,31 @@ function applyStaticLanguage() {
 
   setText("#ticketsTabPanel .table-panel .section-title .eyebrow", t("supportInbox"));
   setText("#table-title", t("allTickets"));
+  setText(".service-records-panel .section-title .eyebrow", t("supportInbox"));
+  setText("#service-records-title", t("tickets"));
   setText('label[for="searchInput"]', t("search"));
   setText('label[for="statusFilter"]', t("status"));
   setText('label[for="priorityFilter"]', t("priority"));
+  setText('label[for="serviceRecordSearchInput"]', t("search"));
+  setText('label[for="serviceRecordTechnicianFilter"]', "TechnicianUserID");
+  setText('label[for="serviceRecordClientFilter"]', "ClientID");
+  setText('label[for="serviceRecordProjectFilter"]', "ProjectID");
+  setText('label[for="serviceRecordDateFilter"]', "ServiceDate");
+  setText('label[for="serviceRecordStatusFilter"]', "Status");
   setPlaceholder("#searchInput", t("searchPlaceholder"));
+  setPlaceholder("#serviceRecordSearchInput", t("serviceRecordSearchPlaceholder"));
+  setText("#serviceRecordModal .section-title .eyebrow", t("tickets"));
+  setText('label[for="serviceRecordTechnicianId"]', "TechnicianUserID");
+  setText('label[for="serviceRecordDate"]', "ServiceDate");
+  setText('label[for="serviceRecordClientId"]', "ClientID");
+  setText('label[for="serviceRecordProjectId"]', "ProjectID");
+  setText('label[for="morningStart"]', "MorningStart");
+  setText('label[for="morningEnd"]', "MorningEnd");
+  setText('label[for="afternoonStart"]', "AfternoonStart");
+  setText('label[for="afternoonEnd"]', "AfternoonEnd");
+  setText('label[for="serviceRecordStatus"]', "Status");
+  setText('label[for="serviceDescription"]', "ServiceDescription");
+  setAriaLabel("#closeServiceRecordModal", t("closeEditor"));
 
   const ticketStatLabels = document.querySelectorAll("#ticketsTabPanel .stats-grid .stat-card span");
   if (ticketStatLabels[0]) ticketStatLabels[0].textContent = t("openCountLabel");
@@ -1886,7 +2390,8 @@ function applyStaticLanguage() {
   temporaryPasswordButton.textContent = t("temporaryPassword");
   setAriaLabel("#closeEditUserModal", t("closeUserEditor"));
 
-  setTableHeaders("#ticketsTabPanel table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
+  setTableHeaders(".service-records-panel table", ["TechnicianName", "ClientName", "ProjectName", "ServiceDate", "MorningStart", "MorningEnd", "AfternoonStart", "AfternoonEnd", "TotalHours", "ServiceDescription", "Status", t("actions")]);
+  setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
   setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
   setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "HourlyRate", "IsActive", t("actions")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
@@ -1912,6 +2417,8 @@ function applyLanguage() {
   setButtonText(saveClientButton, t("saveClient"));
   setButtonText(addProjectButton, t("addProject"));
   setButtonText(saveProjectButton, t("saveProject"));
+  setButtonText(addServiceRecordButton, t("addServiceRecord"));
+  setButtonText(saveServiceRecordButton, t("saveServiceRecord"));
   setButtonText(logoutButton, t("logout"));
   setButtonText(loginForm.querySelector(".btn-primary"), t("enter"));
   setButtonText(ticketForm.querySelector(".btn-primary"), t("createTicket"));
@@ -1923,6 +2430,8 @@ function applyLanguage() {
   renderClients();
   renderProjectClientOptions();
   renderProjects();
+  renderServiceRecordOptions();
+  renderServiceRecords();
   renderUsers();
   renderPasswordResets();
   renderNotifications();
@@ -1936,9 +2445,13 @@ function setRoleControls() {
   statusHelp.classList.toggle("hidden", isAdmin());
   addClientButton.classList.toggle("hidden", !isAdmin());
   addProjectButton.classList.toggle("hidden", !isAdmin());
+  addServiceRecordButton.classList.toggle("hidden", !canCreateServiceRecords());
+  serviceRecordStatus.disabled = !isAdmin();
+  serviceRecordTechnicianId.disabled = !isAdmin();
 
   if (!isAdmin()) {
     statusInput.value = "Abierto";
+    serviceRecordStatus.value = "Recorded";
   }
 
   renderCreatingTicketAs();
@@ -2719,6 +3232,85 @@ function formatDate(value) {
   return new Date(value).toLocaleString(locale);
 }
 
+function formatDateOnly(value) {
+  if (!value) return "";
+
+  return String(value).slice(0, 10);
+}
+
+function normalizeTimeInput(value) {
+  if (!value) return "";
+
+  return String(value).slice(0, 5);
+}
+
+function formatServiceRecordTime(value) {
+  return normalizeTimeInput(value) || "-";
+}
+
+function getTimeMinutes(value) {
+  if (!value) return null;
+
+  const [hours, minutes] = String(value).split(":").map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return NaN;
+
+  return (hours * 60) + minutes;
+}
+
+function calculateServiceRecordHours(payload = null) {
+  const intervals = [
+    {
+      start: payload?.MorningStart ?? morningStart.value,
+      end: payload?.MorningEnd ?? morningEnd.value
+    },
+    {
+      start: payload?.AfternoonStart ?? afternoonStart.value,
+      end: payload?.AfternoonEnd ?? afternoonEnd.value
+    }
+  ];
+  let minutes = 0;
+
+  for (const interval of intervals) {
+    const startMinutes = getTimeMinutes(interval.start);
+    const endMinutes = getTimeMinutes(interval.end);
+
+    if ((startMinutes === null) !== (endMinutes === null)) {
+      return { hours: 0, error: t("serviceRecordTimeError") };
+    }
+
+    if (startMinutes === null) continue;
+
+    if (!Number.isFinite(startMinutes) || !Number.isFinite(endMinutes) || endMinutes <= startMinutes) {
+      return { hours: 0, error: t("serviceRecordTimeError") };
+    }
+
+    minutes += endMinutes - startMinutes;
+  }
+
+  if (minutes <= 0) {
+    return { hours: 0, error: t("serviceRecordTimeError") };
+  }
+
+  return {
+    hours: Math.round((minutes / 60) * 100) / 100,
+    error: ""
+  };
+}
+
+function updateServiceRecordTotalPreview() {
+  if (!serviceRecordTotalPreview) return;
+
+  const result = calculateServiceRecordHours();
+  serviceRecordTotalPreview.textContent = result.error ? "0.00" : result.hours.toFixed(2);
+}
+
+function getServiceRecordStatusClass(status) {
+  if (status === "Recorded") return "status-abierto";
+  if (status === "Billed") return "status-progreso";
+  return "status-cerrado";
+}
+
 function formatCurrency(value) {
   const locale = currentLanguage === "es" ? "es-BO" : "en-US";
   const amount = Number(value || 0);
@@ -2816,6 +3408,31 @@ projectModal.addEventListener("click", (event) => {
   if (event.target === projectModal) {
     closeProjectEditor();
   }
+});
+addServiceRecordButton.addEventListener("click", () => openServiceRecordEditor("create"));
+serviceRecordSearchInput.addEventListener("input", loadServiceRecords);
+serviceRecordTechnicianFilter.addEventListener("change", loadServiceRecords);
+serviceRecordClientFilter.addEventListener("change", () => {
+  renderServiceRecordOptions();
+  loadServiceRecords();
+});
+serviceRecordProjectFilter.addEventListener("change", loadServiceRecords);
+serviceRecordDateFilter.addEventListener("change", loadServiceRecords);
+serviceRecordStatusFilter.addEventListener("change", loadServiceRecords);
+serviceRecordsTableBody.addEventListener("click", handleServiceRecordsTableClick);
+serviceRecordForm.addEventListener("submit", saveServiceRecord);
+closeServiceRecordModal.addEventListener("click", closeServiceRecordEditor);
+serviceRecordModal.addEventListener("click", (event) => {
+  if (event.target === serviceRecordModal) {
+    closeServiceRecordEditor();
+  }
+});
+serviceRecordClientId.addEventListener("change", () => {
+  serviceRecordProjectId.value = "";
+  renderServiceRecordOptions();
+});
+[morningStart, morningEnd, afternoonStart, afternoonEnd].forEach((input) => {
+  input.addEventListener("input", updateServiceRecordTotalPreview);
 });
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);

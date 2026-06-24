@@ -749,7 +749,8 @@ textarea:focus {
 }
 
 .ticket-toolbar,
-.client-toolbar {
+.client-toolbar,
+.service-record-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(150px, 190px) minmax(150px, 190px);
   gap: 12px;
@@ -767,6 +768,11 @@ textarea:focus {
 
 .project-toolbar {
   grid-template-columns: minmax(240px, 1fr) minmax(180px, 240px) auto;
+}
+
+.service-record-toolbar {
+  grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(132px, 1fr)) auto;
+  align-items: end;
 }
 
 .report-toolbar {
@@ -800,6 +806,7 @@ textarea:focus {
 
 .ticket-toolbar label,
 .client-toolbar label,
+.service-record-toolbar label,
 .report-toolbar label {
   color: #aebcd0;
   font-size: 0.78rem;
@@ -1017,6 +1024,14 @@ tbody tr:last-child td {
   animation: riseIn 0.25s ease both;
 }
 
+.wide-modal-panel {
+  width: min(920px, calc(100% - 28px));
+}
+
+.time-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .icon-button {
   display: grid;
   place-items: center;
@@ -1121,7 +1136,8 @@ tbody tr:last-child td {
   }
 
   .ticket-toolbar,
-  .client-toolbar {
+  .client-toolbar,
+  .service-record-toolbar {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1130,7 +1146,8 @@ tbody tr:last-child td {
   }
 
   .ticket-toolbar .search-field,
-  .client-toolbar .search-field {
+  .client-toolbar .search-field,
+  .service-record-toolbar .search-field {
     grid-column: 1 / -1;
   }
 
@@ -1288,7 +1305,12 @@ tbody tr:last-child td {
   }
 
   .ticket-toolbar,
-  .client-toolbar {
+  .client-toolbar,
+  .service-record-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .time-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1398,6 +1420,7 @@ tbody tr:last-child td {
   .table-wrapper,
   .ticket-toolbar,
   .client-toolbar,
+  .service-record-toolbar,
   .report-toolbar {
     border-radius: 8px;
   }
