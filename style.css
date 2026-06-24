@@ -750,7 +750,8 @@ textarea:focus {
 
 .ticket-toolbar,
 .client-toolbar,
-.service-record-toolbar {
+.service-record-toolbar,
+.invoice-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(150px, 190px) minmax(150px, 190px);
   gap: 12px;
@@ -772,6 +773,11 @@ textarea:focus {
 
 .service-record-toolbar {
   grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(132px, 1fr)) auto;
+  align-items: end;
+}
+
+.invoice-toolbar {
+  grid-template-columns: minmax(220px, 1.4fr) minmax(160px, 220px) repeat(3, minmax(132px, 1fr)) auto;
   align-items: end;
 }
 
@@ -807,6 +813,7 @@ textarea:focus {
 .ticket-toolbar label,
 .client-toolbar label,
 .service-record-toolbar label,
+.invoice-toolbar label,
 .report-toolbar label {
   color: #aebcd0;
   font-size: 0.78rem;
@@ -1032,6 +1039,37 @@ tbody tr:last-child td {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.detail-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.detail-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-summary-grid div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 13, 24, 0.44);
+}
+
+.detail-summary-grid span {
+  display: block;
+  color: #aebcd0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.detail-summary-grid strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+}
+
 .icon-button {
   display: grid;
   place-items: center;
@@ -1137,7 +1175,8 @@ tbody tr:last-child td {
 
   .ticket-toolbar,
   .client-toolbar,
-  .service-record-toolbar {
+  .service-record-toolbar,
+  .invoice-toolbar {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1147,8 +1186,13 @@ tbody tr:last-child td {
 
   .ticket-toolbar .search-field,
   .client-toolbar .search-field,
-  .service-record-toolbar .search-field {
+  .service-record-toolbar .search-field,
+  .invoice-toolbar .search-field {
     grid-column: 1 / -1;
+  }
+
+  .detail-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   #dashboardTabPanel .dashboard-grid {
@@ -1306,11 +1350,16 @@ tbody tr:last-child td {
 
   .ticket-toolbar,
   .client-toolbar,
-  .service-record-toolbar {
+  .service-record-toolbar,
+  .invoice-toolbar {
     grid-template-columns: 1fr;
   }
 
   .time-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-summary-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1421,6 +1470,7 @@ tbody tr:last-child td {
   .ticket-toolbar,
   .client-toolbar,
   .service-record-toolbar,
+  .invoice-toolbar,
   .report-toolbar {
     border-radius: 8px;
   }

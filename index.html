@@ -581,27 +581,79 @@
       </div>
     </section>
 
-    <section id="invoicesTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="invoices-title">
-      <section class="panel foundation-hero">
-        <div class="section-title">
-          <p class="eyebrow">Billing workspace</p>
-          <h2 id="invoices-title">Invoices</h2>
+    <section id="invoicesTabPanel" class="tab-panel hidden" aria-labelledby="invoices-title">
+      <section class="panel table-panel invoices-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Billing workspace</p>
+            <h2 id="invoices-title">Invoices</h2>
+          </div>
+          <button type="button" id="generateInvoiceButton" class="btn btn-primary">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
+            </svg>
+            Generate Invoice
+          </button>
         </div>
-        <p class="foundation-copy">Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.</p>
-      </section>
-      <section class="foundation-grid" aria-label="Invoice workspace preview">
-        <article class="panel foundation-card">
-          <h3>Invoice List</h3>
-          <p>Track draft, issued, paid, and canceled invoices in one billing view.</p>
-        </article>
-        <article class="panel foundation-card">
-          <h3>Invoice Lines</h3>
-          <p>Show service records, project rates, hours, and line totals per invoice.</p>
-        </article>
-        <article class="panel foundation-card">
-          <h3>Generate Invoice</h3>
-          <p>Select a client and date range to prepare billing from recorded hours.</p>
-        </article>
+
+        <div class="invoice-toolbar" aria-label="Invoice filters">
+          <div class="search-field">
+            <label for="invoiceSearchInput">Search</label>
+            <input type="search" id="invoiceSearchInput" placeholder="Invoice, client, or notes">
+          </div>
+          <div class="filter-field">
+            <label for="invoiceClientFilter">ClientID</label>
+            <select id="invoiceClientFilter">
+              <option value="">All clients</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="invoiceFromFilter">PeriodFrom</label>
+            <input type="date" id="invoiceFromFilter">
+          </div>
+          <div class="filter-field">
+            <label for="invoiceToFilter">PeriodTo</label>
+            <input type="date" id="invoiceToFilter">
+          </div>
+          <div class="filter-field">
+            <label for="invoiceStatusFilter">Status</label>
+            <select id="invoiceStatusFilter">
+              <option value="">All statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Issued">Issued</option>
+              <option value="Paid">Paid</option>
+              <option value="Canceled">Canceled</option>
+            </select>
+          </div>
+          <p class="ticket-total"><span id="invoicesTotalCount">0</span> invoices</p>
+        </div>
+
+        <p id="invoicesMessage" class="form-message" aria-live="polite"></p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>InvoiceNumber</th>
+                <th>ClientName</th>
+                <th>InvoiceDate</th>
+                <th>PeriodFrom</th>
+                <th>PeriodTo</th>
+                <th>Subtotal</th>
+                <th>TaxAmount</th>
+                <th>TotalAmount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="invoicesTableBody">
+              <tr>
+                <td colspan="10" class="empty-state">No invoices loaded.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </section>
 
@@ -1073,6 +1125,141 @@
         Save Service Record
       </button>
     </form>
+  </div>
+
+  <div id="invoiceGenerateModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="invoice-generate-title">
+    <form id="invoiceGenerateForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Invoices</p>
+          <h2 id="invoice-generate-title">Generate Invoice</h2>
+        </div>
+        <button type="button" id="closeInvoiceGenerateModal" class="icon-button" aria-label="Close invoice generator">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="invoiceGenerateClientId">ClientID</label>
+        <select id="invoiceGenerateClientId" required></select>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="invoiceGeneratePeriodFrom">PeriodFrom</label>
+          <input type="date" id="invoiceGeneratePeriodFrom" required>
+        </div>
+        <div class="form-group">
+          <label for="invoiceGeneratePeriodTo">PeriodTo</label>
+          <input type="date" id="invoiceGeneratePeriodTo" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="invoiceGenerateTaxRate">TaxRate</label>
+        <input type="number" id="invoiceGenerateTaxRate" min="0" step="0.0001" value="0">
+      </div>
+
+      <div class="form-group">
+        <label for="invoiceGenerateNotes">Notes</label>
+        <textarea id="invoiceGenerateNotes" rows="4"></textarea>
+      </div>
+
+      <p id="invoiceGenerateMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" id="saveGeneratedInvoiceButton" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Generate Invoice
+      </button>
+    </form>
+  </div>
+
+  <div id="invoiceStatusModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="invoice-status-title">
+    <form id="invoiceStatusForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Invoices</p>
+          <h2 id="invoice-status-title">Edit Invoice Status</h2>
+        </div>
+        <button type="button" id="closeInvoiceStatusModal" class="icon-button" aria-label="Close invoice status editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="invoiceStatusId">
+
+      <div class="form-group">
+        <label for="invoiceStatusValue">Status</label>
+        <select id="invoiceStatusValue" required>
+          <option value="Draft">Draft</option>
+          <option value="Issued">Issued</option>
+          <option value="Paid">Paid</option>
+          <option value="Canceled">Canceled</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="invoiceStatusNotes">Notes</label>
+        <textarea id="invoiceStatusNotes" rows="4"></textarea>
+      </div>
+
+      <p id="invoiceStatusMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" id="saveInvoiceStatusButton" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Save Status
+      </button>
+    </form>
+  </div>
+
+  <div id="invoiceDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="invoice-detail-title">
+    <section class="panel modal-panel wide-modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Invoice Lines</p>
+          <h2 id="invoice-detail-title">Invoice Detail</h2>
+        </div>
+        <button type="button" id="closeInvoiceDetailModal" class="icon-button" aria-label="Close invoice detail">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="invoiceDetailSummary" class="detail-summary"></div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ServiceDate</th>
+              <th>ProjectName</th>
+              <th>Description</th>
+              <th>Hours</th>
+              <th>HourlyRate</th>
+              <th>LineTotal</th>
+            </tr>
+          </thead>
+          <tbody id="invoiceLinesTableBody">
+            <tr>
+              <td colspan="6" class="empty-state">No invoice lines loaded.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <div id="editModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-title">

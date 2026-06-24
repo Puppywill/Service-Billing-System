@@ -102,6 +102,38 @@ const serviceDescription = document.querySelector("#serviceDescription");
 const serviceRecordFormMessage = document.querySelector("#serviceRecordFormMessage");
 const saveServiceRecordButton = document.querySelector("#saveServiceRecordButton");
 
+const generateInvoiceButton = document.querySelector("#generateInvoiceButton");
+const invoiceSearchInput = document.querySelector("#invoiceSearchInput");
+const invoiceClientFilter = document.querySelector("#invoiceClientFilter");
+const invoiceFromFilter = document.querySelector("#invoiceFromFilter");
+const invoiceToFilter = document.querySelector("#invoiceToFilter");
+const invoiceStatusFilter = document.querySelector("#invoiceStatusFilter");
+const invoicesTableBody = document.querySelector("#invoicesTableBody");
+const invoicesTotalCount = document.querySelector("#invoicesTotalCount");
+const invoicesMessage = document.querySelector("#invoicesMessage");
+const invoiceGenerateModal = document.querySelector("#invoiceGenerateModal");
+const invoiceGenerateForm = document.querySelector("#invoiceGenerateForm");
+const closeInvoiceGenerateModal = document.querySelector("#closeInvoiceGenerateModal");
+const invoiceGenerateClientId = document.querySelector("#invoiceGenerateClientId");
+const invoiceGeneratePeriodFrom = document.querySelector("#invoiceGeneratePeriodFrom");
+const invoiceGeneratePeriodTo = document.querySelector("#invoiceGeneratePeriodTo");
+const invoiceGenerateTaxRate = document.querySelector("#invoiceGenerateTaxRate");
+const invoiceGenerateNotes = document.querySelector("#invoiceGenerateNotes");
+const invoiceGenerateMessage = document.querySelector("#invoiceGenerateMessage");
+const saveGeneratedInvoiceButton = document.querySelector("#saveGeneratedInvoiceButton");
+const invoiceStatusModal = document.querySelector("#invoiceStatusModal");
+const invoiceStatusForm = document.querySelector("#invoiceStatusForm");
+const closeInvoiceStatusModal = document.querySelector("#closeInvoiceStatusModal");
+const invoiceStatusId = document.querySelector("#invoiceStatusId");
+const invoiceStatusValue = document.querySelector("#invoiceStatusValue");
+const invoiceStatusNotes = document.querySelector("#invoiceStatusNotes");
+const invoiceStatusMessage = document.querySelector("#invoiceStatusMessage");
+const saveInvoiceStatusButton = document.querySelector("#saveInvoiceStatusButton");
+const invoiceDetailModal = document.querySelector("#invoiceDetailModal");
+const closeInvoiceDetailModal = document.querySelector("#closeInvoiceDetailModal");
+const invoiceDetailSummary = document.querySelector("#invoiceDetailSummary");
+const invoiceLinesTableBody = document.querySelector("#invoiceLinesTableBody");
+
 const ticketForm = document.querySelector("#ticketForm");
 const creatingTicketAsLabel = document.querySelector("#creatingTicketAsLabel");
 const creatingTicketAsName = document.querySelector("#creatingTicketAsName");
@@ -180,6 +212,8 @@ let serviceRecords = [];
 let serviceRecordTechnicians = [];
 let serviceRecordClients = [];
 let serviceRecordProjects = [];
+let invoices = [];
+let invoiceClients = [];
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -210,6 +244,8 @@ function resetClientState({ render = true } = {}) {
   serviceRecordTechnicians = [];
   serviceRecordClients = [];
   serviceRecordProjects = [];
+  invoices = [];
+  invoiceClients = [];
   users = [];
   notifications = [];
   passwordResets = [];
@@ -221,6 +257,7 @@ function resetClientState({ render = true } = {}) {
     renderClients();
     renderProjects();
     renderServiceRecords();
+    renderInvoices();
     renderUsers();
     renderPasswordResets();
     renderNotifications();
@@ -355,6 +392,31 @@ const translations = {
     createServiceRecordError: "No se pudo crear el registro de servicio.",
     updateServiceRecordError: "No se pudo actualizar el registro de servicio.",
     cancelServiceRecordError: "No se pudo cancelar el registro de servicio.",
+    generateInvoice: "Generate Invoice",
+    editInvoiceStatus: "Edit Invoice Status",
+    saveInvoiceStatus: "Save Status",
+    invoiceSearchPlaceholder: "Factura, cliente o notas",
+    invoicesCount: "facturas",
+    noInvoices: "No hay facturas.",
+    noInvoiceMatches: "No hay facturas que coincidan con los filtros.",
+    loadInvoicesError: "No se pudieron cargar las facturas.",
+    loadInvoiceClientsError: "No se pudieron cargar los clientes para facturas.",
+    invoiceGeneratedSuccess: "Factura generada correctamente.",
+    invoiceStatusUpdatedSuccess: "Estado de factura actualizado correctamente.",
+    invoiceCanceledSuccess: "Factura cancelada correctamente.",
+    invoiceClientRequired: "ClientID es obligatorio.",
+    invoicePeriodFromRequired: "PeriodFrom es obligatorio.",
+    invoicePeriodToRequired: "PeriodTo es obligatorio.",
+    invoicePeriodInvalid: "PeriodFrom no puede ser posterior a PeriodTo.",
+    invoiceTaxRateInvalid: "TaxRate debe ser un numero no negativo.",
+    invoiceStatusInvalid: "Status debe ser Draft, Issued, Paid o Canceled.",
+    invoiceNotFound: "No se encontro la factura seleccionada.",
+    cancelInvoiceConfirm: "Seguro que deseas cancelar esta factura?",
+    generateInvoiceError: "No se pudo generar la factura.",
+    updateInvoiceError: "No se pudo actualizar la factura.",
+    cancelInvoiceError: "No se pudo cancelar la factura.",
+    loadInvoiceDetailError: "No se pudo cargar el detalle de la factura.",
+    noInvoiceLines: "No hay lineas para esta factura.",
     invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas, totales y estados de facturacion.",
     settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de facturacion y controles de migracion en una fase posterior.",
     createTicket: "Crear registro",
@@ -602,6 +664,31 @@ const translations = {
     createServiceRecordError: "Could not create the service record.",
     updateServiceRecordError: "Could not update the service record.",
     cancelServiceRecordError: "Could not cancel the service record.",
+    generateInvoice: "Generate Invoice",
+    editInvoiceStatus: "Edit Invoice Status",
+    saveInvoiceStatus: "Save Status",
+    invoiceSearchPlaceholder: "Invoice, client, or notes",
+    invoicesCount: "invoices",
+    noInvoices: "No invoices.",
+    noInvoiceMatches: "No invoices match the filters.",
+    loadInvoicesError: "Invoices could not be loaded.",
+    loadInvoiceClientsError: "Clients for invoices could not be loaded.",
+    invoiceGeneratedSuccess: "Invoice generated successfully.",
+    invoiceStatusUpdatedSuccess: "Invoice status updated successfully.",
+    invoiceCanceledSuccess: "Invoice canceled successfully.",
+    invoiceClientRequired: "ClientID is required.",
+    invoicePeriodFromRequired: "PeriodFrom is required.",
+    invoicePeriodToRequired: "PeriodTo is required.",
+    invoicePeriodInvalid: "PeriodFrom cannot be after PeriodTo.",
+    invoiceTaxRateInvalid: "TaxRate must be a non-negative number.",
+    invoiceStatusInvalid: "Status must be Draft, Issued, Paid, or Canceled.",
+    invoiceNotFound: "The selected invoice was not found.",
+    cancelInvoiceConfirm: "Are you sure you want to cancel this invoice?",
+    generateInvoiceError: "Could not generate the invoice.",
+    updateInvoiceError: "Could not update the invoice.",
+    cancelInvoiceError: "Could not cancel the invoice.",
+    loadInvoiceDetailError: "Could not load invoice detail.",
+    noInvoiceLines: "This invoice has no lines.",
     invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.",
     settingsFoundation: "Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.",
     createTicket: "Create record",
@@ -879,6 +966,10 @@ function showLogin() {
   });
   closeClientEditor();
   closeProjectEditor();
+  closeServiceRecordEditor();
+  closeInvoiceGenerateEditor();
+  closeInvoiceStatusEditor();
+  closeInvoiceDetail();
   closeEditor();
   closeUserEditor();
   applyLanguage();
@@ -953,6 +1044,11 @@ async function switchTab(tabName) {
   if (activeTab === "tickets") {
     await loadServiceRecordLookups();
     await loadServiceRecords();
+  }
+
+  if (activeTab === "invoices") {
+    await loadInvoiceClients();
+    await loadInvoices();
   }
 
   if (activeTab === "notifications") {
@@ -1892,6 +1988,409 @@ async function cancelServiceRecord(id) {
   }
 }
 
+async function loadInvoiceClients() {
+  try {
+    const response = await fetch("/api/clients", {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (response.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadInvoiceClientsError"));
+    }
+
+    invoiceClients = data.filter((client) => client.IsActive !== false);
+    renderInvoiceClientOptions();
+  } catch (error) {
+    console.error(error);
+    invoiceClients = [];
+    renderInvoiceClientOptions();
+    showInvoicesMessage(error.message || t("loadInvoiceClientsError"), "error");
+  }
+}
+
+function renderInvoiceClientOptions() {
+  if (!invoiceClientFilter || !invoiceGenerateClientId) return;
+
+  const filterValue = invoiceClientFilter.value;
+  const generateValue = invoiceGenerateClientId.value;
+  const options = invoiceClients.map((client) => `
+    <option value="${client.ClientID}">${escapeHTML(client.ClientName || `#${client.ClientID}`)}</option>
+  `).join("");
+
+  invoiceClientFilter.innerHTML = `<option value="">${escapeHTML(t("allClients"))}</option>${options}`;
+  invoiceGenerateClientId.innerHTML = `<option value="">${escapeHTML(t("selectClient"))}</option>${options}`;
+  invoiceClientFilter.value = filterValue;
+  invoiceGenerateClientId.value = generateValue;
+}
+
+async function loadInvoices() {
+  const params = new URLSearchParams();
+  const search = invoiceSearchInput.value.trim();
+
+  if (search) params.set("search", search);
+  if (invoiceClientFilter.value) params.set("clientId", invoiceClientFilter.value);
+  if (invoiceFromFilter.value) params.set("periodFrom", invoiceFromFilter.value);
+  if (invoiceToFilter.value) params.set("periodTo", invoiceToFilter.value);
+  if (invoiceStatusFilter.value) params.set("status", invoiceStatusFilter.value);
+
+  try {
+    const response = await fetch(`/api/invoices?${params.toString()}`, {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (response.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadInvoicesError"));
+    }
+
+    invoices = data;
+    renderInvoices();
+  } catch (error) {
+    console.error(error);
+    invoices = [];
+    showInvoicesTableMessage(t("loadInvoicesError"));
+    showInvoicesMessage(error.message || t("loadInvoicesError"), "error");
+  }
+}
+
+function renderInvoices() {
+  if (!invoicesTableBody) return;
+
+  invoicesTotalCount.textContent = invoices.length;
+  invoicesTotalCount.parentElement.lastChild.textContent = ` ${t("invoicesCount")}`;
+  generateInvoiceButton.classList.toggle("hidden", !isAdmin());
+
+  if (invoices.length === 0) {
+    const hasFilters = invoiceSearchInput.value.trim()
+      || invoiceClientFilter.value
+      || invoiceFromFilter.value
+      || invoiceToFilter.value
+      || invoiceStatusFilter.value;
+    showInvoicesTableMessage(hasFilters ? t("noInvoiceMatches") : t("noInvoices"));
+    return;
+  }
+
+  invoicesTableBody.innerHTML = invoices.map((invoice) => {
+    const canManage = isAdmin();
+    const canCancel = canManage && invoice.Status !== "Canceled";
+
+    return `
+      <tr>
+        <td>${escapeHTML(invoice.InvoiceNumber || "")}</td>
+        <td>${escapeHTML(invoice.ClientName || "")}</td>
+        <td>${escapeHTML(formatDateOnly(invoice.InvoiceDate))}</td>
+        <td>${escapeHTML(formatDateOnly(invoice.PeriodFrom))}</td>
+        <td>${escapeHTML(formatDateOnly(invoice.PeriodTo))}</td>
+        <td>${formatCurrency(invoice.Subtotal)}</td>
+        <td>${formatCurrency(invoice.TaxAmount)}</td>
+        <td>${formatCurrency(invoice.TotalAmount)}</td>
+        <td><span class="badge ${getInvoiceStatusClass(invoice.Status)}">${escapeHTML(invoice.Status || "")}</span></td>
+        <td>
+          <div class="actions">
+            <button type="button" class="action-btn edit-btn" data-invoice-action="detail" data-id="${invoice.InvoiceID}">${currentLanguage === "es" ? "Detalle" : "Detail"}</button>
+            ${canManage ? `<button type="button" class="action-btn edit-btn" data-invoice-action="status" data-id="${invoice.InvoiceID}">${currentLanguage === "es" ? "Estado" : "Status"}</button>` : ""}
+            ${canCancel ? `<button type="button" class="action-btn delete-btn" data-invoice-action="cancel" data-id="${invoice.InvoiceID}">${currentLanguage === "es" ? "Cancelar" : "Cancel"}</button>` : ""}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function showInvoicesTableMessage(message) {
+  invoicesTotalCount.textContent = invoices.length;
+  invoicesTableBody.innerHTML = `
+    <tr>
+      <td colspan="10" class="empty-state">${escapeHTML(message)}</td>
+    </tr>
+  `;
+}
+
+function showInvoicesMessage(message, type = "info") {
+  invoicesMessage.textContent = message;
+  invoicesMessage.classList.toggle("success", type === "success");
+}
+
+function openInvoiceGenerateModal() {
+  if (!isAdmin()) return;
+
+  invoiceGenerateForm.reset();
+  invoiceGenerateMessage.textContent = "";
+  invoiceGenerateTaxRate.value = "0";
+  renderInvoiceClientOptions();
+  invoiceGenerateModal.classList.remove("hidden");
+  invoiceGenerateClientId.focus();
+}
+
+function closeInvoiceGenerateEditor() {
+  invoiceGenerateModal.classList.add("hidden");
+  invoiceGenerateForm.reset();
+  invoiceGenerateMessage.textContent = "";
+}
+
+function getInvoiceGeneratePayload() {
+  return {
+    ClientID: Number(invoiceGenerateClientId.value),
+    PeriodFrom: invoiceGeneratePeriodFrom.value,
+    PeriodTo: invoiceGeneratePeriodTo.value,
+    TaxRate: invoiceGenerateTaxRate.value === "" ? 0 : Number(invoiceGenerateTaxRate.value),
+    Notes: invoiceGenerateNotes.value.trim()
+  };
+}
+
+function getInvoiceValidationMessage(payload, { requireStatus = false } = {}) {
+  const allowedStatuses = new Set(["Draft", "Issued", "Paid", "Canceled"]);
+
+  if (!Number.isInteger(payload.ClientID) || payload.ClientID <= 0) return t("invoiceClientRequired");
+  if (!payload.PeriodFrom) return t("invoicePeriodFromRequired");
+  if (!payload.PeriodTo) return t("invoicePeriodToRequired");
+  if (payload.PeriodFrom > payload.PeriodTo) return t("invoicePeriodInvalid");
+  if (!Number.isFinite(payload.TaxRate) || payload.TaxRate < 0) return t("invoiceTaxRateInvalid");
+  if (requireStatus && !allowedStatuses.has(payload.Status)) return t("invoiceStatusInvalid");
+
+  return "";
+}
+
+async function generateInvoice(event) {
+  event.preventDefault();
+  invoiceGenerateMessage.textContent = "";
+
+  if (!isAdmin()) return;
+
+  const payload = getInvoiceGeneratePayload();
+  const validationMessage = getInvoiceValidationMessage(payload);
+
+  if (validationMessage) {
+    invoiceGenerateMessage.textContent = validationMessage;
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/invoices/generate", {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("generateInvoiceError"));
+    }
+
+    closeInvoiceGenerateEditor();
+    showInvoicesMessage(t("invoiceGeneratedSuccess"), "success");
+    await loadInvoices();
+  } catch (error) {
+    console.error(error);
+    invoiceGenerateMessage.textContent = error.message || t("generateInvoiceError");
+  }
+}
+
+function openInvoiceStatusEditor(invoice) {
+  if (!isAdmin()) return;
+
+  invoiceStatusForm.reset();
+  invoiceStatusMessage.textContent = "";
+  invoiceStatusId.value = invoice.InvoiceID;
+  invoiceStatusValue.value = invoice.Status || "Draft";
+  invoiceStatusNotes.value = invoice.Notes || "";
+  invoiceStatusModal.classList.remove("hidden");
+  invoiceStatusValue.focus();
+}
+
+function closeInvoiceStatusEditor() {
+  invoiceStatusModal.classList.add("hidden");
+  invoiceStatusForm.reset();
+  invoiceStatusMessage.textContent = "";
+  invoiceStatusId.value = "";
+}
+
+async function saveInvoiceStatus(event) {
+  event.preventDefault();
+  invoiceStatusMessage.textContent = "";
+
+  const invoiceId = Number(invoiceStatusId.value);
+  const invoice = invoices.find((item) => Number(item.InvoiceID) === invoiceId);
+
+  if (!invoice) {
+    invoiceStatusMessage.textContent = t("invoiceNotFound");
+    return;
+  }
+
+  const payload = {
+    InvoiceNumber: invoice.InvoiceNumber,
+    ClientID: Number(invoice.ClientID),
+    InvoiceDate: formatDateOnly(invoice.InvoiceDate),
+    PeriodFrom: formatDateOnly(invoice.PeriodFrom),
+    PeriodTo: formatDateOnly(invoice.PeriodTo),
+    TaxRate: Number(invoice.TaxRate || 0),
+    Status: invoiceStatusValue.value,
+    Notes: invoiceStatusNotes.value.trim(),
+    IsActive: invoice.IsActive
+  };
+  const validationMessage = getInvoiceValidationMessage(payload, { requireStatus: true });
+
+  if (validationMessage) {
+    invoiceStatusMessage.textContent = validationMessage;
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/invoices/${invoiceId}`, {
+      method: "PUT",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("updateInvoiceError"));
+    }
+
+    closeInvoiceStatusEditor();
+    showInvoicesMessage(t("invoiceStatusUpdatedSuccess"), "success");
+    await loadInvoices();
+  } catch (error) {
+    console.error(error);
+    invoiceStatusMessage.textContent = error.message || t("updateInvoiceError");
+  }
+}
+
+async function openInvoiceDetail(invoiceId) {
+  try {
+    const response = await fetch(`/api/invoices/${invoiceId}`, {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadInvoiceDetailError"));
+    }
+
+    renderInvoiceDetail(data);
+    invoiceDetailModal.classList.remove("hidden");
+  } catch (error) {
+    console.error(error);
+    showInvoicesMessage(error.message || t("loadInvoiceDetailError"), "error");
+  }
+}
+
+function renderInvoiceDetail(invoice) {
+  const lines = invoice.Lines || [];
+
+  invoiceDetailSummary.innerHTML = `
+    <div class="detail-summary-grid">
+      <div><span>InvoiceNumber</span><strong>${escapeHTML(invoice.InvoiceNumber || "")}</strong></div>
+      <div><span>ClientName</span><strong>${escapeHTML(invoice.ClientName || "")}</strong></div>
+      <div><span>Status</span><strong>${escapeHTML(invoice.Status || "")}</strong></div>
+      <div><span>TotalAmount</span><strong>${formatCurrency(invoice.TotalAmount)}</strong></div>
+    </div>
+  `;
+
+  if (lines.length === 0) {
+    invoiceLinesTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-state">${escapeHTML(t("noInvoiceLines"))}</td>
+      </tr>
+    `;
+    return;
+  }
+
+  invoiceLinesTableBody.innerHTML = lines.map((line) => `
+    <tr>
+      <td>${escapeHTML(formatDateOnly(line.ServiceDate))}</td>
+      <td>${escapeHTML(line.ProjectName || "")}</td>
+      <td class="ticket-description">${escapeHTML(line.Description || "")}</td>
+      <td>${Number(line.Hours || 0).toFixed(2)}</td>
+      <td>${formatCurrency(line.HourlyRate)}</td>
+      <td>${formatCurrency(line.LineTotal)}</td>
+    </tr>
+  `).join("");
+}
+
+function closeInvoiceDetail() {
+  invoiceDetailModal.classList.add("hidden");
+  invoiceDetailSummary.innerHTML = "";
+  invoiceLinesTableBody.innerHTML = `
+    <tr>
+      <td colspan="6" class="empty-state">${escapeHTML(t("noInvoiceLines"))}</td>
+    </tr>
+  `;
+}
+
+function handleInvoicesTableClick(event) {
+  const button = event.target.closest("button[data-invoice-action]");
+
+  if (!button) return;
+
+  const id = Number(button.dataset.id);
+  const action = button.dataset.invoiceAction;
+
+  if (action === "detail") {
+    openInvoiceDetail(id);
+  }
+
+  if (action === "status") {
+    const invoice = invoices.find((item) => Number(item.InvoiceID) === id);
+
+    if (!invoice) {
+      alert(t("invoiceNotFound"));
+      return;
+    }
+
+    openInvoiceStatusEditor(invoice);
+  }
+
+  if (action === "cancel") {
+    cancelInvoice(id);
+  }
+}
+
+async function cancelInvoice(id) {
+  if (!isAdmin()) return;
+
+  const confirmed = confirm(t("cancelInvoiceConfirm"));
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/invoices/${id}`, {
+      method: "DELETE",
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("cancelInvoiceError"));
+    }
+
+    showInvoicesMessage(t("invoiceCanceledSuccess"), "success");
+    await loadInvoices();
+  } catch (error) {
+    console.error(error);
+    showInvoicesMessage(error.message || t("cancelInvoiceError"), "error");
+  }
+}
+
 function renderNotifications() {
   notificationsTotalCount.textContent = notifications.length;
 
@@ -2336,7 +2835,29 @@ function applyStaticLanguage() {
   setText('label[for="projectHourlyRate"]', "HourlyRate");
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
-  setText("#invoicesTabPanel .foundation-copy", t("invoicesFoundation"));
+  setText('label[for="invoiceSearchInput"]', t("search"));
+  setText('label[for="invoiceClientFilter"]', "ClientID");
+  setText('label[for="invoiceFromFilter"]', "PeriodFrom");
+  setText('label[for="invoiceToFilter"]', "PeriodTo");
+  setText('label[for="invoiceStatusFilter"]', "Status");
+  setPlaceholder("#invoiceSearchInput", t("invoiceSearchPlaceholder"));
+  if (invoiceStatusFilter.options[0]) invoiceStatusFilter.options[0].textContent = t("allStatuses");
+  setText("#invoiceGenerateModal .section-title .eyebrow", t("invoices"));
+  setText("#invoice-generate-title", t("generateInvoice"));
+  setText('label[for="invoiceGenerateClientId"]', "ClientID");
+  setText('label[for="invoiceGeneratePeriodFrom"]', "PeriodFrom");
+  setText('label[for="invoiceGeneratePeriodTo"]', "PeriodTo");
+  setText('label[for="invoiceGenerateTaxRate"]', "TaxRate");
+  setText('label[for="invoiceGenerateNotes"]', "Notes");
+  setAriaLabel("#closeInvoiceGenerateModal", t("closeEditor"));
+  setText("#invoiceStatusModal .section-title .eyebrow", t("invoices"));
+  setText("#invoice-status-title", t("editInvoiceStatus"));
+  setText('label[for="invoiceStatusValue"]', "Status");
+  setText('label[for="invoiceStatusNotes"]', "Notes");
+  setAriaLabel("#closeInvoiceStatusModal", t("closeEditor"));
+  setText("#invoiceDetailModal .section-title .eyebrow", "Invoice Lines");
+  setText("#invoice-detail-title", currentLanguage === "es" ? "Detalle de factura" : "Invoice Detail");
+  setAriaLabel("#closeInvoiceDetailModal", t("closeEditor"));
   setText("#settingsTabPanel .section-title .eyebrow", t("settingsEyebrow"));
   setText("#settings-title", t("settings"));
   setText("#settingsTabPanel .foundation-copy", t("settingsFoundation"));
@@ -2394,6 +2915,8 @@ function applyStaticLanguage() {
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
   setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
   setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "HourlyRate", "IsActive", t("actions")]);
+  setTableHeaders("#invoicesTabPanel table", ["InvoiceNumber", "ClientName", "InvoiceDate", "PeriodFrom", "PeriodTo", "Subtotal", "TaxAmount", "TotalAmount", "Status", t("actions")]);
+  setTableHeaders("#invoiceDetailModal table", ["ServiceDate", "ProjectName", "Description", "Hours", "HourlyRate", "LineTotal"]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
@@ -2419,6 +2942,9 @@ function applyLanguage() {
   setButtonText(saveProjectButton, t("saveProject"));
   setButtonText(addServiceRecordButton, t("addServiceRecord"));
   setButtonText(saveServiceRecordButton, t("saveServiceRecord"));
+  setButtonText(generateInvoiceButton, t("generateInvoice"));
+  setButtonText(saveGeneratedInvoiceButton, t("generateInvoice"));
+  setButtonText(saveInvoiceStatusButton, t("saveInvoiceStatus"));
   setButtonText(logoutButton, t("logout"));
   setButtonText(loginForm.querySelector(".btn-primary"), t("enter"));
   setButtonText(ticketForm.querySelector(".btn-primary"), t("createTicket"));
@@ -2432,6 +2958,8 @@ function applyLanguage() {
   renderProjects();
   renderServiceRecordOptions();
   renderServiceRecords();
+  renderInvoiceClientOptions();
+  renderInvoices();
   renderUsers();
   renderPasswordResets();
   renderNotifications();
@@ -2446,6 +2974,7 @@ function setRoleControls() {
   addClientButton.classList.toggle("hidden", !isAdmin());
   addProjectButton.classList.toggle("hidden", !isAdmin());
   addServiceRecordButton.classList.toggle("hidden", !canCreateServiceRecords());
+  generateInvoiceButton.classList.toggle("hidden", !isAdmin());
   serviceRecordStatus.disabled = !isAdmin();
   serviceRecordTechnicianId.disabled = !isAdmin();
 
@@ -3311,6 +3840,13 @@ function getServiceRecordStatusClass(status) {
   return "status-cerrado";
 }
 
+function getInvoiceStatusClass(status) {
+  if (status === "Draft") return "status-progreso";
+  if (status === "Issued") return "status-abierto";
+  if (status === "Paid") return "status-cerrado";
+  return "status-cerrado";
+}
+
 function formatCurrency(value) {
   const locale = currentLanguage === "es" ? "es-BO" : "en-US";
   const amount = Number(value || 0);
@@ -3433,6 +3969,33 @@ serviceRecordClientId.addEventListener("change", () => {
 });
 [morningStart, morningEnd, afternoonStart, afternoonEnd].forEach((input) => {
   input.addEventListener("input", updateServiceRecordTotalPreview);
+});
+generateInvoiceButton.addEventListener("click", openInvoiceGenerateModal);
+invoiceSearchInput.addEventListener("input", loadInvoices);
+invoiceClientFilter.addEventListener("change", loadInvoices);
+invoiceFromFilter.addEventListener("change", loadInvoices);
+invoiceToFilter.addEventListener("change", loadInvoices);
+invoiceStatusFilter.addEventListener("change", loadInvoices);
+invoicesTableBody.addEventListener("click", handleInvoicesTableClick);
+invoiceGenerateForm.addEventListener("submit", generateInvoice);
+closeInvoiceGenerateModal.addEventListener("click", closeInvoiceGenerateEditor);
+invoiceGenerateModal.addEventListener("click", (event) => {
+  if (event.target === invoiceGenerateModal) {
+    closeInvoiceGenerateEditor();
+  }
+});
+invoiceStatusForm.addEventListener("submit", saveInvoiceStatus);
+closeInvoiceStatusModal.addEventListener("click", closeInvoiceStatusEditor);
+invoiceStatusModal.addEventListener("click", (event) => {
+  if (event.target === invoiceStatusModal) {
+    closeInvoiceStatusEditor();
+  }
+});
+closeInvoiceDetailModal.addEventListener("click", closeInvoiceDetail);
+invoiceDetailModal.addEventListener("click", (event) => {
+  if (event.target === invoiceDetailModal) {
+    closeInvoiceDetail();
+  }
 });
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
