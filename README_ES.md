@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 12 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Clients y Projects conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
+Este repositorio ha completado la Fase 13 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Clients, Projects y Service Records conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -24,8 +24,9 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 10: Frontend Foundation ✅
 - Fase 11: Clients Frontend ✅
 - Fase 12: Projects Frontend ✅
+- Fase 13: Service Records Frontend ✅
 
-Proxima fase: Fase 13 - Service Records Frontend
+Proxima fase: Fase 14 - Invoices Frontend
 
 ## Capacidades Actuales
 
@@ -41,6 +42,7 @@ Proxima fase: Fase 13 - Service Records Frontend
 - Frontend Foundation con branding Service Billing, nueva navegacion y pantallas iniciales.
 - Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
 - Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
+- Service Records Frontend conectado al backend real con busqueda, filtros, modal de crear/editar, cancelacion logica, vista previa automatica de horas y acciones segun rol.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -817,7 +819,63 @@ DELETE /api/projects/:id
 7. Desactivar un proyecto y confirmar el mensaje.
 8. Iniciar sesion como tecnico y verificar que la lista sea solo lectura.
 
-Proxima fase: Fase 13 - Service Records Frontend.
+## Fase 13: Service Records Frontend
+
+La Fase 13 conecta la pantalla `Service Records` al backend real. La pantalla ahora carga registros de servicio reales, permite busqueda y filtros operacionales, y ofrece flujos de creacion, edicion y cancelacion logica segun el rol de la sesion actual.
+
+### Service Records Frontend Completado
+
+- Carga la lista de registros con `GET /api/service-records`.
+- Permite busqueda por tecnico, cliente, proyecto o descripcion del servicio.
+- Agrega filtros por tecnico, cliente, proyecto, fecha de servicio y estado.
+- Agrega boton `Add Service Record` para los roles permitidos.
+- Agrega modal para crear registros de servicio.
+- Agrega modal para editar registros de servicio.
+- Soporta cancelacion logica con `DELETE /api/service-records/:id`.
+- Muestra `TechnicianName`, `ClientName`, `ProjectName`, `ServiceDate`, `MorningStart`, `MorningEnd`, `AfternoonStart`, `AfternoonEnd`, `TotalHours`, `ServiceDescription` y `Status`.
+- Calcula automaticamente una vista previa de `TotalHours` usando los rangos de horas ingresados antes de guardar.
+- Carga tecnicos dinamicamente desde usuarios, clientes desde `GET /api/clients` y proyectos desde `GET /api/projects`.
+- Filtra el dropdown de proyectos segun el cliente seleccionado.
+- Valida campos requeridos y rangos de horarios antes de enviar la solicitud.
+- Usa la sesion actual para controlar las acciones disponibles por rol.
+- Mantiene diseno responsive y consistente con Clients y Projects.
+
+### Filtros De Service Records
+
+`GET /api/service-records` puede llamarse desde el frontend con:
+
+- `search`
+- `technicianUserId`
+- `clientId`
+- `projectId`
+- `serviceDate`
+- `status`
+
+Ejemplo:
+
+```http
+GET /api/service-records?clientId=1&status=Recorded
+```
+
+### Permisos Por Rol
+
+- `Admin`: puede crear, editar y cancelar registros de servicio.
+- `Technician`: puede crear y visualizar registros de servicio.
+- La UI usa la sesion activa para mostrar u ocultar acciones y mantener el flujo del tecnico asociado al usuario autenticado cuando aplica.
+
+### Flujo De Prueba
+
+1. Iniciar sesion como administrador.
+2. Abrir `Service Records`.
+3. Confirmar que la tabla carga registros desde `GET /api/service-records`.
+4. Usar busqueda y filtros por tecnico, cliente, proyecto, fecha y estado.
+5. Hacer clic en `Add Service Record`, completar el modal y verificar que `TotalHours` se actualiza segun los horarios.
+6. Guardar el registro y confirmar que aparece en la lista.
+7. Editar el registro como administrador.
+8. Cancelar el registro y confirmar el mensaje.
+9. Iniciar sesion como tecnico y verificar que la pantalla permite crear y visualizar sin acciones exclusivas de Admin.
+
+Proxima fase: Fase 14 - Invoices Frontend.
 
 ## Autor
 

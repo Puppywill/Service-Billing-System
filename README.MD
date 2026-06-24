@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 12 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients and Projects frontends are available while legacy modules remain in place for a safe migration.
+This repository has completed Phase 13 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients, Projects, and Service Records frontends are available while legacy modules remain in place for a safe migration.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -24,8 +24,9 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 10: Frontend Foundation ✅
 - Phase 11: Clients Frontend ✅
 - Phase 12: Projects Frontend ✅
+- Phase 13: Service Records Frontend ✅
 
-Next phase: Phase 13 - Service Records Frontend
+Next phase: Phase 14 - Invoices Frontend
 
 ## Current Capabilities
 
@@ -41,6 +42,7 @@ Next phase: Phase 13 - Service Records Frontend
 - Frontend foundation with Service Billing branding, navigation, and initial module screens.
 - Connected Clients frontend with search, create, edit, and logical deactivation.
 - Connected Projects frontend with search, client filtering, create, edit, and logical deactivation.
+- Connected Service Records frontend with search, filters, create/edit modal, logical cancellation, automatic hour preview, and role-aware actions.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -817,7 +819,63 @@ DELETE /api/projects/:id
 7. Deactivate a project and confirm the prompt.
 8. Sign in as a technician and verify the project list is read-only.
 
-Next phase: Phase 13 - Service Records Frontend.
+## Phase 13: Service Records Frontend
+
+Phase 13 connects the `Service Records` screen to the real backend API. The screen now loads live service records, supports search and operational filters, and provides role-aware creation, editing, and logical cancellation workflows.
+
+### Completed Service Records Frontend
+
+- Loads the service record list with `GET /api/service-records`.
+- Supports search across technician, client, project, and service description.
+- Adds filters by technician, client, project, service date, and status.
+- Adds an `Add Service Record` button for allowed roles.
+- Adds a modal form to create service records.
+- Adds a modal form to edit service records.
+- Supports logical cancellation through `DELETE /api/service-records/:id`.
+- Shows `TechnicianName`, `ClientName`, `ProjectName`, `ServiceDate`, `MorningStart`, `MorningEnd`, `AfternoonStart`, `AfternoonEnd`, `TotalHours`, `ServiceDescription`, and `Status`.
+- Calculates a `TotalHours` preview automatically from the entered time ranges before saving.
+- Loads technicians dynamically from users, clients from `GET /api/clients`, and projects from `GET /api/projects`.
+- Filters the project dropdown by the selected client.
+- Validates required fields and time ranges before sending the request.
+- Uses the current session role to control available actions.
+- Keeps the Service Records screen responsive and visually consistent with Clients and Projects.
+
+### Service Records Filters
+
+`GET /api/service-records` can be called from the frontend with:
+
+- `search`
+- `technicianUserId`
+- `clientId`
+- `projectId`
+- `serviceDate`
+- `status`
+
+Example:
+
+```http
+GET /api/service-records?clientId=1&status=Recorded
+```
+
+### Role Rules
+
+- `Admin`: can create, edit, and cancel service records.
+- `Technician`: can create and view service records.
+- The UI uses the active session to show or hide actions and to keep technician workflows scoped to the signed-in user where applicable.
+
+### Test Flow
+
+1. Sign in as an administrator.
+2. Open `Service Records`.
+3. Confirm the table loads records from `GET /api/service-records`.
+4. Use search and filters for technician, client, project, date, and status.
+5. Click `Add Service Record`, complete the modal, and verify `TotalHours` updates from the time ranges.
+6. Save the record and confirm it appears in the list.
+7. Edit the record as an administrator.
+8. Cancel the record and confirm the prompt.
+9. Sign in as a technician and verify the screen allows create/view workflows without admin-only actions.
+
+Next phase: Phase 14 - Invoices Frontend.
 
 ## Author
 
