@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 11 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients frontend are available while legacy modules remain in place for a safe migration.
+This repository has completed Phase 12 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients and Projects frontends are available while legacy modules remain in place for a safe migration.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -23,6 +23,9 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 9: Dashboard API ✅
 - Phase 10: Frontend Foundation ✅
 - Phase 11: Clients Frontend ✅
+- Phase 12: Projects Frontend ✅
+
+Next phase: Phase 13 - Service Records Frontend
 
 ## Current Capabilities
 
@@ -37,6 +40,7 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Dashboard API with summary cards, chart data, and recent activity.
 - Frontend foundation with Service Billing branding, navigation, and initial module screens.
 - Connected Clients frontend with search, create, edit, and logical deactivation.
+- Connected Projects frontend with search, client filtering, create, edit, and logical deactivation.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -755,6 +759,65 @@ DELETE /api/clients/:id
 5. Edit contact, billing, phone, email, or tax fields.
 6. Deactivate a client and confirm the prompt.
 7. Sign in as a technician and verify the client list is read-only.
+
+## Phase 12: Projects Frontend
+
+Phase 12 connects the `Projects` screen to the real backend API. The screen now loads live project data, supports project search and client filtering, and keeps management actions role-aware.
+
+### Completed Projects Frontend
+
+- Loads the project list with `GET /api/projects`.
+- Supports search by project name, client name, or description.
+- Adds a client filter.
+- Loads active clients from `GET /api/clients` for filter and form dropdowns.
+- Adds an `Add Project` button for administrators.
+- Adds a modal form to create projects.
+- Adds a modal form to edit projects.
+- Supports logical project deactivation through `DELETE /api/projects/:id`.
+- Shows `ProjectName`, `ClientName`, `Description`, `HourlyRate`, and `IsActive`.
+- Uses the current session role to control available actions.
+- Keeps the Projects screen responsive and visually consistent with Clients.
+
+### Validation
+
+- `ClientID` is required.
+- `ProjectName` is required.
+- `HourlyRate` must be numeric.
+- `HourlyRate` cannot be negative.
+- Deactivation requires confirmation before calling the API.
+- Success and error messages are shown in the Projects screen or modal.
+
+### Role Permissions
+
+- `Admin`: can create, edit, and deactivate projects.
+- `Technician` / staff users: read-only access to the project list.
+
+### API Usage
+
+The frontend uses:
+
+```http
+GET /api/projects
+GET /api/projects?search=support
+GET /api/projects?clientId=1
+GET /api/clients
+POST /api/projects
+PUT /api/projects/:id
+DELETE /api/projects/:id
+```
+
+### Test Flow
+
+1. Sign in as an admin.
+2. Open `Projects`.
+3. Search by project, client, or description.
+4. Filter by client.
+5. Create a project by selecting `ClientID`, entering `ProjectName`, and setting `HourlyRate`.
+6. Edit a project's client, name, description, rate, or active state.
+7. Deactivate a project and confirm the prompt.
+8. Sign in as a technician and verify the project list is read-only.
+
+Next phase: Phase 13 - Service Records Frontend.
 
 ## Author
 

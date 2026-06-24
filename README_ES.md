@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 11 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y la pantalla Clients conectada al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
+Este repositorio ha completado la Fase 12 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Clients y Projects conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -23,6 +23,9 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 9: Dashboard API ✅
 - Fase 10: Frontend Foundation ✅
 - Fase 11: Clients Frontend ✅
+- Fase 12: Projects Frontend ✅
+
+Proxima fase: Fase 13 - Service Records Frontend
 
 ## Capacidades Actuales
 
@@ -37,6 +40,7 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - API de dashboard con resumen, graficas y actividad reciente.
 - Frontend Foundation con branding Service Billing, nueva navegacion y pantallas iniciales.
 - Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
+- Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -755,6 +759,65 @@ DELETE /api/clients/:id
 5. Editar contacto, facturacion, telefono, email o tax ID.
 6. Desactivar un cliente y confirmar el mensaje.
 7. Iniciar sesion como tecnico y verificar que la lista sea solo lectura.
+
+## Fase 12: Projects Frontend
+
+La Fase 12 conecta la pantalla `Projects` al backend real. La pantalla ahora carga proyectos reales, permite busqueda y filtro por cliente, y mantiene acciones de administracion segun el rol de la sesion actual.
+
+### Projects Frontend Completado
+
+- Carga la lista de proyectos con `GET /api/projects`.
+- Permite busqueda por nombre de proyecto, cliente o descripcion.
+- Agrega filtro por cliente.
+- Carga clientes activos desde `GET /api/clients` para el filtro y el dropdown del formulario.
+- Agrega boton `Add Project` para administradores.
+- Agrega modal para crear proyecto.
+- Agrega modal para editar proyecto.
+- Soporta desactivacion logica con `DELETE /api/projects/:id`.
+- Muestra `ProjectName`, `ClientName`, `Description`, `HourlyRate` e `IsActive`.
+- Usa la sesion actual para controlar acciones por rol.
+- Mantiene diseno responsive y consistente con la pantalla Clients.
+
+### Validaciones
+
+- `ClientID` es requerido.
+- `ProjectName` es requerido.
+- `HourlyRate` debe ser numerico.
+- `HourlyRate` no puede ser negativo.
+- La desactivacion pide confirmacion antes de llamar la API.
+- Se muestran mensajes de exito y error en la pantalla Projects o en el modal.
+
+### Permisos Por Rol
+
+- `Admin`: puede crear, editar y desactivar proyectos.
+- `Technician` / staff: solo lectura en la lista de proyectos.
+
+### Uso De API
+
+El frontend usa:
+
+```http
+GET /api/projects
+GET /api/projects?search=support
+GET /api/projects?clientId=1
+GET /api/clients
+POST /api/projects
+PUT /api/projects/:id
+DELETE /api/projects/:id
+```
+
+### Flujo De Prueba
+
+1. Iniciar sesion como administrador.
+2. Abrir `Projects`.
+3. Buscar por proyecto, cliente o descripcion.
+4. Filtrar por cliente.
+5. Crear un proyecto seleccionando `ClientID`, entrando `ProjectName` y asignando `HourlyRate`.
+6. Editar cliente, nombre, descripcion, tarifa o estado activo del proyecto.
+7. Desactivar un proyecto y confirmar el mensaje.
+8. Iniciar sesion como tecnico y verificar que la lista sea solo lectura.
+
+Proxima fase: Fase 13 - Service Records Frontend.
 
 ## Autor
 
