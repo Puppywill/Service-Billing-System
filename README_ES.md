@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 14 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Clients, Projects, Service Records e Invoices conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
+Este repositorio ha completado la Fase 15 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Dashboard, Clients, Projects, Service Records e Invoices conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -26,20 +26,26 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 12: Projects Frontend ✅
 - Fase 13: Service Records Frontend ✅
 - Fase 14: Invoices Frontend ✅
+- Fase 15: Dashboard Frontend ✅
 
-Proxima fase: Fase 15 - Dashboard Frontend y validacion completa del flujo de negocio
+Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion para demo local
 
 ## Estado Actual Del Proyecto
 
-- ✅ Backend principal completado
-- ✅ Base de datos ServiceBillingDB
+- ✅ ServiceBillingDB
+- ✅ Authentication
+- ✅ Users
 - ✅ Clients
 - ✅ Projects
 - ✅ Service Records
 - ✅ Invoices
 - ✅ Reports API
 - ✅ Dashboard API
-- ✅ Frontend principal conectado
+- ✅ Dashboard Frontend
+- ✅ Clients Frontend
+- ✅ Projects Frontend
+- ✅ Service Records Frontend
+- ✅ Invoices Frontend
 
 ## Capacidades Actuales
 
@@ -57,6 +63,7 @@ Proxima fase: Fase 15 - Dashboard Frontend y validacion completa del flujo de ne
 - Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
 - Service Records Frontend conectado al backend real con busqueda, filtros, modal de crear/editar, cancelacion logica, vista previa automatica de horas y acciones segun rol.
 - Invoices Frontend conectado al backend real con busqueda, filtros, generacion de facturas, vista de detalle, lineas de factura, edicion de estado y cancelacion logica.
+- Dashboard Frontend conectado al backend real con tarjetas de resumen, secciones visuales, actividad reciente, manejo de errores de API y datos limitados por rol.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -960,7 +967,81 @@ Content-Type: application/json
 8. Cancelar una factura y confirmar el mensaje.
 9. Iniciar sesion como tecnico y verificar que la pantalla de facturas sea solo lectura.
 
-Proxima fase: Fase 15 - Dashboard Frontend y validacion completa del flujo de negocio.
+## Fase 15: Dashboard Frontend
+
+La Fase 15 conecta la pantalla `Dashboard` a las APIs reales del dashboard. El dashboard ahora muestra metricas del negocio, secciones visuales y actividad reciente desde los modulos de Service Billing.
+
+### Dashboard Frontend Completado
+
+- Conecta el Dashboard frontend con `GET /api/dashboard/summary`.
+- Conecta las secciones visuales con `GET /api/dashboard/charts`.
+- Conecta la actividad reciente con `GET /api/dashboard/recent-activity`.
+- Usa la sesion activa para cargar el alcance correcto del dashboard.
+- Muestra dashboard completo para `Admin`.
+- Muestra dashboard limitado para `Technician` segun permisos del backend.
+- Maneja errores de API con un mensaje visible en el dashboard.
+- Mantiene diseno responsive y consistente con Clients, Projects, Service Records e Invoices.
+
+### Tarjetas De Resumen
+
+El dashboard muestra:
+
+- `TotalClients`
+- `TotalProjects`
+- `TotalServiceRecords`
+- `TotalInvoices`
+- `TotalHours`
+- `BilledHours`
+- `UnbilledHours`
+- `TotalBilledAmount`
+- `PendingInvoiceAmount`
+- `PaidAmount`
+
+### Secciones Visuales
+
+El dashboard incluye secciones visuales ligeras sin agregar librerias nuevas:
+
+- `HoursByMonth`
+- `BillingByMonth`
+- `HoursByClient`
+- `HoursByProject`
+- `HoursByTechnician`
+- `InvoicesByStatus`
+
+### Actividad Reciente
+
+El dashboard muestra actividad reciente de:
+
+- `ServiceRecords`
+- `Invoices`
+- `Clients`
+- `Projects`
+
+### Ejemplos De API
+
+```http
+GET /api/dashboard/summary
+```
+
+```http
+GET /api/dashboard/charts
+```
+
+```http
+GET /api/dashboard/recent-activity
+```
+
+### Flujo De Prueba
+
+1. Iniciar sesion como administrador.
+2. Abrir `Dashboard`.
+3. Confirmar que todas las tarjetas de resumen cargan datos.
+4. Confirmar que las secciones visuales muestran datos o estados vacios.
+5. Confirmar que la actividad reciente muestra registros de servicio, facturas, clientes y proyectos.
+6. Iniciar sesion como tecnico y confirmar que el dashboard esta limitado por permisos del backend.
+7. Interrumpir temporalmente una API o conexion local de base de datos durante pruebas y confirmar que aparece el mensaje de error del dashboard.
+
+Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion para demo local.
 
 ## Autor
 

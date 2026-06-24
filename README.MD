@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 14 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients, Projects, Service Records, and Invoices frontends are available while legacy modules remain in place for a safe migration.
+This repository has completed Phase 15 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Dashboard, Clients, Projects, Service Records, and Invoices frontends are available while legacy modules remain in place for a safe migration.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -26,20 +26,26 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 12: Projects Frontend ✅
 - Phase 13: Service Records Frontend ✅
 - Phase 14: Invoices Frontend ✅
+- Phase 15: Dashboard Frontend ✅
 
-Next phase: Phase 15 - Dashboard Frontend and complete business-flow validation
+Next phase: Phase 16 - Complete validation, functional testing, and local demo preparation
 
 ## Current Project Status
 
-- ✅ Main backend completed
-- ✅ ServiceBillingDB database
+- ✅ ServiceBillingDB
+- ✅ Authentication
+- ✅ Users
 - ✅ Clients
 - ✅ Projects
 - ✅ Service Records
 - ✅ Invoices
 - ✅ Reports API
 - ✅ Dashboard API
-- ✅ Main frontend connected
+- ✅ Dashboard Frontend
+- ✅ Clients Frontend
+- ✅ Projects Frontend
+- ✅ Service Records Frontend
+- ✅ Invoices Frontend
 
 ## Current Capabilities
 
@@ -57,6 +63,7 @@ Next phase: Phase 15 - Dashboard Frontend and complete business-flow validation
 - Connected Projects frontend with search, client filtering, create, edit, and logical deactivation.
 - Connected Service Records frontend with search, filters, create/edit modal, logical cancellation, automatic hour preview, and role-aware actions.
 - Connected Invoices frontend with search, filters, invoice generation, detail view, invoice lines, status editing, and logical cancellation.
+- Connected Dashboard frontend with summary cards, visual chart sections, recent activity, API error handling, and role-limited data.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -960,7 +967,81 @@ Content-Type: application/json
 8. Cancel an invoice and confirm the prompt.
 9. Sign in as a technician and verify the invoice screen is read-only.
 
-Next phase: Phase 15 - Dashboard Frontend and complete business-flow validation.
+## Phase 15: Dashboard Frontend
+
+Phase 15 connects the `Dashboard` screen to the real backend dashboard APIs. The dashboard now displays business metrics, visual chart sections, and recent activity from the Service Billing modules.
+
+### Completed Dashboard Frontend
+
+- Connects the Dashboard frontend to `GET /api/dashboard/summary`.
+- Connects visual chart sections to `GET /api/dashboard/charts`.
+- Connects recent activity to `GET /api/dashboard/recent-activity`.
+- Uses the active session to load the correct dashboard scope.
+- Shows a complete dashboard for `Admin`.
+- Shows a backend-limited dashboard for `Technician`.
+- Handles API errors with a visible dashboard message.
+- Keeps the dashboard responsive and consistent with Clients, Projects, Service Records, and Invoices.
+
+### Summary Cards
+
+The dashboard displays:
+
+- `TotalClients`
+- `TotalProjects`
+- `TotalServiceRecords`
+- `TotalInvoices`
+- `TotalHours`
+- `BilledHours`
+- `UnbilledHours`
+- `TotalBilledAmount`
+- `PendingInvoiceAmount`
+- `PaidAmount`
+
+### Visual Sections
+
+The dashboard includes lightweight frontend chart sections without adding new libraries:
+
+- `HoursByMonth`
+- `BillingByMonth`
+- `HoursByClient`
+- `HoursByProject`
+- `HoursByTechnician`
+- `InvoicesByStatus`
+
+### Recent Activity
+
+The dashboard displays recent:
+
+- `ServiceRecords`
+- `Invoices`
+- `Clients`
+- `Projects`
+
+### API Examples
+
+```http
+GET /api/dashboard/summary
+```
+
+```http
+GET /api/dashboard/charts
+```
+
+```http
+GET /api/dashboard/recent-activity
+```
+
+### Test Flow
+
+1. Sign in as an administrator.
+2. Open `Dashboard`.
+3. Confirm all summary cards are populated.
+4. Confirm chart sections render data or empty states.
+5. Confirm recent activity lists service records, invoices, clients, and projects.
+6. Sign in as a technician and confirm the dashboard is limited by backend permissions.
+7. Temporarily interrupt an API or database connection during local testing and confirm the dashboard error message appears.
+
+Next phase: Phase 16 - Complete validation, functional testing, and local demo preparation.
 
 ## Author
 
