@@ -765,6 +765,10 @@ textarea:focus {
   align-items: end;
 }
 
+.project-toolbar {
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 240px) auto;
+}
+
 .report-toolbar {
   display: grid;
   grid-template-columns: repeat(4, minmax(130px, 1fr));

@@ -284,27 +284,57 @@
       </section>
     </section>
 
-    <section id="projectsTabPanel" class="tab-panel foundation-panel hidden" aria-labelledby="projects-title">
-      <section class="panel foundation-hero">
-        <div class="section-title">
-          <p class="eyebrow">Work catalog</p>
-          <h2 id="projects-title">Projects</h2>
+    <section id="projectsTabPanel" class="tab-panel hidden" aria-labelledby="projects-title">
+      <section class="panel table-panel projects-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Work catalog</p>
+            <h2 id="projects-title">Projects</h2>
+          </div>
+          <button type="button" id="addProjectButton" class="btn btn-primary">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
+            </svg>
+            Add Project
+          </button>
         </div>
-        <p class="foundation-copy">Project management will organize client work, descriptions, and hourly rates before service records are entered.</p>
-      </section>
-      <section class="foundation-grid" aria-label="Project workspace preview">
-        <article class="panel foundation-card">
-          <h3>Client Projects</h3>
-          <p>Group work by client and keep each project tied to its billing relationship.</p>
-        </article>
-        <article class="panel foundation-card">
-          <h3>Hourly Rates</h3>
-          <p>Prepare project-specific rates that invoice generation can use later.</p>
-        </article>
-        <article class="panel foundation-card">
-          <h3>Project Filters</h3>
-          <p>Search by project, client, or description when the API is connected.</p>
-        </article>
+
+        <div class="client-toolbar project-toolbar" aria-label="Project filters">
+          <div class="search-field">
+            <label for="projectSearchInput">Search</label>
+            <input type="search" id="projectSearchInput" placeholder="Project, client, or description">
+          </div>
+          <div class="filter-field">
+            <label for="projectClientFilter">Client</label>
+            <select id="projectClientFilter">
+              <option value="">All clients</option>
+            </select>
+          </div>
+          <p class="ticket-total"><span id="projectsTotalCount">0</span> projects</p>
+        </div>
+
+        <p id="projectsMessage" class="form-message" aria-live="polite"></p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ProjectName</th>
+                <th>ClientName</th>
+                <th>Description</th>
+                <th>HourlyRate</th>
+                <th>IsActive</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="projectsTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">No projects loaded.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </section>
 
@@ -805,6 +835,64 @@
           <path d="M7 3v5h8"/>
         </svg>
         Save Client
+      </button>
+    </form>
+  </div>
+
+  <div id="projectModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+    <form id="projectForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Project</p>
+          <h2 id="project-modal-title">Add Project</h2>
+        </div>
+        <button type="button" id="closeProjectModal" class="icon-button" aria-label="Close project editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="projectId">
+
+      <div class="form-group">
+        <label for="projectClientId">ClientID</label>
+        <select id="projectClientId" required>
+          <option value="">Select client</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="projectName">ProjectName</label>
+        <input type="text" id="projectName" required>
+      </div>
+
+      <div class="form-group">
+        <label for="projectDescription">Description</label>
+        <textarea id="projectDescription" rows="4"></textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="projectHourlyRate">HourlyRate</label>
+          <input type="number" id="projectHourlyRate" min="0" step="0.01" required>
+        </div>
+
+        <label class="checkbox-field">
+          <input type="checkbox" id="projectIsActive" checked>
+          <span>IsActive</span>
+        </label>
+      </div>
+
+      <p id="projectFormMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" id="saveProjectButton" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Save Project
       </button>
     </form>
   </div>

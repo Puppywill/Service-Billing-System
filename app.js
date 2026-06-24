@@ -54,6 +54,25 @@ const clientIsActive = document.querySelector("#clientIsActive");
 const clientFormMessage = document.querySelector("#clientFormMessage");
 const saveClientButton = document.querySelector("#saveClientButton");
 
+const addProjectButton = document.querySelector("#addProjectButton");
+const projectSearchInput = document.querySelector("#projectSearchInput");
+const projectClientFilter = document.querySelector("#projectClientFilter");
+const projectsTableBody = document.querySelector("#projectsTableBody");
+const projectsTotalCount = document.querySelector("#projectsTotalCount");
+const projectsMessage = document.querySelector("#projectsMessage");
+const projectModal = document.querySelector("#projectModal");
+const projectForm = document.querySelector("#projectForm");
+const projectModalTitle = document.querySelector("#project-modal-title");
+const closeProjectModal = document.querySelector("#closeProjectModal");
+const projectId = document.querySelector("#projectId");
+const projectClientId = document.querySelector("#projectClientId");
+const projectName = document.querySelector("#projectName");
+const projectDescription = document.querySelector("#projectDescription");
+const projectHourlyRate = document.querySelector("#projectHourlyRate");
+const projectIsActive = document.querySelector("#projectIsActive");
+const projectFormMessage = document.querySelector("#projectFormMessage");
+const saveProjectButton = document.querySelector("#saveProjectButton");
+
 const ticketForm = document.querySelector("#ticketForm");
 const creatingTicketAsLabel = document.querySelector("#creatingTicketAsLabel");
 const creatingTicketAsName = document.querySelector("#creatingTicketAsName");
@@ -126,6 +145,8 @@ const exportExcelButton = document.querySelector("#exportExcelButton");
 
 let tickets = [];
 let clients = [];
+let projectClients = [];
+let projects = [];
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -150,6 +171,8 @@ function clearTransientStorage() {
 function resetClientState({ render = true } = {}) {
   tickets = [];
   clients = [];
+  projectClients = [];
+  projects = [];
   users = [];
   notifications = [];
   passwordResets = [];
@@ -159,6 +182,7 @@ function resetClientState({ render = true } = {}) {
   if (render) {
     renderTickets();
     renderClients();
+    renderProjects();
     renderUsers();
     renderPasswordResets();
     renderNotifications();
@@ -243,6 +267,29 @@ const translations = {
     updateClientError: "No se pudo actualizar el cliente.",
     deleteClientError: "No se pudo desactivar el cliente.",
     projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente, descripcion y tarifa por hora antes de registrar servicios.",
+    addProject: "Add Project",
+    editProject: "Edit Project",
+    saveProject: "Save Project",
+    projectSearchPlaceholder: "Proyecto, cliente o descripcion",
+    allClients: "Todos los clientes",
+    selectClient: "Selecciona cliente",
+    projectsCount: "proyectos",
+    noProjects: "No hay proyectos activos.",
+    noProjectMatches: "No hay proyectos que coincidan con los filtros.",
+    loadProjectsError: "No se pudieron cargar los proyectos.",
+    loadProjectClientsError: "No se pudieron cargar los clientes para proyectos.",
+    createProjectSuccess: "Proyecto creado correctamente.",
+    updateProjectSuccess: "Proyecto actualizado correctamente.",
+    deleteProjectSuccess: "Proyecto desactivado correctamente.",
+    projectClientRequired: "ClientID es obligatorio.",
+    projectNameRequired: "ProjectName es obligatorio.",
+    projectRateRequired: "HourlyRate debe ser numerico.",
+    projectRateNegative: "HourlyRate no puede ser negativo.",
+    projectNotFound: "No se encontro el proyecto seleccionado.",
+    deleteProjectConfirm: "Seguro que deseas desactivar este proyecto?",
+    createProjectError: "No se pudo crear el proyecto.",
+    updateProjectError: "No se pudo actualizar el proyecto.",
+    deleteProjectError: "No se pudo desactivar el proyecto.",
     invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas, totales y estados de facturacion.",
     settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de facturacion y controles de migracion en una fase posterior.",
     createTicket: "Crear registro",
@@ -440,6 +487,29 @@ const translations = {
     updateClientError: "Could not update the client.",
     deleteClientError: "Could not deactivate the client.",
     projectsFoundation: "Project management will organize client work, descriptions, and hourly rates before service records are entered.",
+    addProject: "Add Project",
+    editProject: "Edit Project",
+    saveProject: "Save Project",
+    projectSearchPlaceholder: "Project, client, or description",
+    allClients: "All clients",
+    selectClient: "Select client",
+    projectsCount: "projects",
+    noProjects: "No active projects.",
+    noProjectMatches: "No projects match the filters.",
+    loadProjectsError: "Projects could not be loaded.",
+    loadProjectClientsError: "Clients for projects could not be loaded.",
+    createProjectSuccess: "Project created successfully.",
+    updateProjectSuccess: "Project updated successfully.",
+    deleteProjectSuccess: "Project deactivated successfully.",
+    projectClientRequired: "ClientID is required.",
+    projectNameRequired: "ProjectName is required.",
+    projectRateRequired: "HourlyRate must be numeric.",
+    projectRateNegative: "HourlyRate cannot be negative.",
+    projectNotFound: "The selected project was not found.",
+    deleteProjectConfirm: "Are you sure you want to deactivate this project?",
+    createProjectError: "Could not create the project.",
+    updateProjectError: "Could not update the project.",
+    deleteProjectError: "Could not deactivate the project.",
     invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.",
     settingsFoundation: "Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.",
     createTicket: "Create record",
@@ -716,6 +786,7 @@ function showLogin() {
     button.classList.toggle("active", button.dataset.tab === "tickets");
   });
   closeClientEditor();
+  closeProjectEditor();
   closeEditor();
   closeUserEditor();
   applyLanguage();
@@ -772,6 +843,11 @@ async function switchTab(tabName) {
 
   if (activeTab === "clients") {
     await loadClients();
+  }
+
+  if (activeTab === "projects") {
+    await loadProjectClients();
+    await loadProjects();
   }
 
   if (activeTab === "notifications") {
@@ -1065,6 +1141,271 @@ async function deactivateClient(id) {
   } catch (error) {
     console.error(error);
     showClientsMessage(error.message || t("deleteClientError"), "error");
+  }
+}
+
+async function loadProjectClients() {
+  try {
+    const response = await fetch("/api/clients", {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadProjectClientsError"));
+    }
+
+    projectClients = data;
+    renderProjectClientOptions();
+  } catch (error) {
+    console.error(error);
+    projectClients = [];
+    renderProjectClientOptions();
+    showProjectsMessage(error.message || t("loadProjectClientsError"), "error");
+  }
+}
+
+async function loadProjects() {
+  const params = new URLSearchParams();
+  const search = projectSearchInput.value.trim();
+  const selectedClientId = projectClientFilter.value;
+
+  if (search) params.set("search", search);
+  if (selectedClientId) params.set("clientId", selectedClientId);
+
+  try {
+    const response = await fetch(`/api/projects${params.toString() ? `?${params.toString()}` : ""}`, {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (response.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadProjectsError"));
+    }
+
+    projects = data;
+    renderProjects();
+  } catch (error) {
+    console.error(error);
+    projects = [];
+    renderProjects();
+    showProjectsMessage(error.message || t("loadProjectsError"), "error");
+  }
+}
+
+function renderProjectClientOptions() {
+  if (!projectClientFilter || !projectClientId) return;
+
+  const options = projectClients.map((client) => `
+    <option value="${client.ClientID}">${escapeHTML(client.ClientName || "")}</option>
+  `).join("");
+
+  projectClientFilter.innerHTML = `<option value="">${escapeHTML(t("allClients"))}</option>${options}`;
+  projectClientId.innerHTML = `<option value="">${escapeHTML(t("selectClient"))}</option>${options}`;
+}
+
+function renderProjects() {
+  if (!projectsTableBody) return;
+
+  const canManageProjects = isAdmin();
+  projectsTotalCount.textContent = projects.length;
+  projectsTotalCount.parentElement.lastChild.textContent = ` ${t("projectsCount")}`;
+  addProjectButton.classList.toggle("hidden", !canManageProjects);
+
+  if (projects.length === 0) {
+    const hasFilters = projectSearchInput.value.trim() || projectClientFilter.value;
+    showProjectsTableMessage(hasFilters ? t("noProjectMatches") : t("noProjects"));
+    return;
+  }
+
+  projectsTableBody.innerHTML = projects.map((project) => `
+    <tr>
+      <td>${escapeHTML(project.ProjectName || "")}</td>
+      <td>${escapeHTML(project.ClientName || "")}</td>
+      <td class="ticket-description">${escapeHTML(project.Description || "")}</td>
+      <td>${formatCurrency(project.HourlyRate)}</td>
+      <td><span class="badge ${project.IsActive ? "status-abierto" : "status-cerrado"}">${project.IsActive ? "Active" : "Inactive"}</span></td>
+      <td>
+        ${canManageProjects ? `
+          <div class="actions">
+            <button type="button" class="action-btn edit-btn" data-project-action="edit" data-id="${project.ProjectID}">${t("edit")}</button>
+            <button type="button" class="action-btn delete-btn" data-project-action="delete" data-id="${project.ProjectID}">${t("delete")}</button>
+          </div>
+        ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+      </td>
+    </tr>
+  `).join("");
+}
+
+function showProjectsTableMessage(message) {
+  projectsTotalCount.textContent = projects.length;
+  projectsTableBody.innerHTML = `
+    <tr>
+      <td colspan="6" class="empty-state">${escapeHTML(message)}</td>
+    </tr>
+  `;
+}
+
+function showProjectsMessage(message, type = "info") {
+  projectsMessage.textContent = message;
+  projectsMessage.classList.toggle("success", type === "success");
+}
+
+function getProjectPayloadFromForm() {
+  return {
+    ClientID: Number(projectClientId.value),
+    ProjectName: projectName.value.trim(),
+    Description: projectDescription.value.trim(),
+    HourlyRate: projectHourlyRate.value === "" ? NaN : Number(projectHourlyRate.value),
+    IsActive: projectIsActive.checked
+  };
+}
+
+async function openProjectEditor(mode, selectedProject = null) {
+  if (projectClients.length === 0) {
+    await loadProjectClients();
+  }
+
+  projectForm.reset();
+  projectFormMessage.textContent = "";
+  projectId.value = selectedProject?.ProjectID || "";
+  projectModalTitle.textContent = mode === "edit" ? t("editProject") : t("addProject");
+  projectIsActive.checked = selectedProject?.IsActive ?? true;
+
+  if (selectedProject) {
+    projectClientId.value = selectedProject.ClientID || "";
+    projectName.value = selectedProject.ProjectName || "";
+    projectDescription.value = selectedProject.Description || "";
+    projectHourlyRate.value = selectedProject.HourlyRate ?? "";
+  }
+
+  projectModal.classList.remove("hidden");
+  projectClientId.focus();
+}
+
+function closeProjectEditor() {
+  if (!projectModal) return;
+  projectModal.classList.add("hidden");
+  projectForm.reset();
+  projectFormMessage.textContent = "";
+  projectId.value = "";
+}
+
+async function saveProject(event) {
+  event.preventDefault();
+  projectFormMessage.textContent = "";
+
+  if (!isAdmin()) {
+    projectFormMessage.textContent = t("usersAdminOnly");
+    return;
+  }
+
+  const payload = getProjectPayloadFromForm();
+
+  if (!Number.isInteger(payload.ClientID) || payload.ClientID <= 0) {
+    projectFormMessage.textContent = t("projectClientRequired");
+    projectClientId.focus();
+    return;
+  }
+
+  if (!payload.ProjectName) {
+    projectFormMessage.textContent = t("projectNameRequired");
+    projectName.focus();
+    return;
+  }
+
+  if (!Number.isFinite(payload.HourlyRate)) {
+    projectFormMessage.textContent = t("projectRateRequired");
+    projectHourlyRate.focus();
+    return;
+  }
+
+  if (payload.HourlyRate < 0) {
+    projectFormMessage.textContent = t("projectRateNegative");
+    projectHourlyRate.focus();
+    return;
+  }
+
+  const id = Number(projectId.value);
+  const isEditing = Number.isInteger(id) && id > 0;
+
+  try {
+    const response = await fetch(isEditing ? `/api/projects/${id}` : "/api/projects", {
+      method: isEditing ? "PUT" : "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || (isEditing ? t("updateProjectError") : t("createProjectError")));
+    }
+
+    closeProjectEditor();
+    showProjectsMessage(isEditing ? t("updateProjectSuccess") : t("createProjectSuccess"), "success");
+    await loadProjects();
+  } catch (error) {
+    console.error(error);
+    projectFormMessage.textContent = error.message || (isEditing ? t("updateProjectError") : t("createProjectError"));
+  }
+}
+
+function handleProjectsTableClick(event) {
+  const button = event.target.closest("button[data-project-action]");
+
+  if (!button) return;
+
+  const id = Number(button.dataset.id);
+  const action = button.dataset.projectAction;
+
+  if (action === "edit") {
+    const selectedProject = projects.find((project) => Number(project.ProjectID) === id);
+
+    if (!selectedProject) {
+      alert(t("projectNotFound"));
+      return;
+    }
+
+    openProjectEditor("edit", selectedProject);
+  }
+
+  if (action === "delete") {
+    deactivateProject(id);
+  }
+}
+
+async function deactivateProject(id) {
+  if (!isAdmin()) return;
+
+  const confirmed = confirm(t("deleteProjectConfirm"));
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/projects/${id}`, {
+      method: "DELETE",
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("deleteProjectError"));
+    }
+
+    showProjectsMessage(t("deleteProjectSuccess"), "success");
+    await loadProjects();
+  } catch (error) {
+    console.error(error);
+    showProjectsMessage(error.message || t("deleteProjectError"), "error");
   }
 }
 
@@ -1481,6 +1822,14 @@ function applyStaticLanguage() {
   setText("#projectsTabPanel .section-title .eyebrow", t("projectsEyebrow"));
   setText("#projects-title", t("projects"));
   setText("#projectsTabPanel .foundation-copy", t("projectsFoundation"));
+  setText('label[for="projectSearchInput"]', t("search"));
+  setText('label[for="projectClientFilter"]', t("clients"));
+  setPlaceholder("#projectSearchInput", t("projectSearchPlaceholder"));
+  setText("#projectModal .section-title .eyebrow", t("projects"));
+  setText('label[for="projectClientId"]', "ClientID");
+  setText('label[for="projectName"]', "ProjectName");
+  setText('label[for="projectDescription"]', "Description");
+  setText('label[for="projectHourlyRate"]', "HourlyRate");
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
   setText("#invoicesTabPanel .foundation-copy", t("invoicesFoundation"));
@@ -1539,6 +1888,7 @@ function applyStaticLanguage() {
 
   setTableHeaders("#ticketsTabPanel table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
   setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
+  setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "HourlyRate", "IsActive", t("actions")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
@@ -1560,6 +1910,8 @@ function applyLanguage() {
   setButtonText(document.querySelector('[data-tab="settings"]'), t("settings"));
   setButtonText(addClientButton, t("addClient"));
   setButtonText(saveClientButton, t("saveClient"));
+  setButtonText(addProjectButton, t("addProject"));
+  setButtonText(saveProjectButton, t("saveProject"));
   setButtonText(logoutButton, t("logout"));
   setButtonText(loginForm.querySelector(".btn-primary"), t("enter"));
   setButtonText(ticketForm.querySelector(".btn-primary"), t("createTicket"));
@@ -1569,6 +1921,8 @@ function applyLanguage() {
 
   renderTickets();
   renderClients();
+  renderProjectClientOptions();
+  renderProjects();
   renderUsers();
   renderPasswordResets();
   renderNotifications();
@@ -1581,6 +1935,7 @@ function setRoleControls() {
   statusInput.disabled = !isAdmin();
   statusHelp.classList.toggle("hidden", isAdmin());
   addClientButton.classList.toggle("hidden", !isAdmin());
+  addProjectButton.classList.toggle("hidden", !isAdmin());
 
   if (!isAdmin()) {
     statusInput.value = "Abierto";
@@ -2364,6 +2719,17 @@ function formatDate(value) {
   return new Date(value).toLocaleString(locale);
 }
 
+function formatCurrency(value) {
+  const locale = currentLanguage === "es" ? "es-BO" : "en-US";
+  const amount = Number(value || 0);
+
+  return amount.toLocaleString(locale, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2
+  });
+}
+
 function formatPerson(fullName, userId) {
   if (fullName) {
     return escapeHTML(fullName);
@@ -2438,6 +2804,17 @@ closeClientModal.addEventListener("click", closeClientEditor);
 clientModal.addEventListener("click", (event) => {
   if (event.target === clientModal) {
     closeClientEditor();
+  }
+});
+addProjectButton.addEventListener("click", () => openProjectEditor("create"));
+projectSearchInput.addEventListener("input", loadProjects);
+projectClientFilter.addEventListener("change", loadProjects);
+projectsTableBody.addEventListener("click", handleProjectsTableClick);
+projectForm.addEventListener("submit", saveProject);
+closeProjectModal.addEventListener("click", closeProjectEditor);
+projectModal.addEventListener("click", (event) => {
+  if (event.target === projectModal) {
+    closeProjectEditor();
   }
 });
 ticketForm.addEventListener("submit", createTicket);
