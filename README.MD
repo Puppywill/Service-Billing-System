@@ -6,7 +6,7 @@ Service Billing System is a web application being migrated from a Help Desk tick
 
 ## Migration Notice
 
-This repository has completed Phase 13 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients, Projects, and Service Records frontends are available while legacy modules remain in place for a safe migration.
+This repository has completed Phase 14 of the migration. The product identity, SQL Server schema, backend APIs, dashboard API, frontend foundation, and connected Clients, Projects, Service Records, and Invoices frontends are available while legacy modules remain in place for a safe migration.
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
@@ -25,8 +25,21 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 - Phase 11: Clients Frontend ✅
 - Phase 12: Projects Frontend ✅
 - Phase 13: Service Records Frontend ✅
+- Phase 14: Invoices Frontend ✅
 
-Next phase: Phase 14 - Invoices Frontend
+Next phase: Phase 15 - Dashboard Frontend and complete business-flow validation
+
+## Current Project Status
+
+- ✅ Main backend completed
+- ✅ ServiceBillingDB database
+- ✅ Clients
+- ✅ Projects
+- ✅ Service Records
+- ✅ Invoices
+- ✅ Reports API
+- ✅ Dashboard API
+- ✅ Main frontend connected
 
 ## Current Capabilities
 
@@ -43,6 +56,7 @@ Next phase: Phase 14 - Invoices Frontend
 - Connected Clients frontend with search, create, edit, and logical deactivation.
 - Connected Projects frontend with search, client filtering, create, edit, and logical deactivation.
 - Connected Service Records frontend with search, filters, create/edit modal, logical cancellation, automatic hour preview, and role-aware actions.
+- Connected Invoices frontend with search, filters, invoice generation, detail view, invoice lines, status editing, and logical cancellation.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
@@ -875,7 +889,78 @@ GET /api/service-records?clientId=1&status=Recorded
 8. Cancel the record and confirm the prompt.
 9. Sign in as a technician and verify the screen allows create/view workflows without admin-only actions.
 
-Next phase: Phase 14 - Invoices Frontend.
+## Phase 14: Invoices Frontend
+
+Phase 14 connects the `Invoices` screen to the real backend API. The screen now loads live invoice data, supports billing filters, generates invoices from recorded service hours, and provides role-aware detail, status, and cancellation workflows.
+
+### Completed Invoices Frontend
+
+- Loads the invoice list with `GET /api/invoices`.
+- Supports search by invoice number, client, or notes.
+- Adds filters by client, status, and date range.
+- Adds `Generate Invoice` for administrators.
+- Generates invoices with `POST /api/invoices/generate`.
+- Adds a modal to generate invoices from `ServiceRecords`.
+- Uses `ClientID`, `PeriodFrom`, `PeriodTo`, `TaxRate`, and `Notes` in the generation flow.
+- Adds an invoice detail view.
+- Displays `InvoiceLines` from `GET /api/invoices/:id`.
+- Allows invoice status editing for administrators.
+- Supports logical invoice cancellation with `DELETE /api/invoices/:id`.
+- Loads clients dynamically for filters and the generation modal.
+- Shows `InvoiceNumber`, `ClientName`, `InvoiceDate`, `PeriodFrom`, `PeriodTo`, `Subtotal`, `TaxAmount`, `TotalAmount`, and `Status`.
+- Uses the current session role to control available actions.
+- Keeps the Invoices screen responsive and visually consistent with the connected modules.
+
+### Invoice Filters
+
+`GET /api/invoices` can be called from the frontend with:
+
+- `search`
+- `clientId`
+- `periodFrom`
+- `periodTo`
+- `status`
+
+Example:
+
+```http
+GET /api/invoices?clientId=1&status=Issued&periodFrom=2026-06-01&periodTo=2026-06-30
+```
+
+### Generate Invoice Example
+
+```http
+POST /api/invoices/generate
+Content-Type: application/json
+
+{
+  "ClientID": 1,
+  "PeriodFrom": "2026-06-01",
+  "PeriodTo": "2026-06-30",
+  "TaxRate": 0,
+  "Notes": "June service billing"
+}
+```
+
+### Role Rules
+
+- `Admin`: can generate, edit status, and cancel invoices.
+- `Technician` / `Staff`: read-only invoice access.
+- The UI uses the active session to show or hide generation, status, and cancellation actions.
+
+### Test Flow
+
+1. Sign in as an administrator.
+2. Open `Invoices`.
+3. Confirm the table loads invoices from `GET /api/invoices`.
+4. Use search and filters for client, status, and date range.
+5. Click `Generate Invoice`, select a client and period with `Recorded` service records, and save.
+6. Open the invoice detail and confirm `InvoiceLines` are displayed.
+7. Edit invoice status as an administrator.
+8. Cancel an invoice and confirm the prompt.
+9. Sign in as a technician and verify the invoice screen is read-only.
+
+Next phase: Phase 15 - Dashboard Frontend and complete business-flow validation.
 
 ## Author
 

@@ -6,7 +6,7 @@ Service Billing System es una aplicacion web en proceso de migracion desde un pr
 
 ## Nota de Migracion
 
-Este repositorio ha completado la Fase 13 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Clients, Projects y Service Records conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
+Este repositorio ha completado la Fase 14 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Clients, Projects, Service Records e Invoices conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
 
 Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
 
@@ -25,8 +25,21 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 - Fase 11: Clients Frontend ✅
 - Fase 12: Projects Frontend ✅
 - Fase 13: Service Records Frontend ✅
+- Fase 14: Invoices Frontend ✅
 
-Proxima fase: Fase 14 - Invoices Frontend
+Proxima fase: Fase 15 - Dashboard Frontend y validacion completa del flujo de negocio
+
+## Estado Actual Del Proyecto
+
+- ✅ Backend principal completado
+- ✅ Base de datos ServiceBillingDB
+- ✅ Clients
+- ✅ Projects
+- ✅ Service Records
+- ✅ Invoices
+- ✅ Reports API
+- ✅ Dashboard API
+- ✅ Frontend principal conectado
 
 ## Capacidades Actuales
 
@@ -43,6 +56,7 @@ Proxima fase: Fase 14 - Invoices Frontend
 - Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
 - Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
 - Service Records Frontend conectado al backend real con busqueda, filtros, modal de crear/editar, cancelacion logica, vista previa automatica de horas y acciones segun rol.
+- Invoices Frontend conectado al backend real con busqueda, filtros, generacion de facturas, vista de detalle, lineas de factura, edicion de estado y cancelacion logica.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
@@ -875,7 +889,78 @@ GET /api/service-records?clientId=1&status=Recorded
 8. Cancelar el registro y confirmar el mensaje.
 9. Iniciar sesion como tecnico y verificar que la pantalla permite crear y visualizar sin acciones exclusivas de Admin.
 
-Proxima fase: Fase 14 - Invoices Frontend.
+## Fase 14: Invoices Frontend
+
+La Fase 14 conecta la pantalla `Invoices` al backend real. La pantalla ahora carga facturas reales, permite filtros de facturacion, genera facturas desde horas de servicio registradas y ofrece flujos de detalle, estado y cancelacion segun el rol de la sesion actual.
+
+### Invoices Frontend Completado
+
+- Carga la lista de facturas con `GET /api/invoices`.
+- Permite busqueda por numero de factura, cliente o notas.
+- Agrega filtros por cliente, estado y rango de fechas.
+- Agrega `Generate Invoice` para administradores.
+- Genera facturas con `POST /api/invoices/generate`.
+- Agrega modal para generar facturas desde `ServiceRecords`.
+- Usa `ClientID`, `PeriodFrom`, `PeriodTo`, `TaxRate` y `Notes` en el flujo de generacion.
+- Agrega vista de detalle de factura.
+- Muestra `InvoiceLines` desde `GET /api/invoices/:id`.
+- Permite editar estado de factura para administradores.
+- Soporta cancelacion logica con `DELETE /api/invoices/:id`.
+- Carga clientes dinamicamente para filtros y el modal de generacion.
+- Muestra `InvoiceNumber`, `ClientName`, `InvoiceDate`, `PeriodFrom`, `PeriodTo`, `Subtotal`, `TaxAmount`, `TotalAmount` y `Status`.
+- Usa la sesion actual para controlar acciones disponibles por rol.
+- Mantiene diseno responsive y consistente con los modulos conectados.
+
+### Filtros De Invoices
+
+`GET /api/invoices` puede llamarse desde el frontend con:
+
+- `search`
+- `clientId`
+- `periodFrom`
+- `periodTo`
+- `status`
+
+Ejemplo:
+
+```http
+GET /api/invoices?clientId=1&status=Issued&periodFrom=2026-06-01&periodTo=2026-06-30
+```
+
+### Ejemplo Para Generar Factura
+
+```http
+POST /api/invoices/generate
+Content-Type: application/json
+
+{
+  "ClientID": 1,
+  "PeriodFrom": "2026-06-01",
+  "PeriodTo": "2026-06-30",
+  "TaxRate": 0,
+  "Notes": "Facturacion de servicios de junio"
+}
+```
+
+### Permisos Por Rol
+
+- `Admin`: puede generar, editar estado y cancelar facturas.
+- `Technician` / `Staff`: acceso de solo lectura a facturas.
+- La UI usa la sesion activa para mostrar u ocultar acciones de generacion, estado y cancelacion.
+
+### Flujo De Prueba
+
+1. Iniciar sesion como administrador.
+2. Abrir `Invoices`.
+3. Confirmar que la tabla carga facturas desde `GET /api/invoices`.
+4. Usar busqueda y filtros por cliente, estado y rango de fechas.
+5. Hacer clic en `Generate Invoice`, seleccionar un cliente y un periodo con registros `Recorded`, y guardar.
+6. Abrir el detalle de la factura y confirmar que se muestran las `InvoiceLines`.
+7. Editar el estado de la factura como administrador.
+8. Cancelar una factura y confirmar el mensaje.
+9. Iniciar sesion como tecnico y verificar que la pantalla de facturas sea solo lectura.
+
+Proxima fase: Fase 15 - Dashboard Frontend y validacion completa del flujo de negocio.
 
 ## Autor
 
