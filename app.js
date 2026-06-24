@@ -158,16 +158,29 @@ const passwordResetsTableBody = document.querySelector("#passwordResetsTableBody
 const passwordResetsTotalCount = document.querySelector("#passwordResetsTotalCount");
 const notificationsTableBody = document.querySelector("#notificationsTableBody");
 const notificationsTotalCount = document.querySelector("#notificationsTotalCount");
-const dashboardMetricOne = document.querySelector("#dashboardMetricOne");
-const dashboardMetricTwo = document.querySelector("#dashboardMetricTwo");
-const dashboardMetricThree = document.querySelector("#dashboardMetricThree");
-const dashboardMetricFour = document.querySelector("#dashboardMetricFour");
-const dashboardMetricOneLabel = document.querySelector("#dashboardMetricOneLabel");
-const dashboardMetricTwoLabel = document.querySelector("#dashboardMetricTwoLabel");
-const dashboardMetricThreeLabel = document.querySelector("#dashboardMetricThreeLabel");
-const dashboardMetricFourLabel = document.querySelector("#dashboardMetricFourLabel");
-const dashboardNotificationsTitle = document.querySelector("#dashboardNotificationsTitle");
-const dashboardNotificationsList = document.querySelector("#dashboardNotificationsList");
+const dashboardTitle = document.querySelector("#dashboardTitle");
+const dashboardMessage = document.querySelector("#dashboardMessage");
+const dashboardSummaryGrid = document.querySelector("#dashboardSummaryGrid");
+const hoursByMonthTitle = document.querySelector("#hoursByMonthTitle");
+const billingByMonthTitle = document.querySelector("#billingByMonthTitle");
+const hoursByClientTitle = document.querySelector("#hoursByClientTitle");
+const hoursByProjectTitle = document.querySelector("#hoursByProjectTitle");
+const hoursByTechnicianTitle = document.querySelector("#hoursByTechnicianTitle");
+const invoicesByStatusTitle = document.querySelector("#invoicesByStatusTitle");
+const hoursByMonthChart = document.querySelector("#hoursByMonthChart");
+const billingByMonthChart = document.querySelector("#billingByMonthChart");
+const hoursByClientChart = document.querySelector("#hoursByClientChart");
+const hoursByProjectChart = document.querySelector("#hoursByProjectChart");
+const hoursByTechnicianChart = document.querySelector("#hoursByTechnicianChart");
+const invoicesByStatusChart = document.querySelector("#invoicesByStatusChart");
+const recentServiceRecordsTitle = document.querySelector("#recentServiceRecordsTitle");
+const recentInvoicesTitle = document.querySelector("#recentInvoicesTitle");
+const recentClientsTitle = document.querySelector("#recentClientsTitle");
+const recentProjectsTitle = document.querySelector("#recentProjectsTitle");
+const recentServiceRecordsList = document.querySelector("#recentServiceRecordsList");
+const recentInvoicesList = document.querySelector("#recentInvoicesList");
+const recentClientsList = document.querySelector("#recentClientsList");
+const recentProjectsList = document.querySelector("#recentProjectsList");
 
 const editModal = document.querySelector("#editModal");
 const editTicketForm = document.querySelector("#editTicketForm");
@@ -214,6 +227,9 @@ let serviceRecordClients = [];
 let serviceRecordProjects = [];
 let invoices = [];
 let invoiceClients = [];
+let dashboardSummary = null;
+let dashboardCharts = null;
+let dashboardRecentActivity = null;
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -246,6 +262,9 @@ function resetClientState({ render = true } = {}) {
   serviceRecordProjects = [];
   invoices = [];
   invoiceClients = [];
+  dashboardSummary = null;
+  dashboardCharts = null;
+  dashboardRecentActivity = null;
   users = [];
   notifications = [];
   passwordResets = [];
@@ -319,6 +338,37 @@ const translations = {
     projects: "Projects",
     invoices: "Invoices",
     settings: "Settings",
+    dashboardTitle: "Dashboard",
+    dashboardLoadError: "No se pudo cargar el dashboard.",
+    noDashboardData: "No hay datos para mostrar.",
+    businessOverview: "Resumen del negocio",
+    recentActivity: "Actividad reciente",
+    dashboardMetrics: {
+      TotalClients: "Clientes",
+      TotalProjects: "Proyectos",
+      TotalServiceRecords: "Registros",
+      TotalInvoices: "Facturas",
+      TotalHours: "Horas totales",
+      UnbilledHours: "Horas sin facturar",
+      BilledHours: "Horas facturadas",
+      TotalBilledAmount: "Monto facturado",
+      PendingInvoiceAmount: "Monto pendiente",
+      PaidAmount: "Monto pagado"
+    },
+    dashboardCharts: {
+      HoursByMonth: "Horas por mes",
+      BillingByMonth: "Facturacion por mes",
+      HoursByClient: "Horas por cliente",
+      HoursByProject: "Horas por proyecto",
+      HoursByTechnician: "Horas por tecnico",
+      InvoicesByStatus: "Facturas por estado"
+    },
+    dashboardActivity: {
+      ServiceRecords: "Registros de servicio",
+      Invoices: "Facturas",
+      Clients: "Clientes",
+      Projects: "Proyectos"
+    },
     clientsEyebrow: "Catalogo de clientes",
     projectsEyebrow: "Catalogo de trabajo",
     invoicesEyebrow: "Area de facturacion",
@@ -591,6 +641,37 @@ const translations = {
     projects: "Projects",
     invoices: "Invoices",
     settings: "Settings",
+    dashboardTitle: "Summary",
+    dashboardLoadError: "Dashboard could not be loaded.",
+    noDashboardData: "No data to display.",
+    businessOverview: "Business overview",
+    recentActivity: "Recent activity",
+    dashboardMetrics: {
+      TotalClients: "Clients",
+      TotalProjects: "Projects",
+      TotalServiceRecords: "Service Records",
+      TotalInvoices: "Invoices",
+      TotalHours: "Total Hours",
+      UnbilledHours: "Unbilled Hours",
+      BilledHours: "Billed Hours",
+      TotalBilledAmount: "Total Billed",
+      PendingInvoiceAmount: "Pending Amount",
+      PaidAmount: "Paid Amount"
+    },
+    dashboardCharts: {
+      HoursByMonth: "Hours by Month",
+      BillingByMonth: "Billing by Month",
+      HoursByClient: "Hours by Client",
+      HoursByProject: "Hours by Project",
+      HoursByTechnician: "Hours by Technician",
+      InvoicesByStatus: "Invoices by Status"
+    },
+    dashboardActivity: {
+      ServiceRecords: "Service Records",
+      Invoices: "Invoices",
+      Clients: "Clients",
+      Projects: "Projects"
+    },
     clientsEyebrow: "Customer catalog",
     projectsEyebrow: "Work catalog",
     invoicesEyebrow: "Billing workspace",
@@ -1056,7 +1137,7 @@ async function switchTab(tabName) {
   }
 
   if (activeTab === "dashboard") {
-    renderDashboard();
+    await loadDashboardData();
   }
 
   if (activeTab === "reports" && reportTickets.length === 0) {
@@ -2489,33 +2570,168 @@ async function resolvePasswordResetNotification(notificationId) {
   }
 }
 
+async function loadDashboardData() {
+  try {
+    const [summaryResponse, chartsResponse, activityResponse] = await Promise.all([
+      fetch("/api/dashboard/summary", { cache: "no-store" }),
+      fetch("/api/dashboard/charts", { cache: "no-store" }),
+      fetch("/api/dashboard/recent-activity", { cache: "no-store" })
+    ]);
+    const summaryData = await parseJsonResponse(summaryResponse);
+    const chartsData = await parseJsonResponse(chartsResponse);
+    const activityData = await parseJsonResponse(activityResponse);
+
+    if ([summaryResponse, chartsResponse, activityResponse].some((response) => response.status === 401)) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!summaryResponse.ok) {
+      throw new Error(translateServerMessage(summaryData.message) || t("dashboardLoadError"));
+    }
+
+    if (!chartsResponse.ok) {
+      throw new Error(translateServerMessage(chartsData.message) || t("dashboardLoadError"));
+    }
+
+    if (!activityResponse.ok) {
+      throw new Error(translateServerMessage(activityData.message) || t("dashboardLoadError"));
+    }
+
+    dashboardSummary = summaryData;
+    dashboardCharts = chartsData;
+    dashboardRecentActivity = activityData;
+    dashboardMessage.textContent = "";
+    renderDashboard();
+  } catch (error) {
+    console.error(error);
+    dashboardSummary = null;
+    dashboardCharts = null;
+    dashboardRecentActivity = null;
+    dashboardMessage.textContent = error.message || t("dashboardLoadError");
+    renderDashboard();
+  }
+}
+
 function renderDashboard() {
-  if (!currentUser) {
+  if (!dashboardSummaryGrid) return;
+
+  renderDashboardSummary();
+  renderDashboardCharts();
+  renderDashboardRecentActivity();
+}
+
+function renderDashboardSummary() {
+  const metrics = [
+    { key: "TotalClients", type: "count" },
+    { key: "TotalProjects", type: "count" },
+    { key: "TotalServiceRecords", type: "count" },
+    { key: "TotalInvoices", type: "count" },
+    { key: "TotalHours", type: "hours" },
+    { key: "UnbilledHours", type: "hours" },
+    { key: "BilledHours", type: "hours" },
+    { key: "TotalBilledAmount", type: "currency" },
+    { key: "PendingInvoiceAmount", type: "currency" },
+    { key: "PaidAmount", type: "currency" }
+  ];
+
+  dashboardSummaryGrid.innerHTML = metrics.map((metric, index) => `
+    <article class="stat-card dashboard-summary-card">
+      <div class="stat-icon ${index % 3 === 0 ? "stat-open" : index % 3 === 1 ? "stat-progress" : "stat-closed"}" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
+      </div>
+      <div>
+        <span>${escapeHTML(tNested("dashboardMetrics", metric.key))}</span>
+        <strong>${formatDashboardMetric(dashboardSummary?.[metric.key], metric.type)}</strong>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderDashboardCharts() {
+  renderBarChart(hoursByMonthChart, dashboardCharts?.HoursByMonth, "Month", "TotalHours", "hours");
+  renderBarChart(billingByMonthChart, dashboardCharts?.BillingByMonth, "Month", "TotalAmount", "currency");
+  renderBarChart(hoursByClientChart, dashboardCharts?.HoursByClient, "ClientName", "TotalHours", "hours");
+  renderBarChart(hoursByProjectChart, dashboardCharts?.HoursByProject, "ProjectName", "TotalHours", "hours");
+  renderBarChart(hoursByTechnicianChart, dashboardCharts?.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
+  renderBarChart(invoicesByStatusChart, dashboardCharts?.InvoicesByStatus, "Status", "TotalInvoices", "count");
+}
+
+function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
+  if (!container) return;
+
+  if (!rows || rows.length === 0) {
+    container.innerHTML = `<p class="empty-state">${escapeHTML(t("noDashboardData"))}</p>`;
     return;
   }
 
-  const visibleTickets = isAdmin()
-    ? tickets
-    : tickets.filter((ticket) => Number(ticket.CreatedByUserID) === Number(currentUser.UserID));
-  const visibleNotifications = notifications;
+  const maxValue = Math.max(...rows.map((row) => Number(row[valueKey] || 0)), 1);
+  container.innerHTML = rows.slice(0, 8).map((row) => {
+    const value = Number(row[valueKey] || 0);
+    const width = Math.max((value / maxValue) * 100, value > 0 ? 6 : 0);
 
-  dashboardMetricOneLabel.textContent = isAdmin() ? t("totalTickets") : t("myTickets");
-  dashboardMetricTwoLabel.textContent = isAdmin() ? t("openTickets") : t("myOpenTickets");
-  dashboardMetricThreeLabel.textContent = isAdmin() ? t("closedTickets") : t("myClosedTickets");
-  dashboardMetricFourLabel.textContent = isAdmin() ? t("totalUsers") : t("myNotifications");
+    return `
+      <div class="bar-row">
+        <div class="bar-row-header">
+          <span>${escapeHTML(String(row[labelKey] || ""))}</span>
+          <strong>${formatDashboardMetric(value, valueType)}</strong>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width: ${width}%"></div></div>
+      </div>
+    `;
+  }).join("");
+}
 
-  dashboardMetricOne.textContent = visibleTickets.length;
-  dashboardMetricTwo.textContent = visibleTickets.filter((ticket) => ticket.Status === "Abierto").length;
-  dashboardMetricThree.textContent = visibleTickets.filter((ticket) => ticket.Status === "Cerrado").length;
-  dashboardMetricFour.textContent = isAdmin() ? users.length : visibleNotifications.length;
+function renderDashboardRecentActivity() {
+  renderActivityList(recentServiceRecordsList, dashboardRecentActivity?.ServiceRecords, renderServiceRecordActivity);
+  renderActivityList(recentInvoicesList, dashboardRecentActivity?.Invoices, renderInvoiceActivity);
+  renderActivityList(recentClientsList, dashboardRecentActivity?.Clients, renderClientActivity);
+  renderActivityList(recentProjectsList, dashboardRecentActivity?.Projects, renderProjectActivity);
+}
 
-  dashboardNotificationsTitle.textContent = t("latestNotifications");
-  dashboardNotificationsList.innerHTML = visibleNotifications.slice(0, 5).map((notification) => `
+function renderActivityList(container, rows = [], renderer) {
+  if (!container) return;
+
+  container.innerHTML = rows && rows.length
+    ? rows.slice(0, 6).map(renderer).join("")
+    : `<p class="empty-state">${escapeHTML(t("noDashboardData"))}</p>`;
+}
+
+function renderServiceRecordActivity(record) {
+  return `
     <article class="notification-item">
-      <strong>${escapeHTML(translateNotificationMessage(notification.Message))}</strong>
-      <span>${formatDate(notification.CreatedAt)}</span>
+      <strong>${escapeHTML(record.ClientName || "")} · ${escapeHTML(record.ProjectName || "")}</strong>
+      <span>${escapeHTML(record.TechnicianName || "")} · ${formatDateOnly(record.ServiceDate)} · ${Number(record.TotalHours || 0).toFixed(2)}h · ${escapeHTML(record.Status || "")}</span>
     </article>
-  `).join("") || `<p class="empty-state">${t("noNotifications")}</p>`;
+  `;
+}
+
+function renderInvoiceActivity(invoice) {
+  return `
+    <article class="notification-item">
+      <strong>${escapeHTML(invoice.InvoiceNumber || "")} · ${escapeHTML(invoice.ClientName || "")}</strong>
+      <span>${formatDateOnly(invoice.InvoiceDate)} · ${formatCurrency(invoice.TotalAmount)} · ${escapeHTML(invoice.Status || "")}</span>
+    </article>
+  `;
+}
+
+function renderClientActivity(client) {
+  return `
+    <article class="notification-item">
+      <strong>${escapeHTML(client.ClientName || "")}</strong>
+      <span>${escapeHTML(client.ContactName || client.Email || client.Phone || "")}</span>
+    </article>
+  `;
+}
+
+function renderProjectActivity(project) {
+  return `
+    <article class="notification-item">
+      <strong>${escapeHTML(project.ProjectName || "")}</strong>
+      <span>${escapeHTML(project.ClientName || "")} · ${formatCurrency(project.HourlyRate)}</span>
+    </article>
+  `;
 }
 
 function t(key) {
@@ -2805,8 +3021,21 @@ function applyStaticLanguage() {
   if (ticketStatLabels[2]) ticketStatLabels[2].textContent = t("closedCountLabel");
   totalCount.parentElement.lastChild.textContent = ` ${t("registeredTickets")}`;
 
-  setText("#dashboardTabPanel .section-title .eyebrow", t("activity"));
-  setText("#dashboardNotificationsTitle", t("latestNotifications"));
+  setText("#dashboardTabPanel .dashboard-overview-panel .section-title .eyebrow", t("businessOverview"));
+  setText("#dashboardTitle", t("dashboardTitle"));
+  setText("#hoursByMonthTitle", tNested("dashboardCharts", "HoursByMonth"));
+  setText("#billingByMonthTitle", tNested("dashboardCharts", "BillingByMonth"));
+  setText("#hoursByClientTitle", tNested("dashboardCharts", "HoursByClient"));
+  setText("#hoursByProjectTitle", tNested("dashboardCharts", "HoursByProject"));
+  setText("#hoursByTechnicianTitle", tNested("dashboardCharts", "HoursByTechnician"));
+  setText("#invoicesByStatusTitle", tNested("dashboardCharts", "InvoicesByStatus"));
+  setText("#recentServiceRecordsTitle", tNested("dashboardActivity", "ServiceRecords"));
+  setText("#recentInvoicesTitle", tNested("dashboardActivity", "Invoices"));
+  setText("#recentClientsTitle", tNested("dashboardActivity", "Clients"));
+  setText("#recentProjectsTitle", tNested("dashboardActivity", "Projects"));
+  document.querySelectorAll("#dashboardTabPanel .activity-panel .eyebrow").forEach((element) => {
+    element.textContent = t("recentActivity");
+  });
 
   setText("#clientsTabPanel .section-title .eyebrow", t("clientsEyebrow"));
   setText("#clients-title", t("clients"));
@@ -3856,6 +4085,24 @@ function formatCurrency(value) {
     currency: "USD",
     minimumFractionDigits: 2
   });
+}
+
+function formatDashboardMetric(value, type) {
+  const locale = currentLanguage === "es" ? "es-BO" : "en-US";
+  const amount = Number(value || 0);
+
+  if (type === "currency") {
+    return formatCurrency(amount);
+  }
+
+  if (type === "hours") {
+    return `${amount.toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} h`;
+  }
+
+  return amount.toLocaleString(locale);
 }
 
 function formatPerson(fullName, userId) {

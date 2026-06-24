@@ -197,40 +197,91 @@
     </nav>
 
     <section id="dashboardTabPanel" class="tab-panel hidden">
-      <section class="stats-grid dashboard-grid" aria-label="Resumen ejecutivo">
-        <article class="stat-card">
-          <div class="stat-icon stat-open" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M8 9h8M8 13h5"/></svg>
-          </div>
-          <div><span id="dashboardMetricOneLabel">Total Registros</span><strong id="dashboardMetricOne">0</strong></div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-icon stat-progress" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg>
-          </div>
-          <div><span id="dashboardMetricTwoLabel">Registros Abiertos</span><strong id="dashboardMetricTwo">0</strong></div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-icon stat-closed" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-          </div>
-          <div><span id="dashboardMetricThreeLabel">Registros Cerrados</span><strong id="dashboardMetricThree">0</strong></div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-icon stat-open" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
-          </div>
-          <div><span id="dashboardMetricFourLabel">Total Usuarios</span><strong id="dashboardMetricFour">0</strong></div>
-        </article>
-      </section>
-      <section class="panel table-panel dashboard-notifications-panel">
+      <section class="panel table-panel dashboard-overview-panel">
         <div class="table-header">
           <div class="section-title">
-            <p class="eyebrow">Actividad</p>
-            <h2 id="dashboardNotificationsTitle">Últimas notificaciones</h2>
+            <p class="eyebrow">Business overview</p>
+            <h2 id="dashboardTitle">Dashboard</h2>
           </div>
         </div>
-        <div id="dashboardNotificationsList" class="notification-list"></div>
+        <p id="dashboardMessage" class="form-message" aria-live="polite"></p>
+        <div id="dashboardSummaryGrid" class="stats-grid dashboard-grid" aria-label="Dashboard summary"></div>
+      </section>
+
+      <section class="dashboard-chart-grid" aria-label="Dashboard charts">
+        <article class="panel chart-panel">
+          <div class="section-title">
+            <p class="eyebrow">Hours</p>
+            <h3 id="hoursByMonthTitle">HoursByMonth</h3>
+          </div>
+          <div id="hoursByMonthChart" class="bar-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-title">
+            <p class="eyebrow">Billing</p>
+            <h3 id="billingByMonthTitle">BillingByMonth</h3>
+          </div>
+          <div id="billingByMonthChart" class="bar-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-title">
+            <p class="eyebrow">Clients</p>
+            <h3 id="hoursByClientTitle">HoursByClient</h3>
+          </div>
+          <div id="hoursByClientChart" class="bar-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-title">
+            <p class="eyebrow">Projects</p>
+            <h3 id="hoursByProjectTitle">HoursByProject</h3>
+          </div>
+          <div id="hoursByProjectChart" class="bar-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-title">
+            <p class="eyebrow">Technicians</p>
+            <h3 id="hoursByTechnicianTitle">HoursByTechnician</h3>
+          </div>
+          <div id="hoursByTechnicianChart" class="bar-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-title">
+            <p class="eyebrow">Invoices</p>
+            <h3 id="invoicesByStatusTitle">InvoicesByStatus</h3>
+          </div>
+          <div id="invoicesByStatusChart" class="bar-chart"></div>
+        </article>
+      </section>
+
+      <section class="dashboard-activity-grid" aria-label="Recent activity">
+        <article class="panel activity-panel">
+          <div class="section-title">
+            <p class="eyebrow">Recent activity</p>
+            <h3 id="recentServiceRecordsTitle">ServiceRecords</h3>
+          </div>
+          <div id="recentServiceRecordsList" class="notification-list"></div>
+        </article>
+        <article class="panel activity-panel">
+          <div class="section-title">
+            <p class="eyebrow">Recent activity</p>
+            <h3 id="recentInvoicesTitle">Invoices</h3>
+          </div>
+          <div id="recentInvoicesList" class="notification-list"></div>
+        </article>
+        <article class="panel activity-panel">
+          <div class="section-title">
+            <p class="eyebrow">Recent activity</p>
+            <h3 id="recentClientsTitle">Clients</h3>
+          </div>
+          <div id="recentClientsList" class="notification-list"></div>
+        </article>
+        <article class="panel activity-panel">
+          <div class="section-title">
+            <p class="eyebrow">Recent activity</p>
+            <h3 id="recentProjectsTitle">Projects</h3>
+          </div>
+          <div id="recentProjectsList" class="notification-list"></div>
+        </article>
       </section>
     </section>
 
