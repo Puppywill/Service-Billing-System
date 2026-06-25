@@ -10,6 +10,10 @@ This repository has completed Phase 15 of the migration. The product identity, S
 
 Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid breaking the application while the new service billing modules are introduced safely.
 
+## Presentation Note
+
+For the current local demo, monetary values are intentionally hidden from the user interface. Rates, taxes, subtotals, totals, billed amounts, pending amounts, paid amounts, and currency symbols remain available in the database and backend APIs, but they are not displayed in Dashboard, Projects, Invoices, invoice lines, Reports, or Settings screens.
+
 ## Project Progress
 
 - Phase 1: Identity and documentation ✅
@@ -797,7 +801,8 @@ Phase 12 connects the `Projects` screen to the real backend API. The screen now 
 - Adds a modal form to create projects.
 - Adds a modal form to edit projects.
 - Supports logical project deactivation through `DELETE /api/projects/:id`.
-- Shows `ProjectName`, `ClientName`, `Description`, `HourlyRate`, and `IsActive`.
+- Shows `ProjectName`, `ClientName`, `Description`, and `IsActive`.
+- Keeps internal project rate values available for API compatibility, but hides them from the UI for the current demo.
 - Uses the current session role to control available actions.
 - Keeps the Projects screen responsive and visually consistent with Clients.
 
@@ -805,8 +810,7 @@ Phase 12 connects the `Projects` screen to the real backend API. The screen now 
 
 - `ClientID` is required.
 - `ProjectName` is required.
-- `HourlyRate` must be numeric.
-- `HourlyRate` cannot be negative.
+- Internal project rate defaults remain validated for API compatibility.
 - Deactivation requires confirmation before calling the API.
 - Success and error messages are shown in the Projects screen or modal.
 
@@ -835,8 +839,8 @@ DELETE /api/projects/:id
 2. Open `Projects`.
 3. Search by project, client, or description.
 4. Filter by client.
-5. Create a project by selecting `ClientID`, entering `ProjectName`, and setting `HourlyRate`.
-6. Edit a project's client, name, description, rate, or active state.
+5. Create a project by selecting `ClientID` and entering `ProjectName`.
+6. Edit a project's client, name, description, or active state.
 7. Deactivate a project and confirm the prompt.
 8. Sign in as a technician and verify the project list is read-only.
 
@@ -908,13 +912,15 @@ Phase 14 connects the `Invoices` screen to the real backend API. The screen now 
 - Adds `Generate Invoice` for administrators.
 - Generates invoices with `POST /api/invoices/generate`.
 - Adds a modal to generate invoices from `ServiceRecords`.
-- Uses `ClientID`, `PeriodFrom`, `PeriodTo`, `TaxRate`, and `Notes` in the generation flow.
+- Uses `ClientID`, `PeriodFrom`, `PeriodTo`, and `Notes` in the visible generation flow.
+- Keeps internal invoice tax values available for API compatibility, but hides them from the UI for the current demo.
 - Adds an invoice detail view.
 - Displays `InvoiceLines` from `GET /api/invoices/:id`.
 - Allows invoice status editing for administrators.
 - Supports logical invoice cancellation with `DELETE /api/invoices/:id`.
 - Loads clients dynamically for filters and the generation modal.
-- Shows `InvoiceNumber`, `ClientName`, `InvoiceDate`, `PeriodFrom`, `PeriodTo`, `Subtotal`, `TaxAmount`, `TotalAmount`, and `Status`.
+- Shows `InvoiceNumber`, `ClientName`, `InvoiceDate`, `PeriodFrom`, `PeriodTo`, and `Status`.
+- Shows `InvoiceLines` without monetary columns.
 - Uses the current session role to control available actions.
 - Keeps the Invoices screen responsive and visually consistent with the connected modules.
 
@@ -944,7 +950,6 @@ Content-Type: application/json
   "ClientID": 1,
   "PeriodFrom": "2026-06-01",
   "PeriodTo": "2026-06-30",
-  "TaxRate": 0,
   "Notes": "June service billing"
 }
 ```
@@ -993,16 +998,13 @@ The dashboard displays:
 - `TotalHours`
 - `BilledHours`
 - `UnbilledHours`
-- `TotalBilledAmount`
-- `PendingInvoiceAmount`
-- `PaidAmount`
+- Monetary summary values are hidden in the UI for the current demo.
 
 ### Visual Sections
 
 The dashboard includes lightweight frontend chart sections without adding new libraries:
 
 - `HoursByMonth`
-- `BillingByMonth`
 - `HoursByClient`
 - `HoursByProject`
 - `HoursByTechnician`

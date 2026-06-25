@@ -350,14 +350,10 @@ const translations = {
       TotalInvoices: "Facturas",
       TotalHours: "Horas totales",
       UnbilledHours: "Horas sin facturar",
-      BilledHours: "Horas facturadas",
-      TotalBilledAmount: "Monto facturado",
-      PendingInvoiceAmount: "Monto pendiente",
-      PaidAmount: "Monto pagado"
+      BilledHours: "Horas facturadas"
     },
     dashboardCharts: {
       HoursByMonth: "Horas por mes",
-      BillingByMonth: "Facturacion por mes",
       HoursByClient: "Horas por cliente",
       HoursByProject: "Horas por proyecto",
       HoursByTechnician: "Horas por tecnico",
@@ -391,7 +387,7 @@ const translations = {
     createClientError: "No se pudo crear el cliente.",
     updateClientError: "No se pudo actualizar el cliente.",
     deleteClientError: "No se pudo desactivar el cliente.",
-    projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente, descripcion y tarifa por hora antes de registrar servicios.",
+    projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente y descripcion antes de registrar servicios.",
     addProject: "Add Project",
     editProject: "Edit Project",
     saveProject: "Save Project",
@@ -408,8 +404,8 @@ const translations = {
     deleteProjectSuccess: "Proyecto desactivado correctamente.",
     projectClientRequired: "ClientID es obligatorio.",
     projectNameRequired: "ProjectName es obligatorio.",
-    projectRateRequired: "HourlyRate debe ser numerico.",
-    projectRateNegative: "HourlyRate no puede ser negativo.",
+    projectRateRequired: "La configuracion interna del proyecto debe ser numerica.",
+    projectRateNegative: "La configuracion interna del proyecto no puede ser negativa.",
     projectNotFound: "No se encontro el proyecto seleccionado.",
     deleteProjectConfirm: "Seguro que deseas desactivar este proyecto?",
     createProjectError: "No se pudo crear el proyecto.",
@@ -458,7 +454,7 @@ const translations = {
     invoicePeriodFromRequired: "PeriodFrom es obligatorio.",
     invoicePeriodToRequired: "PeriodTo es obligatorio.",
     invoicePeriodInvalid: "PeriodFrom no puede ser posterior a PeriodTo.",
-    invoiceTaxRateInvalid: "TaxRate debe ser un numero no negativo.",
+    invoiceTaxRateInvalid: "La configuracion interna de la factura debe ser un numero no negativo.",
     invoiceStatusInvalid: "Status debe ser Draft, Issued, Paid o Canceled.",
     invoiceNotFound: "No se encontro la factura seleccionada.",
     cancelInvoiceConfirm: "Seguro que deseas cancelar esta factura?",
@@ -467,8 +463,8 @@ const translations = {
     cancelInvoiceError: "No se pudo cancelar la factura.",
     loadInvoiceDetailError: "No se pudo cargar el detalle de la factura.",
     noInvoiceLines: "No hay lineas para esta factura.",
-    invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas, totales y estados de facturacion.",
-    settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de facturacion y controles de migracion en una fase posterior.",
+    invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas y estados del documento.",
+    settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de flujo de trabajo y controles de migracion en una fase posterior.",
     createTicket: "Crear registro",
     addUser: "Agregar usuario",
     createUser: "Crear usuario",
@@ -653,14 +649,10 @@ const translations = {
       TotalInvoices: "Invoices",
       TotalHours: "Total Hours",
       UnbilledHours: "Unbilled Hours",
-      BilledHours: "Billed Hours",
-      TotalBilledAmount: "Total Billed",
-      PendingInvoiceAmount: "Pending Amount",
-      PaidAmount: "Paid Amount"
+      BilledHours: "Billed Hours"
     },
     dashboardCharts: {
       HoursByMonth: "Hours by Month",
-      BillingByMonth: "Billing by Month",
       HoursByClient: "Hours by Client",
       HoursByProject: "Hours by Project",
       HoursByTechnician: "Hours by Technician",
@@ -694,7 +686,7 @@ const translations = {
     createClientError: "Could not create the client.",
     updateClientError: "Could not update the client.",
     deleteClientError: "Could not deactivate the client.",
-    projectsFoundation: "Project management will organize client work, descriptions, and hourly rates before service records are entered.",
+    projectsFoundation: "Project management will organize client work and descriptions before service records are entered.",
     addProject: "Add Project",
     editProject: "Edit Project",
     saveProject: "Save Project",
@@ -711,8 +703,8 @@ const translations = {
     deleteProjectSuccess: "Project deactivated successfully.",
     projectClientRequired: "ClientID is required.",
     projectNameRequired: "ProjectName is required.",
-    projectRateRequired: "HourlyRate must be numeric.",
-    projectRateNegative: "HourlyRate cannot be negative.",
+    projectRateRequired: "The internal project setting must be numeric.",
+    projectRateNegative: "The internal project setting cannot be negative.",
     projectNotFound: "The selected project was not found.",
     deleteProjectConfirm: "Are you sure you want to deactivate this project?",
     createProjectError: "Could not create the project.",
@@ -761,7 +753,7 @@ const translations = {
     invoicePeriodFromRequired: "PeriodFrom is required.",
     invoicePeriodToRequired: "PeriodTo is required.",
     invoicePeriodInvalid: "PeriodFrom cannot be after PeriodTo.",
-    invoiceTaxRateInvalid: "TaxRate must be a non-negative number.",
+    invoiceTaxRateInvalid: "The internal invoice setting must be a non-negative number.",
     invoiceStatusInvalid: "Status must be Draft, Issued, Paid, or Canceled.",
     invoiceNotFound: "The selected invoice was not found.",
     cancelInvoiceConfirm: "Are you sure you want to cancel this invoice?",
@@ -770,8 +762,8 @@ const translations = {
     cancelInvoiceError: "Could not cancel the invoice.",
     loadInvoiceDetailError: "Could not load invoice detail.",
     noInvoiceLines: "This invoice has no lines.",
-    invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, totals, and billing status.",
-    settingsFoundation: "Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.",
+    invoicesFoundation: "Invoice screens will use recorded service hours to generate invoice headers, line items, and document status.",
+    settingsFoundation: "Settings will centralize account preferences, notifications, workflow defaults, and migration controls in a later phase.",
     createTicket: "Create record",
     addUser: "Add user",
     createUser: "Create user",
@@ -1511,7 +1503,6 @@ function renderProjects() {
       <td>${escapeHTML(project.ProjectName || "")}</td>
       <td>${escapeHTML(project.ClientName || "")}</td>
       <td class="ticket-description">${escapeHTML(project.Description || "")}</td>
-      <td>${formatCurrency(project.HourlyRate)}</td>
       <td><span class="badge ${project.IsActive ? "status-abierto" : "status-cerrado"}">${project.IsActive ? "Active" : "Inactive"}</span></td>
       <td>
         ${canManageProjects ? `
@@ -1529,7 +1520,7 @@ function showProjectsTableMessage(message) {
   projectsTotalCount.textContent = projects.length;
   projectsTableBody.innerHTML = `
     <tr>
-      <td colspan="6" class="empty-state">${escapeHTML(message)}</td>
+      <td colspan="5" class="empty-state">${escapeHTML(message)}</td>
     </tr>
   `;
 }
@@ -1544,7 +1535,7 @@ function getProjectPayloadFromForm() {
     ClientID: Number(projectClientId.value),
     ProjectName: projectName.value.trim(),
     Description: projectDescription.value.trim(),
-    HourlyRate: projectHourlyRate.value === "" ? NaN : Number(projectHourlyRate.value),
+    HourlyRate: projectHourlyRate.value === "" ? 0 : Number(projectHourlyRate.value),
     IsActive: projectIsActive.checked
   };
 }
@@ -1559,6 +1550,7 @@ async function openProjectEditor(mode, selectedProject = null) {
   projectId.value = selectedProject?.ProjectID || "";
   projectModalTitle.textContent = mode === "edit" ? t("editProject") : t("addProject");
   projectIsActive.checked = selectedProject?.IsActive ?? true;
+  projectHourlyRate.value = "0";
 
   if (selectedProject) {
     projectClientId.value = selectedProject.ClientID || "";
@@ -2175,9 +2167,6 @@ function renderInvoices() {
         <td>${escapeHTML(formatDateOnly(invoice.InvoiceDate))}</td>
         <td>${escapeHTML(formatDateOnly(invoice.PeriodFrom))}</td>
         <td>${escapeHTML(formatDateOnly(invoice.PeriodTo))}</td>
-        <td>${formatCurrency(invoice.Subtotal)}</td>
-        <td>${formatCurrency(invoice.TaxAmount)}</td>
-        <td>${formatCurrency(invoice.TotalAmount)}</td>
         <td><span class="badge ${getInvoiceStatusClass(invoice.Status)}">${escapeHTML(invoice.Status || "")}</span></td>
         <td>
           <div class="actions">
@@ -2195,7 +2184,7 @@ function showInvoicesTableMessage(message) {
   invoicesTotalCount.textContent = invoices.length;
   invoicesTableBody.innerHTML = `
     <tr>
-      <td colspan="10" class="empty-state">${escapeHTML(message)}</td>
+      <td colspan="7" class="empty-state">${escapeHTML(message)}</td>
     </tr>
   `;
 }
@@ -2382,15 +2371,15 @@ function renderInvoiceDetail(invoice) {
     <div class="detail-summary-grid">
       <div><span>InvoiceNumber</span><strong>${escapeHTML(invoice.InvoiceNumber || "")}</strong></div>
       <div><span>ClientName</span><strong>${escapeHTML(invoice.ClientName || "")}</strong></div>
+      <div><span>InvoiceDate</span><strong>${escapeHTML(formatDateOnly(invoice.InvoiceDate))}</strong></div>
       <div><span>Status</span><strong>${escapeHTML(invoice.Status || "")}</strong></div>
-      <div><span>TotalAmount</span><strong>${formatCurrency(invoice.TotalAmount)}</strong></div>
     </div>
   `;
 
   if (lines.length === 0) {
     invoiceLinesTableBody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty-state">${escapeHTML(t("noInvoiceLines"))}</td>
+        <td colspan="4" class="empty-state">${escapeHTML(t("noInvoiceLines"))}</td>
       </tr>
     `;
     return;
@@ -2402,8 +2391,6 @@ function renderInvoiceDetail(invoice) {
       <td>${escapeHTML(line.ProjectName || "")}</td>
       <td class="ticket-description">${escapeHTML(line.Description || "")}</td>
       <td>${Number(line.Hours || 0).toFixed(2)}</td>
-      <td>${formatCurrency(line.HourlyRate)}</td>
-      <td>${formatCurrency(line.LineTotal)}</td>
     </tr>
   `).join("");
 }
@@ -2413,7 +2400,7 @@ function closeInvoiceDetail() {
   invoiceDetailSummary.innerHTML = "";
   invoiceLinesTableBody.innerHTML = `
     <tr>
-      <td colspan="6" class="empty-state">${escapeHTML(t("noInvoiceLines"))}</td>
+      <td colspan="4" class="empty-state">${escapeHTML(t("noInvoiceLines"))}</td>
     </tr>
   `;
 }
@@ -2630,10 +2617,7 @@ function renderDashboardSummary() {
     { key: "TotalInvoices", type: "count" },
     { key: "TotalHours", type: "hours" },
     { key: "UnbilledHours", type: "hours" },
-    { key: "BilledHours", type: "hours" },
-    { key: "TotalBilledAmount", type: "currency" },
-    { key: "PendingInvoiceAmount", type: "currency" },
-    { key: "PaidAmount", type: "currency" }
+    { key: "BilledHours", type: "hours" }
   ];
 
   dashboardSummaryGrid.innerHTML = metrics.map((metric, index) => `
@@ -2651,7 +2635,6 @@ function renderDashboardSummary() {
 
 function renderDashboardCharts() {
   renderBarChart(hoursByMonthChart, dashboardCharts?.HoursByMonth, "Month", "TotalHours", "hours");
-  renderBarChart(billingByMonthChart, dashboardCharts?.BillingByMonth, "Month", "TotalAmount", "currency");
   renderBarChart(hoursByClientChart, dashboardCharts?.HoursByClient, "ClientName", "TotalHours", "hours");
   renderBarChart(hoursByProjectChart, dashboardCharts?.HoursByProject, "ProjectName", "TotalHours", "hours");
   renderBarChart(hoursByTechnicianChart, dashboardCharts?.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
@@ -2711,7 +2694,7 @@ function renderInvoiceActivity(invoice) {
   return `
     <article class="notification-item">
       <strong>${escapeHTML(invoice.InvoiceNumber || "")} · ${escapeHTML(invoice.ClientName || "")}</strong>
-      <span>${formatDateOnly(invoice.InvoiceDate)} · ${formatCurrency(invoice.TotalAmount)} · ${escapeHTML(invoice.Status || "")}</span>
+      <span>${formatDateOnly(invoice.InvoiceDate)} · ${escapeHTML(invoice.Status || "")}</span>
     </article>
   `;
 }
@@ -2729,7 +2712,7 @@ function renderProjectActivity(project) {
   return `
     <article class="notification-item">
       <strong>${escapeHTML(project.ProjectName || "")}</strong>
-      <span>${escapeHTML(project.ClientName || "")} · ${formatCurrency(project.HourlyRate)}</span>
+      <span>${escapeHTML(project.ClientName || "")}</span>
     </article>
   `;
 }
@@ -3024,7 +3007,6 @@ function applyStaticLanguage() {
   setText("#dashboardTabPanel .dashboard-overview-panel .section-title .eyebrow", t("businessOverview"));
   setText("#dashboardTitle", t("dashboardTitle"));
   setText("#hoursByMonthTitle", tNested("dashboardCharts", "HoursByMonth"));
-  setText("#billingByMonthTitle", tNested("dashboardCharts", "BillingByMonth"));
   setText("#hoursByClientTitle", tNested("dashboardCharts", "HoursByClient"));
   setText("#hoursByProjectTitle", tNested("dashboardCharts", "HoursByProject"));
   setText("#hoursByTechnicianTitle", tNested("dashboardCharts", "HoursByTechnician"));
@@ -3061,7 +3043,6 @@ function applyStaticLanguage() {
   setText('label[for="projectClientId"]', "ClientID");
   setText('label[for="projectName"]', "ProjectName");
   setText('label[for="projectDescription"]', "Description");
-  setText('label[for="projectHourlyRate"]', "HourlyRate");
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
   setText('label[for="invoiceSearchInput"]', t("search"));
@@ -3076,7 +3057,6 @@ function applyStaticLanguage() {
   setText('label[for="invoiceGenerateClientId"]', "ClientID");
   setText('label[for="invoiceGeneratePeriodFrom"]', "PeriodFrom");
   setText('label[for="invoiceGeneratePeriodTo"]', "PeriodTo");
-  setText('label[for="invoiceGenerateTaxRate"]', "TaxRate");
   setText('label[for="invoiceGenerateNotes"]', "Notes");
   setAriaLabel("#closeInvoiceGenerateModal", t("closeEditor"));
   setText("#invoiceStatusModal .section-title .eyebrow", t("invoices"));
@@ -3143,9 +3123,9 @@ function applyStaticLanguage() {
   setTableHeaders(".service-records-panel table", ["TechnicianName", "ClientName", "ProjectName", "ServiceDate", "MorningStart", "MorningEnd", "AfternoonStart", "AfternoonEnd", "TotalHours", "ServiceDescription", "Status", t("actions")]);
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
   setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
-  setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "HourlyRate", "IsActive", t("actions")]);
-  setTableHeaders("#invoicesTabPanel table", ["InvoiceNumber", "ClientName", "InvoiceDate", "PeriodFrom", "PeriodTo", "Subtotal", "TaxAmount", "TotalAmount", "Status", t("actions")]);
-  setTableHeaders("#invoiceDetailModal table", ["ServiceDate", "ProjectName", "Description", "Hours", "HourlyRate", "LineTotal"]);
+  setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "IsActive", t("actions")]);
+  setTableHeaders("#invoicesTabPanel table", ["InvoiceNumber", "ClientName", "InvoiceDate", "PeriodFrom", "PeriodTo", "Status", t("actions")]);
+  setTableHeaders("#invoiceDetailModal table", ["ServiceDate", "ProjectName", "Description", "Hours"]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
@@ -4092,7 +4072,7 @@ function formatDashboardMetric(value, type) {
   const amount = Number(value || 0);
 
   if (type === "currency") {
-    return formatCurrency(amount);
+    return "";
   }
 
   if (type === "hours") {

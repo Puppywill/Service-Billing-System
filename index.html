@@ -216,7 +216,7 @@
           </div>
           <div id="hoursByMonthChart" class="bar-chart"></div>
         </article>
-        <article class="panel chart-panel">
+        <article class="panel chart-panel hidden" aria-hidden="true" hidden>
           <div class="section-title">
             <p class="eyebrow">Billing</p>
             <h3 id="billingByMonthTitle">BillingByMonth</h3>
@@ -374,14 +374,13 @@
                 <th>ProjectName</th>
                 <th>ClientName</th>
                 <th>Description</th>
-                <th>HourlyRate</th>
                 <th>IsActive</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="projectsTableBody">
               <tr>
-                <td colspan="6" class="empty-state">No projects loaded.</td>
+                <td colspan="5" class="empty-state">No projects loaded.</td>
               </tr>
             </tbody>
           </table>
@@ -691,16 +690,13 @@
                 <th>InvoiceDate</th>
                 <th>PeriodFrom</th>
                 <th>PeriodTo</th>
-                <th>Subtotal</th>
-                <th>TaxAmount</th>
-                <th>TotalAmount</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="invoicesTableBody">
               <tr>
-                <td colspan="10" class="empty-state">No invoices loaded.</td>
+                <td colspan="7" class="empty-state">No invoices loaded.</td>
               </tr>
             </tbody>
           </table>
@@ -744,7 +740,7 @@
           <p class="eyebrow">System preferences</p>
           <h2 id="settings-title">Settings</h2>
         </div>
-        <p class="foundation-copy">Settings will centralize account preferences, notifications, billing defaults, and migration controls in a later phase.</p>
+        <p class="foundation-copy">Settings will centralize account preferences, notifications, workflow defaults, and migration controls in a later phase.</p>
       </section>
       <section class="foundation-grid" aria-label="Settings workspace preview">
         <article class="panel foundation-card">
@@ -756,8 +752,8 @@
           <p>Keep administrative alerts available while the new modules are introduced.</p>
         </article>
         <article class="panel foundation-card">
-          <h3>Billing Defaults</h3>
-          <p>Prepare defaults such as tax rate and invoice numbering for future screens.</p>
+          <h3>Workflow Defaults</h3>
+          <p>Prepare service record preferences and document numbering for future screens.</p>
         </article>
       </section>
     </section>
@@ -1062,9 +1058,9 @@
       </div>
 
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group hidden" aria-hidden="true" hidden>
           <label for="projectHourlyRate">HourlyRate</label>
-          <input type="number" id="projectHourlyRate" min="0" step="0.01" required>
+          <input type="number" id="projectHourlyRate" min="0" step="0.01" value="0" tabindex="-1">
         </div>
 
         <label class="checkbox-field">
@@ -1209,9 +1205,9 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group hidden" aria-hidden="true" hidden>
         <label for="invoiceGenerateTaxRate">TaxRate</label>
-        <input type="number" id="invoiceGenerateTaxRate" min="0" step="0.0001" value="0">
+        <input type="number" id="invoiceGenerateTaxRate" min="0" step="0.0001" value="0" tabindex="-1">
       </div>
 
       <div class="form-group">
@@ -1299,13 +1295,11 @@
               <th>ProjectName</th>
               <th>Description</th>
               <th>Hours</th>
-              <th>HourlyRate</th>
-              <th>LineTotal</th>
             </tr>
           </thead>
           <tbody id="invoiceLinesTableBody">
             <tr>
-              <td colspan="6" class="empty-state">No invoice lines loaded.</td>
+              <td colspan="4" class="empty-state">No invoice lines loaded.</td>
             </tr>
           </tbody>
         </table>
