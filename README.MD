@@ -74,7 +74,7 @@ Next phase: Phase 16 - Complete validation, functional testing, and local demo p
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
-- PDF and Excel exports for the new service-hour reports are temporarily marked as pending in the frontend.
+- Report export controls are limited to disabled `PDF (Coming soon)` and `Excel (Coming soon)` buttons for the demo.
 - Responsive web interface for desktop, tablet, and mobile.
 
 ## Target Direction
@@ -1051,7 +1051,8 @@ GET /api/dashboard/recent-activity
 - The visible `Reports` screen now uses `GET /api/reports/service-hours` and `GET /api/reports/service-hours/summary`.
 - Reports show technician, client, project, service date, worked hours, service description, and service record status.
 - Reports no longer call legacy ticket report endpoints from the frontend.
-- PDF and Excel export buttons are disabled and marked as pending until service-hour exports are implemented.
+- The temporary service sheet print/export buttons are hidden for the demo.
+- PDF and Excel buttons remain visible, disabled, and labeled `PDF (Coming soon)` and `Excel (Coming soon)` until service-hour exports are implemented.
 - The visible frontend navigation hides `Invoices` temporarily for demo clarity.
 - Invoice APIs, backend logic, SQL tables, and existing frontend implementation remain in the codebase.
 6. Sign in as a technician and confirm the dashboard is limited by backend permissions.

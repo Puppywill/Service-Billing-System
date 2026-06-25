@@ -74,7 +74,7 @@ Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion p
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
-- Exportacion PDF y Excel para los nuevos reportes de horas queda temporalmente marcada como pendiente en el frontend.
+- Los controles de exportacion quedan limitados a botones deshabilitados `PDF (Proximamente)` y `Excel (Proximamente)` para la demo.
 - Interfaz web responsive para desktop, tablet y movil.
 
 ## Direccion Del Sistema
@@ -1028,7 +1028,8 @@ El dashboard muestra actividad reciente de:
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
 - Reports muestra tecnico, cliente, proyecto, fecha de servicio, horas trabajadas, descripcion del servicio y estado del registro.
 - Reports ya no llama endpoints legacy de reportes de tickets desde el frontend.
-- Los botones PDF y Excel quedan deshabilitados y marcados como pendientes hasta implementar exportacion de horas de servicio.
+- Los botones temporales de imprimir/exportar hoja quedan ocultos para la demo.
+- Los botones PDF y Excel permanecen visibles, deshabilitados y rotulados `PDF (Proximamente)` y `Excel (Proximamente)` hasta implementar exportacion de horas de servicio.
 - La navegacion visible del frontend oculta `Invoices` temporalmente para claridad de demo.
 - Las APIs de Invoices, la logica backend, las tablas SQL y la implementacion frontend existente permanecen en el codigo.
 

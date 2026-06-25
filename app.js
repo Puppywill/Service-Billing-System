@@ -218,8 +218,6 @@ const reportsTotalCount = document.querySelector("#reportsTotalCount");
 const reportsMessage = document.querySelector("#reportsMessage");
 const reportsSummaryGrid = document.querySelector("#reportsSummaryGrid");
 const generateReportButton = document.querySelector("#generateReportButton");
-const printServiceSheetButton = document.querySelector("#printServiceSheetButton");
-const exportServiceSheetButton = document.querySelector("#exportServiceSheetButton");
 const exportPdfButton = document.querySelector("#exportPdfButton");
 const exportExcelButton = document.querySelector("#exportExcelButton");
 
@@ -3104,10 +3102,8 @@ function applyStaticLanguage() {
   setText('label[for="reportStatus"]', t("status"));
   reportsTotalCount.parentElement.lastChild.textContent = currentLanguage === "es" ? " registros" : " records";
   generateReportButton.textContent = t("generateReport");
-  printServiceSheetButton.textContent = currentLanguage === "es" ? "Imprimir hoja" : "Print sheet";
-  exportServiceSheetButton.textContent = currentLanguage === "es" ? "Exportar hoja" : "Export sheet";
-  exportPdfButton.textContent = currentLanguage === "es" ? "Pendiente PDF" : "PDF pending";
-  exportExcelButton.textContent = currentLanguage === "es" ? "Pendiente Excel" : "Excel pending";
+  exportPdfButton.textContent = currentLanguage === "es" ? "PDF (Próximamente)" : "PDF (Coming soon)";
+  exportExcelButton.textContent = currentLanguage === "es" ? "Excel (Próximamente)" : "Excel (Coming soon)";
 
   setText("#editModal .section-title .eyebrow", t("admin"));
   setText("#edit-title", t("editTicket"));
@@ -3603,179 +3599,6 @@ function applyReportPeriod() {
   const lastDay = new Date(year, month, 0).getDate();
   reportFrom.value = `${year}-${String(month).padStart(2, "0")}-01`;
   reportTo.value = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-}
-
-function getReportClientName() {
-  if (!reportClient.value) return currentLanguage === "es" ? "Todos los clientes" : "All clients";
-
-  return reportClient.options[reportClient.selectedIndex]?.textContent || reportClient.value;
-}
-
-function getReportPeriodText() {
-  if (reportPeriod.value) {
-    const [year, month] = reportPeriod.value.split("-").map(Number);
-    const date = new Date(year, month - 1, 1);
-
-    return date.toLocaleDateString(currentLanguage === "es" ? "es-ES" : "en-US", {
-      month: "long",
-      year: "numeric"
-    });
-  }
-
-  if (reportFrom.value || reportTo.value) {
-    return `${reportFrom.value || "..."} - ${reportTo.value || "..."}`;
-  }
-
-  return currentLanguage === "es" ? "Periodo no especificado" : "Unspecified period";
-}
-
-function getServiceSheetTitle() {
-  return currentLanguage === "es" ? "Hoja de Servicio" : "Service Sheet";
-}
-
-function getServiceSheetFileBaseName() {
-  const client = getReportClientName().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "client";
-  const period = (reportPeriod.value || `${reportFrom.value || "from"}-${reportTo.value || "to"}`).replace(/[^a-z0-9]+/gi, "-");
-
-  return `service-sheet-${client}-${period}`.toLowerCase();
-}
-
-function ensureServiceSheetData() {
-  if (reportServiceRecords.length > 0) return true;
-
-  reportsMessage.textContent = currentLanguage === "es"
-    ? "Genera un reporte con registros antes de imprimir o exportar la hoja."
-    : "Generate a report with records before printing or exporting the sheet.";
-  return false;
-}
-
-function buildServiceSheetRows() {
-  return reportServiceRecords.map((record) => `
-    <tr>
-      <td>${escapeHTML(record.ClientName || "")}</td>
-      <td>${escapeHTML(record.ProjectName || "")}</td>
-      <td>${escapeHTML(record.TechnicianName || "")}</td>
-      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
-      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
-      <td>${escapeHTML(record.ServiceDescription || "")}</td>
-      <td>${escapeHTML(record.Status || "")}</td>
-    </tr>
-  `).join("");
-}
-
-function printServiceSheet() {
-  if (!ensureServiceSheetData()) return;
-
-  const totalHours = Number(reportSummary?.TotalHours || reportServiceRecords.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0));
-  const printWindow = window.open("", "_blank", "noopener,noreferrer");
-
-  if (!printWindow) {
-    reportsMessage.textContent = currentLanguage === "es"
-      ? "No se pudo abrir la ventana de impresion."
-      : "The print window could not be opened.";
-    return;
-  }
-
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${escapeHTML(getServiceSheetTitle())}</title>
-      <style>
-        body { font-family: Arial, sans-serif; color: #111827; margin: 24px; }
-        h1 { margin: 0 0 8px; font-size: 24px; }
-        .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin: 16px 0 20px; }
-        .meta div { border-bottom: 1px solid #d1d5db; padding-bottom: 6px; }
-        .meta span { display: block; color: #6b7280; font-size: 12px; text-transform: uppercase; }
-        .meta strong { font-size: 14px; }
-        table { border-collapse: collapse; width: 100%; font-size: 12px; }
-        th, td { border: 1px solid #d1d5db; padding: 7px; text-align: left; vertical-align: top; }
-        th { background: #f3f4f6; }
-        tfoot td { font-weight: 700; }
-      </style>
-    </head>
-    <body>
-      <h1>${escapeHTML(getServiceSheetTitle())}</h1>
-      <div class="meta">
-        <div><span>${currentLanguage === "es" ? "Cliente" : "Client"}</span><strong>${escapeHTML(getReportClientName())}</strong></div>
-        <div><span>${currentLanguage === "es" ? "Periodo" : "Period"}</span><strong>${escapeHTML(getReportPeriodText())}</strong></div>
-        <div><span>${currentLanguage === "es" ? "Total de registros" : "Total records"}</span><strong>${reportServiceRecords.length}</strong></div>
-        <div><span>${currentLanguage === "es" ? "Total de horas" : "Total hours"}</span><strong>${totalHours.toFixed(2)} h</strong></div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>${currentLanguage === "es" ? "Cliente" : "Client"}</th>
-            <th>${currentLanguage === "es" ? "Proyecto" : "Project"}</th>
-            <th>${currentLanguage === "es" ? "Tecnico" : "Technician"}</th>
-            <th>${currentLanguage === "es" ? "Fecha" : "Date"}</th>
-            <th>${currentLanguage === "es" ? "Horas trabajadas" : "Worked hours"}</th>
-            <th>${currentLanguage === "es" ? "Descripcion del servicio" : "Service description"}</th>
-            <th>${currentLanguage === "es" ? "Estado" : "Status"}</th>
-          </tr>
-        </thead>
-        <tbody>${buildServiceSheetRows()}</tbody>
-        <tfoot>
-          <tr>
-            <td colspan="4">${currentLanguage === "es" ? "Total de horas del periodo" : "Total hours for period"}</td>
-            <td>${totalHours.toFixed(2)} h</td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-}
-
-function toCsvCell(value) {
-  const text = String(value ?? "").replaceAll('"', '""');
-
-  return `"${text}"`;
-}
-
-function exportServiceSheet() {
-  if (!ensureServiceSheetData()) return;
-
-  const totalHours = Number(reportSummary?.TotalHours || reportServiceRecords.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0));
-  const rows = [
-    [getServiceSheetTitle()],
-    [currentLanguage === "es" ? "Cliente" : "Client", getReportClientName()],
-    [currentLanguage === "es" ? "Periodo" : "Period", getReportPeriodText()],
-    [],
-    ["Client", "Project", "Technician", "Date", "WorkedHours", "ServiceDescription", "Status"],
-    ...reportServiceRecords.map((record) => [
-      record.ClientName || "",
-      record.ProjectName || "",
-      record.TechnicianName || "",
-      formatDateOnly(record.ServiceDate),
-      Number(record.TotalHours || 0).toFixed(2),
-      record.ServiceDescription || "",
-      record.Status || ""
-    ]),
-    [],
-    [currentLanguage === "es" ? "Total de horas del periodo" : "Total hours for period", totalHours.toFixed(2)]
-  ];
-  const csv = rows.map((row) => row.map(toCsvCell).join(",")).join("\r\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = `${getServiceSheetFileBaseName()}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-function exportReport(format) {
-  reportsMessage.textContent = format === "pdf"
-    ? (currentLanguage === "es" ? "Export PDF pendiente." : "PDF export pending.")
-    : (currentLanguage === "es" ? "Export Excel pendiente." : "Excel export pending.");
 }
 
 function getUserRoleClass(role) {
@@ -4446,10 +4269,6 @@ reportClient.addEventListener("change", () => {
   reportProject.value = "";
   renderReportLookupOptions();
 });
-printServiceSheetButton.addEventListener("click", printServiceSheet);
-exportServiceSheetButton.addEventListener("click", exportServiceSheet);
-exportPdfButton.addEventListener("click", () => exportReport("pdf"));
-exportExcelButton.addEventListener("click", () => exportReport("excel"));
 editTicketForm.addEventListener("submit", updateTicket);
 closeEditModal.addEventListener("click", closeEditor);
 editUserForm.addEventListener("submit", updateUser);
