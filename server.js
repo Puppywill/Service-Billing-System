@@ -8,16 +8,25 @@ const PDFDocument = require("pdfkit");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const hasSqlCredentials = Boolean(process.env.DB_USER && process.env.DB_PASSWORD);
 
 const dbConfig = {
-  server: "localhost",
+  server: process.env.DB_SERVER || "localhost",
+  port: Number(process.env.DB_PORT || 1433),
   database: process.env.DB_NAME || "ServiceBillingDB",
   driver: "msnodesqlv8",
   options: {
-    trustedConnection: true,
-    trustServerCertificate: true
+    trustedConnection: !hasSqlCredentials,
+    encrypt: false,
+    trustServerCertificate: true,
+    enableArithAbort: true
   }
 };
+
+if (hasSqlCredentials) {
+  dbConfig.user = process.env.DB_USER;
+  dbConfig.password = process.env.DB_PASSWORD;
+}
 
 app.use(express.json());
 app.use(session({
