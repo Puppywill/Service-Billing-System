@@ -14,6 +14,8 @@ Legacy endpoints such as `/api/tickets` remain in place temporarily to avoid bre
 
 For the current local demo, monetary values are intentionally hidden from the user interface. Rates, taxes, subtotals, totals, billed amounts, pending amounts, paid amounts, and currency symbols remain available in the database and backend APIs, but they are not displayed in Dashboard, Projects, Invoices, invoice lines, Reports, or Settings screens.
 
+Invoices are also hidden from the visible frontend navigation for the current demo to keep the workflow focused on clients, projects, service records, and worked-hours reports. The invoice backend APIs and SQL tables remain intact.
+
 ## Project Progress
 
 - Phase 1: Identity and documentation ✅
@@ -66,12 +68,13 @@ Next phase: Phase 16 - Complete validation, functional testing, and local demo p
 - Connected Clients frontend with search, create, edit, and logical deactivation.
 - Connected Projects frontend with search, client filtering, create, edit, and logical deactivation.
 - Connected Service Records frontend with search, filters, create/edit modal, logical cancellation, automatic hour preview, and role-aware actions.
-- Connected Invoices frontend with search, filters, invoice generation, detail view, invoice lines, status editing, and logical cancellation.
-- Connected Dashboard frontend with summary cards, visual chart sections, recent activity, API error handling, and role-limited data.
+- Invoices frontend implementation remains in the codebase but is hidden from visible navigation for the current demo.
+- Connected Dashboard frontend with service-focused summary cards, visual chart sections, recent activity, API error handling, and role-limited data.
+- Reports frontend now uses service-hour reports instead of legacy ticket reports.
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
-- PDF and Excel report exports.
+- PDF and Excel exports for the new service-hour reports are temporarily marked as pending in the frontend.
 - Responsive web interface for desktop, tablet, and mobile.
 
 ## Target Direction
@@ -976,6 +979,8 @@ Content-Type: application/json
 
 Phase 15 connects the `Dashboard` screen to the real backend dashboard APIs. The dashboard now displays business metrics, visual chart sections, and recent activity from the Service Billing modules.
 
+Demo adjustment: invoice-specific dashboard cards, charts, and recent activity are hidden from the visible frontend for now. Dashboard remains focused on clients, projects, service records, and hours.
+
 ### Completed Dashboard Frontend
 
 - Connects the Dashboard frontend to `GET /api/dashboard/summary`.
@@ -1039,7 +1044,16 @@ GET /api/dashboard/recent-activity
 2. Open `Dashboard`.
 3. Confirm all summary cards are populated.
 4. Confirm chart sections render data or empty states.
-5. Confirm recent activity lists service records, invoices, clients, and projects.
+5. Confirm recent activity lists service records, clients, and projects.
+
+## Demo Adjustment: Reports and Invoices Visibility
+
+- The visible `Reports` screen now uses `GET /api/reports/service-hours` and `GET /api/reports/service-hours/summary`.
+- Reports show technician, client, project, service date, worked hours, service description, and service record status.
+- Reports no longer call legacy ticket report endpoints from the frontend.
+- PDF and Excel export buttons are disabled and marked as pending until service-hour exports are implemented.
+- The visible frontend navigation hides `Invoices` temporarily for demo clarity.
+- Invoice APIs, backend logic, SQL tables, and existing frontend implementation remain in the codebase.
 6. Sign in as a technician and confirm the dashboard is limited by backend permissions.
 7. Temporarily interrupt an API or database connection during local testing and confirm the dashboard error message appears.
 

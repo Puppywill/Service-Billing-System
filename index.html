@@ -152,7 +152,7 @@
         </svg>
         Service Records
       </button>
-      <button type="button" class="tab-button" data-tab="invoices">
+      <button type="button" class="tab-button hidden" data-tab="invoices" hidden aria-hidden="true">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 3h10l2 2v16l-3-2-3 2-3-2-3 2V3Z"/>
           <path d="M9 8h6"/>
@@ -209,7 +209,7 @@
       </section>
 
       <section class="dashboard-chart-grid" aria-label="Dashboard charts">
-        <article class="panel chart-panel">
+        <article class="panel chart-panel hidden" aria-hidden="true" hidden>
           <div class="section-title">
             <p class="eyebrow">Hours</p>
             <h3 id="hoursByMonthTitle">HoursByMonth</h3>
@@ -254,7 +254,7 @@
       </section>
 
       <section class="dashboard-activity-grid" aria-label="Recent activity">
-        <article class="panel activity-panel">
+        <article class="panel activity-panel hidden" aria-hidden="true" hidden>
           <div class="section-title">
             <p class="eyebrow">Recent activity</p>
             <h3 id="recentServiceRecordsTitle">ServiceRecords</h3>
@@ -885,7 +885,7 @@
         <div class="table-header">
           <div class="section-title">
             <p class="eyebrow">Analitica</p>
-            <h2 id="reportsTitle">Reportes / Facturacion</h2>
+            <h2 id="reportsTitle">Reports</h2>
           </div>
           <p class="ticket-total"><span id="reportsTotalCount">0</span> registros</p>
         </div>
@@ -902,49 +902,63 @@
           </div>
 
           <div class="filter-field">
-            <label for="reportStatus">Estado</label>
-            <select id="reportStatus">
+            <label for="reportTechnician">Tecnico</label>
+            <select id="reportTechnician">
               <option value="">Todos</option>
-              <option value="Abierto">Abierto</option>
-              <option value="En Progreso">En Progreso</option>
-              <option value="Cerrado">Cerrado</option>
             </select>
           </div>
 
           <div class="filter-field">
-            <label for="reportPriority">Prioridad</label>
-            <select id="reportPriority">
-              <option value="">Todas</option>
-              <option value="Alta">Alta</option>
-              <option value="Media">Media</option>
-              <option value="Baja">Baja</option>
+            <label for="reportClient">Cliente</label>
+            <select id="reportClient">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="reportProject">Proyecto</label>
+            <select id="reportProject">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="reportStatus">Estado</label>
+            <select id="reportStatus">
+              <option value="">Todos</option>
+              <option value="Recorded">Recorded</option>
+              <option value="Billed">Billed</option>
+              <option value="Canceled">Canceled</option>
             </select>
           </div>
 
           <div class="report-actions">
             <button type="submit" id="generateReportButton" class="btn btn-primary">Generar reporte</button>
-            <button type="button" id="exportPdfButton" class="btn session-button">Exportar PDF</button>
-            <button type="button" id="exportExcelButton" class="btn session-button">Exportar Excel</button>
+            <button type="button" id="exportPdfButton" class="btn session-button" disabled>Pendiente PDF</button>
+            <button type="button" id="exportExcelButton" class="btn session-button" disabled>Pendiente Excel</button>
           </div>
         </form>
 
         <p id="reportsMessage" class="form-message" aria-live="polite"></p>
+        <div id="reportsSummaryGrid" class="stats-grid dashboard-grid" aria-label="Reports summary"></div>
 
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>TicketID</th>
-                <th>Servicio</th>
-                <th>Prioridad</th>
-                <th>Estado</th>
+                <th>ServiceRecordID</th>
+                <th>Tecnico</th>
+                <th>Cliente</th>
+                <th>Proyecto</th>
                 <th>Fecha</th>
-                <th>Registrado por</th>
+                <th>Horas</th>
+                <th>Estado</th>
+                <th>Descripcion del servicio</th>
               </tr>
             </thead>
             <tbody id="reportsTableBody">
               <tr>
-                <td colspan="6" class="empty-state">Genera un reporte para ver resultados.</td>
+                <td colspan="8" class="empty-state">Genera un reporte para ver resultados.</td>
               </tr>
             </tbody>
           </table>

@@ -14,6 +14,8 @@ Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper l
 
 Para la demo local actual, los valores monetarios estan ocultos intencionalmente en la interfaz. Tarifas, impuestos, subtotales, totales, montos facturados, montos pendientes, montos pagados y simbolos de moneda se conservan en la base de datos y en las APIs backend, pero no se muestran en Dashboard, Projects, Invoices, lineas de factura, Reports ni Settings.
 
+Invoices tambien queda oculto de la navegacion visible del frontend para la demo actual, de forma que el flujo se concentre en clientes, proyectos, registros de servicio y reportes de horas trabajadas. Las APIs backend y tablas SQL de facturas se mantienen intactas.
+
 ## Progreso Del Proyecto
 
 - Fase 1: Identidad y documentacion ✅
@@ -66,12 +68,13 @@ Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion p
 - Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
 - Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
 - Service Records Frontend conectado al backend real con busqueda, filtros, modal de crear/editar, cancelacion logica, vista previa automatica de horas y acciones segun rol.
-- Invoices Frontend conectado al backend real con busqueda, filtros, generacion de facturas, vista de detalle, lineas de factura, edicion de estado y cancelacion logica.
-- Dashboard Frontend conectado al backend real con tarjetas de resumen, secciones visuales, actividad reciente, manejo de errores de API y datos limitados por rol.
+- La implementacion frontend de Invoices permanece en el codigo, pero queda oculta de la navegacion visible para la demo actual.
+- Dashboard Frontend conectado al backend real con tarjetas y secciones enfocadas en servicios, actividad reciente, manejo de errores de API y datos limitados por rol.
+- Reports Frontend ahora usa reportes de horas de servicio en lugar de reportes legacy de tickets.
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
-- Exportacion de reportes PDF y Excel.
+- Exportacion PDF y Excel para los nuevos reportes de horas queda temporalmente marcada como pendiente en el frontend.
 - Interfaz web responsive para desktop, tablet y movil.
 
 ## Direccion Del Sistema
@@ -976,6 +979,8 @@ Content-Type: application/json
 
 La Fase 15 conecta la pantalla `Dashboard` a las APIs reales del dashboard. El dashboard ahora muestra metricas del negocio, secciones visuales y actividad reciente desde los modulos de Service Billing.
 
+Ajuste de demo: las tarjetas, graficas y actividad reciente especificas de facturas quedan ocultas del frontend visible por ahora. El Dashboard permanece enfocado en clientes, proyectos, registros de servicio y horas.
+
 ### Dashboard Frontend Completado
 
 - Conecta el Dashboard frontend con `GET /api/dashboard/summary`.
@@ -1015,9 +1020,17 @@ El dashboard incluye secciones visuales ligeras sin agregar librerias nuevas:
 El dashboard muestra actividad reciente de:
 
 - `ServiceRecords`
-- `Invoices`
 - `Clients`
 - `Projects`
+
+## Ajuste De Demo: Reports E Invoices
+
+- La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
+- Reports muestra tecnico, cliente, proyecto, fecha de servicio, horas trabajadas, descripcion del servicio y estado del registro.
+- Reports ya no llama endpoints legacy de reportes de tickets desde el frontend.
+- Los botones PDF y Excel quedan deshabilitados y marcados como pendientes hasta implementar exportacion de horas de servicio.
+- La navegacion visible del frontend oculta `Invoices` temporalmente para claridad de demo.
+- Las APIs de Invoices, la logica backend, las tablas SQL y la implementacion frontend existente permanecen en el codigo.
 
 ### Ejemplos De API
 

@@ -209,10 +209,13 @@ const reportsForm = document.querySelector("#reportsForm");
 const reportFrom = document.querySelector("#reportFrom");
 const reportTo = document.querySelector("#reportTo");
 const reportStatus = document.querySelector("#reportStatus");
-const reportPriority = document.querySelector("#reportPriority");
+const reportTechnician = document.querySelector("#reportTechnician");
+const reportClient = document.querySelector("#reportClient");
+const reportProject = document.querySelector("#reportProject");
 const reportsTableBody = document.querySelector("#reportsTableBody");
 const reportsTotalCount = document.querySelector("#reportsTotalCount");
 const reportsMessage = document.querySelector("#reportsMessage");
+const reportsSummaryGrid = document.querySelector("#reportsSummaryGrid");
 const generateReportButton = document.querySelector("#generateReportButton");
 const exportPdfButton = document.querySelector("#exportPdfButton");
 const exportExcelButton = document.querySelector("#exportExcelButton");
@@ -233,7 +236,8 @@ let dashboardRecentActivity = null;
 let users = [];
 let notifications = [];
 let passwordResets = [];
-let reportTickets = [];
+let reportServiceRecords = [];
+let reportSummary = null;
 let hasGeneratedReport = false;
 let currentUser = null;
 let activeTab = "tickets";
@@ -268,7 +272,8 @@ function resetClientState({ render = true } = {}) {
   users = [];
   notifications = [];
   passwordResets = [];
-  reportTickets = [];
+  reportServiceRecords = [];
+  reportSummary = null;
   hasGeneratedReport = false;
 
   if (render) {
@@ -280,7 +285,7 @@ function resetClientState({ render = true } = {}) {
     renderUsers();
     renderPasswordResets();
     renderNotifications();
-    renderReportTickets();
+    renderServiceHoursReport();
     renderDashboard();
   }
 }
@@ -308,7 +313,7 @@ async function refreshWorkspace() {
     return;
   }
 
-  if ((activeTab === "users" || activeTab === "reports") && !isAdmin()) {
+  if (activeTab === "users" && !isAdmin()) {
     await switchTab("tickets");
   }
 
@@ -347,7 +352,6 @@ const translations = {
       TotalClients: "Clientes",
       TotalProjects: "Proyectos",
       TotalServiceRecords: "Registros",
-      TotalInvoices: "Facturas",
       TotalHours: "Horas totales",
       UnbilledHours: "Horas sin facturar",
       BilledHours: "Horas facturadas"
@@ -356,8 +360,7 @@ const translations = {
       HoursByMonth: "Horas por mes",
       HoursByClient: "Horas por cliente",
       HoursByProject: "Horas por proyecto",
-      HoursByTechnician: "Horas por tecnico",
-      InvoicesByStatus: "Facturas por estado"
+      HoursByTechnician: "Horas por tecnico"
     },
     dashboardActivity: {
       ServiceRecords: "Registros de servicio",
@@ -646,7 +649,6 @@ const translations = {
       TotalClients: "Clients",
       TotalProjects: "Projects",
       TotalServiceRecords: "Service Records",
-      TotalInvoices: "Invoices",
       TotalHours: "Total Hours",
       UnbilledHours: "Unbilled Hours",
       BilledHours: "Billed Hours"
@@ -655,8 +657,7 @@ const translations = {
       HoursByMonth: "Hours by Month",
       HoursByClient: "Hours by Client",
       HoursByProject: "Hours by Project",
-      HoursByTechnician: "Hours by Technician",
-      InvoicesByStatus: "Invoices by Status"
+      HoursByTechnician: "Hours by Technician"
     },
     dashboardActivity: {
       ServiceRecords: "Service Records",
@@ -1085,6 +1086,10 @@ async function switchTab(tabName) {
     tabName = "tickets";
   }
 
+  if (tabName === "invoices") {
+    tabName = "dashboard";
+  }
+
   activeTab = tabName;
   dashboardTabPanel.classList.toggle("hidden", activeTab !== "dashboard");
   clientsTabPanel.classList.toggle("hidden", activeTab !== "clients");
@@ -1132,8 +1137,9 @@ async function switchTab(tabName) {
     await loadDashboardData();
   }
 
-  if (activeTab === "reports" && reportTickets.length === 0) {
-    renderReportTickets();
+  if (activeTab === "reports") {
+    await loadReportLookups();
+    renderServiceHoursReport();
   }
 }
 
@@ -2614,7 +2620,6 @@ function renderDashboardSummary() {
     { key: "TotalClients", type: "count" },
     { key: "TotalProjects", type: "count" },
     { key: "TotalServiceRecords", type: "count" },
-    { key: "TotalInvoices", type: "count" },
     { key: "TotalHours", type: "hours" },
     { key: "UnbilledHours", type: "hours" },
     { key: "BilledHours", type: "hours" }
@@ -2638,7 +2643,6 @@ function renderDashboardCharts() {
   renderBarChart(hoursByClientChart, dashboardCharts?.HoursByClient, "ClientName", "TotalHours", "hours");
   renderBarChart(hoursByProjectChart, dashboardCharts?.HoursByProject, "ProjectName", "TotalHours", "hours");
   renderBarChart(hoursByTechnicianChart, dashboardCharts?.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
-  renderBarChart(invoicesByStatusChart, dashboardCharts?.InvoicesByStatus, "Status", "TotalInvoices", "count");
 }
 
 function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
@@ -2668,7 +2672,6 @@ function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
 
 function renderDashboardRecentActivity() {
   renderActivityList(recentServiceRecordsList, dashboardRecentActivity?.ServiceRecords, renderServiceRecordActivity);
-  renderActivityList(recentInvoicesList, dashboardRecentActivity?.Invoices, renderInvoiceActivity);
   renderActivityList(recentClientsList, dashboardRecentActivity?.Clients, renderClientActivity);
   renderActivityList(recentProjectsList, dashboardRecentActivity?.Projects, renderProjectActivity);
 }
@@ -2885,11 +2888,9 @@ function applySelectTranslations() {
   });
   setSelectLabels(reportStatus, {
     "": t("all"),
-    ...statusLabels
-  });
-  setSelectLabels(reportPriority, {
-    "": t("allPriority"),
-    ...priorityLabels
+    Recorded: "Recorded",
+    Billed: "Billed",
+    Canceled: "Canceled"
   });
 }
 
@@ -3010,9 +3011,7 @@ function applyStaticLanguage() {
   setText("#hoursByClientTitle", tNested("dashboardCharts", "HoursByClient"));
   setText("#hoursByProjectTitle", tNested("dashboardCharts", "HoursByProject"));
   setText("#hoursByTechnicianTitle", tNested("dashboardCharts", "HoursByTechnician"));
-  setText("#invoicesByStatusTitle", tNested("dashboardCharts", "InvoicesByStatus"));
   setText("#recentServiceRecordsTitle", tNested("dashboardActivity", "ServiceRecords"));
-  setText("#recentInvoicesTitle", tNested("dashboardActivity", "Invoices"));
   setText("#recentClientsTitle", tNested("dashboardActivity", "Clients"));
   setText("#recentProjectsTitle", tNested("dashboardActivity", "Projects"));
   document.querySelectorAll("#dashboardTabPanel .activity-panel .eyebrow").forEach((element) => {
@@ -3095,12 +3094,14 @@ function applyStaticLanguage() {
   setText("#reportsTitle", t("reports"));
   setText('label[for="reportFrom"]', t("dateFrom"));
   setText('label[for="reportTo"]', t("dateTo"));
+  setText('label[for="reportTechnician"]', currentLanguage === "es" ? "Tecnico" : "Technician");
+  setText('label[for="reportClient"]', currentLanguage === "es" ? "Cliente" : "Client");
+  setText('label[for="reportProject"]', currentLanguage === "es" ? "Proyecto" : "Project");
   setText('label[for="reportStatus"]', t("status"));
-  setText('label[for="reportPriority"]', t("priority"));
   reportsTotalCount.parentElement.lastChild.textContent = currentLanguage === "es" ? " registros" : " records";
   generateReportButton.textContent = t("generateReport");
-  exportPdfButton.textContent = t("exportPdf");
-  exportExcelButton.textContent = t("exportExcel");
+  exportPdfButton.textContent = currentLanguage === "es" ? "Pendiente PDF" : "PDF pending";
+  exportExcelButton.textContent = currentLanguage === "es" ? "Pendiente Excel" : "Excel pending";
 
   setText("#editModal .section-title .eyebrow", t("admin"));
   setText("#edit-title", t("editTicket"));
@@ -3129,7 +3130,7 @@ function applyStaticLanguage() {
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
-  setTableHeaders("#reportsTabPanel table", ["TicketID", t("issueDescription"), t("priority"), t("status"), t("date"), t("reportedBy")]);
+  setTableHeaders("#reportsTabPanel table", ["ServiceRecordID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
 }
 
 function applyLanguage() {
@@ -3173,7 +3174,8 @@ function applyLanguage() {
   renderPasswordResets();
   renderNotifications();
   renderDashboard();
-  renderReportTickets();
+  renderReportLookupOptions();
+  renderServiceHoursReport();
   renderCreatingTicketAs();
 }
 
@@ -3448,47 +3450,74 @@ function getReportQueryString() {
   if (reportFrom.value) params.set("from", reportFrom.value);
   if (reportTo.value) params.set("to", reportTo.value);
   if (reportStatus.value) params.set("status", reportStatus.value);
-  if (reportPriority.value) params.set("priority", reportPriority.value);
+  if (reportTechnician.value) params.set("technicianUserId", reportTechnician.value);
+  if (reportClient.value) params.set("clientId", reportClient.value);
+  if (reportProject.value) params.set("projectId", reportProject.value);
 
   return params.toString();
 }
 
-function getExportQueryString() {
-  const params = new URLSearchParams(getReportQueryString());
-  params.set("lang", currentLanguage);
+async function loadReportLookups() {
+  await loadServiceRecordLookups();
+  renderReportLookupOptions();
+}
 
-  return params.toString();
+function renderReportLookupOptions() {
+  if (!reportTechnician || !reportClient || !reportProject) return;
+
+  const selectedTechnician = reportTechnician.value;
+  const selectedClient = reportClient.value;
+  const selectedProject = reportProject.value;
+  const technicianOptions = serviceRecordTechnicians.map((user) => `
+    <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
+  `).join("");
+  const clientOptions = serviceRecordClients.map((client) => `
+    <option value="${client.ClientID}">${escapeHTML(client.ClientName || `#${client.ClientID}`)}</option>
+  `).join("");
+  const visibleProjects = reportClient.value
+    ? serviceRecordProjects.filter((project) => Number(project.ClientID) === Number(reportClient.value))
+    : serviceRecordProjects;
+  const projectOptions = visibleProjects.map((project) => `
+    <option value="${project.ProjectID}">${escapeHTML(project.ProjectName || `#${project.ProjectID}`)}</option>
+  `).join("");
+
+  reportTechnician.innerHTML = `<option value="">${escapeHTML(t("allTechnicians"))}</option>${technicianOptions}`;
+  reportClient.innerHTML = `<option value="">${escapeHTML(t("allClients"))}</option>${clientOptions}`;
+  reportProject.innerHTML = `<option value="">${escapeHTML(t("allProjects"))}</option>${projectOptions}`;
+  reportTechnician.value = selectedTechnician;
+  reportClient.value = selectedClient;
+  reportProject.value = visibleProjects.some((project) => String(project.ProjectID) === selectedProject) ? selectedProject : "";
 }
 
 async function generateReport(event) {
   event.preventDefault();
   reportsMessage.textContent = "";
 
-  if (!isAdmin()) {
-    reportsMessage.textContent = t("usersAdminOnly");
-    switchTab("tickets");
-    return;
-  }
-
   try {
     const query = getReportQueryString();
-    const response = await fetch(`/api/reports/tickets${query ? `?${query}` : ""}`, {
-      cache: "no-store"
-    });
-    const data = await parseJsonResponse(response);
+    const [recordsResponse, summaryResponse] = await Promise.all([
+      fetch(`/api/reports/service-hours${query ? `?${query}` : ""}`, { cache: "no-store" }),
+      fetch(`/api/reports/service-hours/summary${query ? `?${query}` : ""}`, { cache: "no-store" })
+    ]);
+    const recordsData = await parseJsonResponse(recordsResponse);
+    const summaryData = await parseJsonResponse(summaryResponse);
 
-    if (!response.ok) {
-      throw new Error(translateServerMessage(data.message) || t("reportError"));
+    if (!recordsResponse.ok) {
+      throw new Error(translateServerMessage(recordsData.message) || t("reportError"));
     }
 
-    if (!Array.isArray(data)) {
-      throw new Error(data.message || t("reportError"));
+    if (!summaryResponse.ok) {
+      throw new Error(translateServerMessage(summaryData.message) || t("reportError"));
     }
 
-    reportTickets = data;
+    if (!Array.isArray(recordsData)) {
+      throw new Error(recordsData.message || t("reportError"));
+    }
+
+    reportServiceRecords = recordsData;
+    reportSummary = summaryData;
     hasGeneratedReport = true;
-    renderReportTickets();
-    await loadNotifications();
+    renderServiceHoursReport();
     reportsMessage.textContent = t("reportReady");
   } catch (error) {
     console.error(error);
@@ -3496,76 +3525,72 @@ async function generateReport(event) {
   }
 }
 
-function renderReportTickets() {
-  reportsTotalCount.textContent = reportTickets.length;
+function renderServiceHoursReport() {
+  reportsTotalCount.textContent = reportServiceRecords.length;
+  renderReportsSummary();
 
-  if (reportTickets.length === 0) {
+  if (reportServiceRecords.length === 0) {
     const message = hasGeneratedReport ? t("noReportTickets") : t("reportInitial");
     showReportsMessage(message);
     return;
   }
 
-  reportsTableBody.innerHTML = reportTickets.map((ticket) => {
-    const priorityClass = getBadgeClass("priority", ticket.Priority);
-    const statusClass = getBadgeClass("status", ticket.Status);
-
-    return `
-      <tr>
-        <td>#${ticket.TicketID}</td>
-        <td class="ticket-description">${escapeHTML(ticket.Description)}</td>
-        <td><span class="badge ${priorityClass}">${translatePriority(ticket.Priority)}</span></td>
-        <td><span class="badge ${statusClass}">${translateStatus(ticket.Status)}</span></td>
-        <td>${formatDate(ticket.CreatedAt)}</td>
-        <td>${formatPerson(ticket.ReportedBy, ticket.CreatedByUserID)}</td>
-      </tr>
-    `;
-  }).join("");
+  reportsTableBody.innerHTML = reportServiceRecords.map((record) => `
+    <tr>
+      <td>#${record.ServiceRecordID}</td>
+      <td>${escapeHTML(record.TechnicianName || "")}</td>
+      <td>${escapeHTML(record.ClientName || "")}</td>
+      <td>${escapeHTML(record.ProjectName || "")}</td>
+      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+    </tr>
+  `).join("");
 }
 
 function showReportsMessage(message) {
-  reportsTotalCount.textContent = reportTickets.length;
+  reportsTotalCount.textContent = reportServiceRecords.length;
   reportsTableBody.innerHTML = `
     <tr>
-      <td colspan="6" class="empty-state">${message}</td>
+      <td colspan="8" class="empty-state">${message}</td>
     </tr>
   `;
 }
 
-async function exportReport(format) {
-  reportsMessage.textContent = "";
+function renderReportsSummary() {
+  if (!reportsSummaryGrid) return;
 
-  if (!isAdmin()) {
-    reportsMessage.textContent = t("usersAdminOnly");
-    switchTab("tickets");
+  if (!reportSummary) {
+    reportsSummaryGrid.innerHTML = "";
     return;
   }
 
-  try {
-    const query = getExportQueryString();
-    const url = `/api/reports/tickets/${format}${query ? `?${query}` : ""}`;
-    const response = await fetch(url, {
-      cache: "no-store"
-    });
+  const metrics = [
+    { key: "TotalRecords", label: currentLanguage === "es" ? "Total registros" : "Total records", type: "count" },
+    { key: "TotalHours", label: currentLanguage === "es" ? "Total horas" : "Total hours", type: "hours" },
+    { key: "BilledHours", label: currentLanguage === "es" ? "Horas facturadas" : "Billed hours", type: "hours" },
+    { key: "UnbilledHours", label: currentLanguage === "es" ? "Horas sin facturar" : "Unbilled hours", type: "hours" },
+    { key: "CanceledHours", label: currentLanguage === "es" ? "Horas canceladas" : "Canceled hours", type: "hours" }
+  ];
 
-    if (!response.ok) {
-      const data = await parseJsonResponse(response);
-      throw new Error(translateServerMessage(data.message) || t("exportError"));
-    }
+  reportsSummaryGrid.innerHTML = metrics.map((metric, index) => `
+    <article class="stat-card dashboard-summary-card">
+      <div class="stat-icon ${index % 3 === 0 ? "stat-open" : index % 3 === 1 ? "stat-progress" : "stat-closed"}" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
+      </div>
+      <div>
+        <span>${escapeHTML(metric.label)}</span>
+        <strong>${formatDashboardMetric(reportSummary?.[metric.key], metric.type)}</strong>
+      </div>
+    </article>
+  `).join("");
+}
 
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = format === "pdf" ? "helpdesk-ticket-report.pdf" : "helpdesk-ticket-report.xlsx";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(downloadUrl);
-    await loadNotifications();
-  } catch (error) {
-    console.error(error);
-    reportsMessage.textContent = error.message || t("exportError");
-  }
+function exportReport(format) {
+  reportsMessage.textContent = format === "pdf"
+    ? (currentLanguage === "es" ? "Export PDF pendiente." : "PDF export pending.")
+    : (currentLanguage === "es" ? "Export Excel pendiente." : "Excel export pending.");
 }
 
 function getUserRoleClass(role) {
@@ -4231,6 +4256,10 @@ userForm.addEventListener("submit", createUser);
 usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);
+reportClient.addEventListener("change", () => {
+  reportProject.value = "";
+  renderReportLookupOptions();
+});
 exportPdfButton.addEventListener("click", () => exportReport("pdf"));
 exportExcelButton.addEventListener("click", () => exportReport("excel"));
 editTicketForm.addEventListener("submit", updateTicket);
