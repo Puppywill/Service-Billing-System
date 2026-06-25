@@ -902,6 +902,11 @@
           </div>
 
           <div class="filter-field">
+            <label for="reportPeriod">Periodo</label>
+            <input type="month" id="reportPeriod">
+          </div>
+
+          <div class="filter-field">
             <label for="reportTechnician">Tecnico</label>
             <select id="reportTechnician">
               <option value="">Todos</option>
@@ -934,6 +939,8 @@
 
           <div class="report-actions">
             <button type="submit" id="generateReportButton" class="btn btn-primary">Generar reporte</button>
+            <button type="button" id="printServiceSheetButton" class="btn session-button">Imprimir hoja</button>
+            <button type="button" id="exportServiceSheetButton" class="btn session-button">Exportar hoja</button>
             <button type="button" id="exportPdfButton" class="btn session-button" disabled>Pendiente PDF</button>
             <button type="button" id="exportExcelButton" class="btn session-button" disabled>Pendiente Excel</button>
           </div>
