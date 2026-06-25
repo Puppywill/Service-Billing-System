@@ -274,18 +274,58 @@ function mapProject(record) {
     ProjectName: record.ProjectName,
     Description: record.Description,
     HourlyRate: Number(record.HourlyRate),
+    ContractNumber: record.ContractNumber,
+    ContractType: record.ContractType,
+    SignedBy: record.SignedBy,
+    ContractStartDate: record.ContractStartDate,
+    ContractEndDate: record.ContractEndDate,
+    ContractedHours: record.ContractedHours === null || record.ContractedHours === undefined ? null : Number(record.ContractedHours),
+    LowHoursThreshold: record.LowHoursThreshold === null || record.LowHoursThreshold === undefined ? null : Number(record.LowHoursThreshold),
+    ExpirationAlertDays: record.ExpirationAlertDays === null || record.ExpirationAlertDays === undefined ? null : Number(record.ExpirationAlertDays),
+    UsedHours: record.UsedHours === null || record.UsedHours === undefined ? null : Number(record.UsedHours),
+    RemainingHours: record.RemainingHours === null || record.RemainingHours === undefined ? null : Number(record.RemainingHours),
+    HoursAlertStatus: record.HoursAlertStatus,
+    ExpirationAlertStatus: record.ExpirationAlertStatus,
+    ContractStatus: record.ContractStatus,
     IsActive: Boolean(record.IsActive),
     CreatedAt: record.CreatedAt,
     UpdatedAt: record.UpdatedAt
   };
 }
 
+function mapProjectContractStatus(record) {
+  return {
+    ProjectID: record.ProjectID,
+    ProjectName: record.ProjectName,
+    ContractNumber: record.ContractNumber,
+    ContractType: record.ContractType,
+    ContractStartDate: record.ContractStartDate,
+    ContractEndDate: record.ContractEndDate,
+    ContractedHours: record.ContractedHours === null || record.ContractedHours === undefined ? null : Number(record.ContractedHours),
+    UsedHours: record.UsedHours === null || record.UsedHours === undefined ? null : Number(record.UsedHours),
+    RemainingHours: record.RemainingHours === null || record.RemainingHours === undefined ? null : Number(record.RemainingHours),
+    LowHoursThreshold: record.LowHoursThreshold === null || record.LowHoursThreshold === undefined ? null : Number(record.LowHoursThreshold),
+    ExpirationAlertDays: record.ExpirationAlertDays === null || record.ExpirationAlertDays === undefined ? null : Number(record.ExpirationAlertDays),
+    HoursAlertStatus: record.HoursAlertStatus,
+    ExpirationAlertStatus: record.ExpirationAlertStatus,
+    ContractStatus: record.ContractStatus
+  };
+}
+
 function getProjectPayload(body) {
   const getValue = (camelCaseName, pascalCaseName) => body[camelCaseName] ?? body[pascalCaseName];
+  const hasValue = (camelCaseName, pascalCaseName) => Object.prototype.hasOwnProperty.call(body, camelCaseName)
+    || Object.prototype.hasOwnProperty.call(body, pascalCaseName);
   const normalizeOptionalText = (value) => {
     if (value === undefined || value === null) return null;
     const normalized = String(value).trim();
     return normalized || null;
+  };
+  const normalizeOptionalNumber = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const number = Number(value);
+
+    return Number.isFinite(number) ? number : NaN;
   };
 
   const rawClientId = getValue("clientId", "ClientID");
@@ -293,6 +333,7 @@ function getProjectPayload(body) {
   const rawIsActive = getValue("isActive", "IsActive");
   const hasHourlyRate = rawHourlyRate !== undefined && rawHourlyRate !== null && rawHourlyRate !== "";
   const hourlyRate = hasHourlyRate ? Number(rawHourlyRate) : null;
+  const contractType = normalizeOptionalText(getValue("contractType", "ContractType"));
 
   return {
     clientId: Number(rawClientId),
@@ -300,12 +341,64 @@ function getProjectPayload(body) {
     description: normalizeOptionalText(getValue("description", "Description")),
     hourlyRate,
     hourlyRateIsValid: !hasHourlyRate || (Number.isFinite(hourlyRate) && hourlyRate >= 0),
+    contractNumber: normalizeOptionalText(getValue("contractNumber", "ContractNumber")),
+    hasContractNumber: hasValue("contractNumber", "ContractNumber"),
+    contractType,
+    hasContractType: hasValue("contractType", "ContractType"),
+    signedBy: normalizeOptionalText(getValue("signedBy", "SignedBy")),
+    hasSignedBy: hasValue("signedBy", "SignedBy"),
+    contractStartDate: normalizeOptionalText(getValue("contractStartDate", "ContractStartDate")),
+    hasContractStartDate: hasValue("contractStartDate", "ContractStartDate"),
+    contractEndDate: normalizeOptionalText(getValue("contractEndDate", "ContractEndDate")),
+    hasContractEndDate: hasValue("contractEndDate", "ContractEndDate"),
+    contractedHours: normalizeOptionalNumber(getValue("contractedHours", "ContractedHours")),
+    hasContractedHours: hasValue("contractedHours", "ContractedHours"),
+    lowHoursThreshold: normalizeOptionalNumber(getValue("lowHoursThreshold", "LowHoursThreshold")),
+    hasLowHoursThreshold: hasValue("lowHoursThreshold", "LowHoursThreshold"),
+    expirationAlertDays: normalizeOptionalNumber(getValue("expirationAlertDays", "ExpirationAlertDays")),
+    hasExpirationAlertDays: hasValue("expirationAlertDays", "ExpirationAlertDays"),
     isActive: rawIsActive === undefined ? null : Boolean(rawIsActive)
   };
 }
 
 const SERVICE_RECORD_STATUSES = new Set(["Recorded", "Billed", "Canceled"]);
 const INVOICE_STATUSES = new Set(["Draft", "Issued", "Paid", "Canceled"]);
+const CONTRACT_TYPES = new Set(["Direct", "Signed", "Other"]);
+
+function getProjectContractValidationMessage(project) {
+  if (project.contractType && !CONTRACT_TYPES.has(project.contractType)) {
+    return "ContractType debe ser Direct, Signed, Other o vacio.";
+  }
+
+  if (project.contractStartDate && !isValidServiceDate(project.contractStartDate)) {
+    return "ContractStartDate debe usar formato YYYY-MM-DD.";
+  }
+
+  if (project.contractEndDate && !isValidServiceDate(project.contractEndDate)) {
+    return "ContractEndDate debe usar formato YYYY-MM-DD.";
+  }
+
+  if (project.contractStartDate && project.contractEndDate && project.contractStartDate > project.contractEndDate) {
+    return "ContractStartDate no puede ser mayor que ContractEndDate.";
+  }
+
+  if (Number.isNaN(project.contractedHours) || (project.contractedHours !== null && project.contractedHours < 0)) {
+    return "ContractedHours no puede ser negativo.";
+  }
+
+  if (Number.isNaN(project.lowHoursThreshold) || (project.lowHoursThreshold !== null && project.lowHoursThreshold < 0)) {
+    return "LowHoursThreshold no puede ser negativo.";
+  }
+
+  if (
+    Number.isNaN(project.expirationAlertDays)
+    || (project.expirationAlertDays !== null && (!Number.isInteger(project.expirationAlertDays) || project.expirationAlertDays < 0))
+  ) {
+    return "ExpirationAlertDays no puede ser negativo.";
+  }
+
+  return "";
+}
 
 function normalizeServiceTime(value) {
   if (value === undefined || value === null || value === "") {
@@ -950,11 +1043,25 @@ async function getProjectById(pool, projectId, activeOnly = true) {
         p.ProjectName,
         p.Description,
         p.HourlyRate,
+        p.ContractNumber,
+        p.ContractType,
+        p.SignedBy,
+        p.ContractStartDate,
+        p.ContractEndDate,
+        p.ContractedHours,
+        p.LowHoursThreshold,
+        p.ExpirationAlertDays,
+        pcs.UsedHours,
+        pcs.RemainingHours,
+        pcs.HoursAlertStatus,
+        pcs.ExpirationAlertStatus,
+        pcs.ContractStatus,
         p.IsActive,
         p.CreatedAt,
         p.UpdatedAt
       FROM dbo.Projects p
       INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
+      LEFT JOIN dbo.vw_ProjectContractStatus pcs ON pcs.ProjectID = p.ProjectID
       WHERE p.ProjectID = @ProjectID
         ${activeOnly ? "AND p.IsActive = 1" : ""}
     `);
@@ -1916,11 +2023,25 @@ app.get("/api/projects", requireAuth, async (req, res) => {
         p.ProjectName,
         p.Description,
         p.HourlyRate,
+        p.ContractNumber,
+        p.ContractType,
+        p.SignedBy,
+        p.ContractStartDate,
+        p.ContractEndDate,
+        p.ContractedHours,
+        p.LowHoursThreshold,
+        p.ExpirationAlertDays,
+        pcs.UsedHours,
+        pcs.RemainingHours,
+        pcs.HoursAlertStatus,
+        pcs.ExpirationAlertStatus,
+        pcs.ContractStatus,
         p.IsActive,
         p.CreatedAt,
         p.UpdatedAt
       FROM dbo.Projects p
       INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
+      LEFT JOIN dbo.vw_ProjectContractStatus pcs ON pcs.ProjectID = p.ProjectID
       WHERE ${whereClauses.join(" AND ")}
       ORDER BY c.ClientName ASC, p.ProjectName ASC
     `);
@@ -1956,6 +2077,49 @@ app.get("/api/projects/:id", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/api/projects/:id/contract-status", requireAuth, async (req, res) => {
+  const projectId = Number(req.params.id);
+
+  if (!Number.isInteger(projectId) || projectId <= 0) {
+    return res.status(400).json({ message: "ID de proyecto invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ProjectID", sql.Int, projectId)
+      .query(`
+        SELECT
+          ProjectID,
+          ProjectName,
+          ContractNumber,
+          ContractType,
+          ContractStartDate,
+          ContractEndDate,
+          ContractedHours,
+          UsedHours,
+          RemainingHours,
+          LowHoursThreshold,
+          ExpirationAlertDays,
+          HoursAlertStatus,
+          ExpirationAlertStatus,
+          ContractStatus
+        FROM dbo.vw_ProjectContractStatus
+        WHERE ProjectID = @ProjectID
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Proyecto no encontrado." });
+    }
+
+    res.json(mapProjectContractStatus(result.recordset[0]));
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener estado contractual del proyecto." });
+  }
+});
+
 app.post("/api/projects", requireAdmin, async (req, res) => {
   const project = getProjectPayload(req.body || {});
 
@@ -1971,6 +2135,12 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "HourlyRate debe ser un decimal no negativo." });
   }
 
+  const contractValidationMessage = getProjectContractValidationMessage(project);
+
+  if (contractValidationMessage) {
+    return res.status(400).json({ message: contractValidationMessage });
+  }
+
   try {
     const pool = await getPool();
     const activeClient = await getClientById(pool, project.clientId);
@@ -1984,6 +2154,14 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
       .input("ProjectName", sql.NVarChar(160), project.projectName)
       .input("Description", sql.NVarChar(500), project.description)
       .input("HourlyRate", sql.Decimal(10, 2), project.hourlyRate ?? 0)
+      .input("ContractNumber", sql.NVarChar(80), project.contractNumber)
+      .input("ContractType", sql.NVarChar(20), project.contractType)
+      .input("SignedBy", sql.NVarChar(120), project.signedBy)
+      .input("ContractStartDate", sql.Date, project.contractStartDate)
+      .input("ContractEndDate", sql.Date, project.contractEndDate)
+      .input("ContractedHours", sql.Decimal(8, 2), project.contractedHours)
+      .input("LowHoursThreshold", sql.Decimal(8, 2), project.lowHoursThreshold)
+      .input("ExpirationAlertDays", sql.Int, project.expirationAlertDays)
       .input("IsActive", sql.Bit, project.isActive ?? true)
       .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
       .query(`
@@ -1992,6 +2170,14 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
           ProjectName,
           Description,
           HourlyRate,
+          ContractNumber,
+          ContractType,
+          SignedBy,
+          ContractStartDate,
+          ContractEndDate,
+          ContractedHours,
+          LowHoursThreshold,
+          ExpirationAlertDays,
           IsActive,
           CreatedByUserID
         )
@@ -2001,6 +2187,14 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
           @ProjectName,
           @Description,
           @HourlyRate,
+          @ContractNumber,
+          @ContractType,
+          @SignedBy,
+          @ContractStartDate,
+          @ContractEndDate,
+          @ContractedHours,
+          @LowHoursThreshold,
+          @ExpirationAlertDays,
           @IsActive,
           @CreatedByUserID
         )
@@ -2040,6 +2234,12 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "HourlyRate debe ser un decimal no negativo." });
   }
 
+  const contractValidationMessage = getProjectContractValidationMessage(project);
+
+  if (contractValidationMessage) {
+    return res.status(400).json({ message: contractValidationMessage });
+  }
+
   try {
     const pool = await getPool();
     const activeClient = await getClientById(pool, project.clientId);
@@ -2054,6 +2254,22 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
       .input("ProjectName", sql.NVarChar(160), project.projectName)
       .input("Description", sql.NVarChar(500), project.description)
       .input("HourlyRate", sql.Decimal(10, 2), project.hourlyRate)
+      .input("ContractNumber", sql.NVarChar(80), project.contractNumber)
+      .input("ContractType", sql.NVarChar(20), project.contractType)
+      .input("SignedBy", sql.NVarChar(120), project.signedBy)
+      .input("ContractStartDate", sql.Date, project.contractStartDate)
+      .input("ContractEndDate", sql.Date, project.contractEndDate)
+      .input("ContractedHours", sql.Decimal(8, 2), project.contractedHours)
+      .input("LowHoursThreshold", sql.Decimal(8, 2), project.lowHoursThreshold)
+      .input("ExpirationAlertDays", sql.Int, project.expirationAlertDays)
+      .input("HasContractNumber", sql.Bit, project.hasContractNumber)
+      .input("HasContractType", sql.Bit, project.hasContractType)
+      .input("HasSignedBy", sql.Bit, project.hasSignedBy)
+      .input("HasContractStartDate", sql.Bit, project.hasContractStartDate)
+      .input("HasContractEndDate", sql.Bit, project.hasContractEndDate)
+      .input("HasContractedHours", sql.Bit, project.hasContractedHours)
+      .input("HasLowHoursThreshold", sql.Bit, project.hasLowHoursThreshold)
+      .input("HasExpirationAlertDays", sql.Bit, project.hasExpirationAlertDays)
       .input("IsActive", sql.Bit, project.isActive)
       .query(`
         UPDATE dbo.Projects
@@ -2061,6 +2277,14 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
             ProjectName = @ProjectName,
             Description = @Description,
             HourlyRate = COALESCE(@HourlyRate, HourlyRate),
+            ContractNumber = CASE WHEN @HasContractNumber = 1 THEN @ContractNumber ELSE ContractNumber END,
+            ContractType = CASE WHEN @HasContractType = 1 THEN @ContractType ELSE ContractType END,
+            SignedBy = CASE WHEN @HasSignedBy = 1 THEN @SignedBy ELSE SignedBy END,
+            ContractStartDate = CASE WHEN @HasContractStartDate = 1 THEN @ContractStartDate ELSE ContractStartDate END,
+            ContractEndDate = CASE WHEN @HasContractEndDate = 1 THEN @ContractEndDate ELSE ContractEndDate END,
+            ContractedHours = CASE WHEN @HasContractedHours = 1 THEN @ContractedHours ELSE ContractedHours END,
+            LowHoursThreshold = CASE WHEN @HasLowHoursThreshold = 1 THEN @LowHoursThreshold ELSE LowHoursThreshold END,
+            ExpirationAlertDays = CASE WHEN @HasExpirationAlertDays = 1 THEN @ExpirationAlertDays ELSE ExpirationAlertDays END,
             IsActive = COALESCE(@IsActive, IsActive),
             UpdatedAt = SYSUTCDATETIME()
         WHERE ProjectID = @ProjectID
