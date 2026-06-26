@@ -208,6 +208,34 @@
         <div id="dashboardSummaryGrid" class="stats-grid dashboard-grid" aria-label="Dashboard summary"></div>
       </section>
 
+      <section id="dashboardDetailPanel" class="panel table-panel dashboard-detail-panel hidden" aria-labelledby="dashboardDetailTitle">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Detail</p>
+            <h2 id="dashboardDetailTitle">Dashboard Detail</h2>
+          </div>
+          <button type="button" id="closeDashboardDetailButton" class="icon-button" aria-label="Close dashboard detail">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18"/>
+              <path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+        <p id="dashboardDetailMessage" class="form-message" aria-live="polite"></p>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr id="dashboardDetailHeaderRow"></tr>
+            </thead>
+            <tbody id="dashboardDetailTableBody">
+              <tr>
+                <td class="empty-state">Select a dashboard card.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="dashboard-chart-grid" aria-label="Dashboard charts">
         <article class="panel chart-panel">
           <div class="section-title">

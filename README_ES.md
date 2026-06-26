@@ -1008,6 +1008,7 @@ El dashboard muestra:
 - `UnbilledHours` mostrado como horas pendientes.
 - `BilledHours` mostrado como horas procesadas.
 - Los valores de facturas y montos monetarios estan ocultos en la UI para la demo actual.
+- Las tarjetas de horas del mes actual, horas pendientes, horas procesadas, proyectos y registros de servicio abren un panel de detalle relacionado.
 
 ### Secciones Visuales
 
@@ -1025,6 +1026,14 @@ El dashboard muestra actividad reciente de:
 - `ServiceRecords`
 - `Clients`
 - `Projects`
+
+### Detalles Interactivos Del Dashboard
+
+- `Horas del mes actual`: muestra registros de servicio del mes actual.
+- `Horas pendientes`: muestra registros `Recorded`.
+- `Horas procesadas`: muestra registros `Billed`.
+- `Proyectos`: muestra resumen de proyectos con horas y estado contractual.
+- `Registros de servicio`: muestra los registros de servicio mas recientes.
 
 ## Ajuste De Demo: Reports E Invoices
 

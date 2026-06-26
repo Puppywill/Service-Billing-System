@@ -174,6 +174,12 @@ const notificationsTotalCount = document.querySelector("#notificationsTotalCount
 const dashboardTitle = document.querySelector("#dashboardTitle");
 const dashboardMessage = document.querySelector("#dashboardMessage");
 const dashboardSummaryGrid = document.querySelector("#dashboardSummaryGrid");
+const dashboardDetailPanel = document.querySelector("#dashboardDetailPanel");
+const dashboardDetailTitle = document.querySelector("#dashboardDetailTitle");
+const dashboardDetailMessage = document.querySelector("#dashboardDetailMessage");
+const dashboardDetailHeaderRow = document.querySelector("#dashboardDetailHeaderRow");
+const dashboardDetailTableBody = document.querySelector("#dashboardDetailTableBody");
+const closeDashboardDetailButton = document.querySelector("#closeDashboardDetailButton");
 const hoursByMonthTitle = document.querySelector("#hoursByMonthTitle");
 const billingByMonthTitle = document.querySelector("#billingByMonthTitle");
 const hoursByClientTitle = document.querySelector("#hoursByClientTitle");
@@ -2736,16 +2742,19 @@ function getCurrentMonthHours() {
 function renderDashboardSummary() {
   const metrics = [
     { key: "TotalClients", type: "count" },
-    { key: "TotalProjects", type: "count" },
-    { key: "TotalServiceRecords", type: "count" },
+    { key: "TotalProjects", type: "count", detail: "projects" },
+    { key: "TotalServiceRecords", type: "count", detail: "records" },
     { key: "TotalHours", type: "hours" },
-    { key: "CurrentMonthHours", type: "hours", value: getCurrentMonthHours() },
-    { key: "UnbilledHours", type: "hours" },
-    { key: "BilledHours", type: "hours" }
+    { key: "CurrentMonthHours", type: "hours", value: getCurrentMonthHours(), detail: "current-month" },
+    { key: "UnbilledHours", type: "hours", detail: "pending" },
+    { key: "BilledHours", type: "hours", detail: "processed" }
   ];
 
   dashboardSummaryGrid.innerHTML = metrics.map((metric, index) => `
-    <article class="stat-card dashboard-summary-card">
+    <article
+      class="stat-card dashboard-summary-card ${metric.detail ? "interactive-card" : ""}"
+      ${metric.detail ? `data-dashboard-detail="${metric.detail}" role="button" tabindex="0"` : ""}
+    >
       <div class="stat-icon ${index % 3 === 0 ? "stat-open" : index % 3 === 1 ? "stat-progress" : "stat-closed"}" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
       </div>
@@ -2762,6 +2771,204 @@ function renderDashboardCharts() {
   renderBarChart(hoursByClientChart, dashboardCharts?.HoursByClient, "ClientName", "TotalHours", "hours");
   renderBarChart(hoursByProjectChart, dashboardCharts?.HoursByProject, "ProjectName", "TotalHours", "hours");
   renderBarChart(hoursByTechnicianChart, dashboardCharts?.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
+}
+
+function getCurrentMonthDateRange() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const lastDay = new Date(year, month, 0).getDate();
+
+  return {
+    from: `${year}-${String(month).padStart(2, "0")}-01`,
+    to: `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
+  };
+}
+
+function getDashboardDetailTitle(detailType) {
+  const titles = {
+    "current-month": currentLanguage === "es" ? "Registros de servicio del mes actual" : "Current Month Service Records",
+    pending: currentLanguage === "es" ? "Horas pendientes" : "Pending Hours",
+    processed: currentLanguage === "es" ? "Horas procesadas" : "Processed Hours",
+    projects: currentLanguage === "es" ? "Resumen de proyectos" : "Projects Summary",
+    records: currentLanguage === "es" ? "Registros de servicio recientes" : "Latest Service Records"
+  };
+
+  return titles[detailType] || (currentLanguage === "es" ? "Detalle" : "Detail");
+}
+
+function showDashboardDetailLoading(detailType) {
+  dashboardDetailPanel.classList.remove("hidden");
+  dashboardDetailTitle.textContent = getDashboardDetailTitle(detailType);
+  dashboardDetailMessage.textContent = currentLanguage === "es" ? "Cargando detalle..." : "Loading detail...";
+  dashboardDetailHeaderRow.innerHTML = "";
+  dashboardDetailTableBody.innerHTML = "";
+}
+
+function renderDashboardDetailTable(headers, rows, emptyMessage) {
+  dashboardDetailHeaderRow.innerHTML = headers.map((header) => `<th>${escapeHTML(header)}</th>`).join("");
+
+  if (!rows.length) {
+    dashboardDetailTableBody.innerHTML = `
+      <tr>
+        <td colspan="${Math.max(headers.length, 1)}" class="empty-state">${escapeHTML(emptyMessage)}</td>
+      </tr>
+    `;
+    return;
+  }
+
+  dashboardDetailTableBody.innerHTML = rows.join("");
+}
+
+function renderDashboardServiceRecordDetail(records, variant = "full") {
+  const headers = variant === "status"
+    ? [
+      currentLanguage === "es" ? "Proyecto" : "Project",
+      currentLanguage === "es" ? "Cliente" : "Client",
+      currentLanguage === "es" ? "Tecnico" : "Technician",
+      currentLanguage === "es" ? "Fecha" : "Date",
+      currentLanguage === "es" ? "Horas" : "Hours",
+      currentLanguage === "es" ? "Descripcion" : "Description"
+    ]
+    : [
+      currentLanguage === "es" ? "Fecha" : "Date",
+      currentLanguage === "es" ? "Tecnico" : "Technician",
+      currentLanguage === "es" ? "Cliente" : "Client",
+      currentLanguage === "es" ? "Proyecto" : "Project",
+      currentLanguage === "es" ? "Horas" : "Hours",
+      currentLanguage === "es" ? "Estado" : "Status",
+      currentLanguage === "es" ? "Descripcion" : "Description"
+    ];
+  const rows = records.map((record) => variant === "status" ? `
+    <tr>
+      <td>${escapeHTML(record.ProjectName || "")}</td>
+      <td>${escapeHTML(record.ClientName || "")}</td>
+      <td>${escapeHTML(record.TechnicianName || "")}</td>
+      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+    </tr>
+  ` : `
+    <tr>
+      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+      <td>${escapeHTML(record.TechnicianName || "")}</td>
+      <td>${escapeHTML(record.ClientName || "")}</td>
+      <td>${escapeHTML(record.ProjectName || "")}</td>
+      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+    </tr>
+  `);
+
+  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay registros para mostrar." : "No records to display.");
+}
+
+function renderDashboardProjectsDetail(projectRows) {
+  const headers = [
+    currentLanguage === "es" ? "Proyecto" : "Project",
+    currentLanguage === "es" ? "Cliente" : "Client",
+    currentLanguage === "es" ? "Horas usadas" : "UsedHours",
+    currentLanguage === "es" ? "Horas restantes" : "RemainingHours",
+    currentLanguage === "es" ? "Estado contrato" : "ContractStatus",
+    currentLanguage === "es" ? "Fin contrato" : "ContractEndDate"
+  ];
+  const rows = projectRows.map((project) => `
+    <tr>
+      <td>${escapeHTML(project.ProjectName || "")}</td>
+      <td>${escapeHTML(project.ClientName || "")}</td>
+      <td>${formatProjectHours(project.UsedHours)}</td>
+      <td>${formatProjectHours(project.RemainingHours)}</td>
+      <td>${renderContractBadge(project.ContractStatus)}</td>
+      <td>${escapeHTML(formatDateOnly(project.ContractEndDate) || "-")}</td>
+    </tr>
+  `);
+
+  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay proyectos para mostrar." : "No projects to display.");
+}
+
+async function fetchDashboardServiceHours(params = "") {
+  const response = await fetch(`/api/reports/service-hours${params ? `?${params}` : ""}`, {
+    cache: "no-store"
+  });
+  const data = await parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(translateServerMessage(data.message) || t("dashboardLoadError"));
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+async function showDashboardDetail(detailType) {
+  showDashboardDetailLoading(detailType);
+
+  try {
+    if (detailType === "projects") {
+      const response = await fetch("/api/projects", { cache: "no-store" });
+      const data = await parseJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(translateServerMessage(data.message) || t("loadProjectsError"));
+      }
+
+      renderDashboardProjectsDetail(Array.isArray(data) ? data : []);
+      dashboardDetailMessage.textContent = "";
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    if (detailType === "current-month") {
+      const range = getCurrentMonthDateRange();
+      params.set("from", range.from);
+      params.set("to", range.to);
+    }
+
+    if (detailType === "pending") {
+      params.set("status", "Recorded");
+    }
+
+    if (detailType === "processed") {
+      params.set("status", "Billed");
+    }
+
+    const records = await fetchDashboardServiceHours(params.toString());
+    const visibleRecords = detailType === "records" ? records.slice(0, 20) : records;
+
+    renderDashboardServiceRecordDetail(visibleRecords, detailType === "pending" || detailType === "processed" ? "status" : "full");
+    dashboardDetailMessage.textContent = "";
+  } catch (error) {
+    console.error(error);
+    dashboardDetailMessage.textContent = error.message || t("dashboardLoadError");
+    renderDashboardDetailTable([], [], "");
+  }
+}
+
+function closeDashboardDetail() {
+  dashboardDetailPanel.classList.add("hidden");
+  dashboardDetailTitle.textContent = "";
+  dashboardDetailMessage.textContent = "";
+  dashboardDetailHeaderRow.innerHTML = "";
+  dashboardDetailTableBody.innerHTML = "";
+}
+
+function handleDashboardCardAction(event) {
+  const card = event.target.closest("[data-dashboard-detail]");
+
+  if (!card) return;
+
+  showDashboardDetail(card.dataset.dashboardDetail);
+}
+
+function handleDashboardCardKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+
+  const card = event.target.closest("[data-dashboard-detail]");
+
+  if (!card) return;
+
+  event.preventDefault();
+  showDashboardDetail(card.dataset.dashboardDetail);
 }
 
 function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
@@ -4384,6 +4591,9 @@ invoiceDetailModal.addEventListener("click", (event) => {
     closeInvoiceDetail();
   }
 });
+dashboardSummaryGrid.addEventListener("click", handleDashboardCardAction);
+dashboardSummaryGrid.addEventListener("keydown", handleDashboardCardKeydown);
+closeDashboardDetailButton.addEventListener("click", closeDashboardDetail);
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);

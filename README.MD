@@ -1008,6 +1008,7 @@ The dashboard displays:
 - `UnbilledHours` shown as pending hours.
 - `BilledHours` shown as processed hours.
 - Invoice and monetary summary values are hidden in the UI for the current demo.
+- Dashboard cards for current month hours, pending hours, processed hours, projects, and service records open a detail panel with related records.
 
 ### Visual Sections
 
@@ -1025,6 +1026,14 @@ The dashboard displays recent:
 - `ServiceRecords`
 - `Clients`
 - `Projects`
+
+### Interactive Dashboard Details
+
+- `Current Month Hours`: shows service records for the current month.
+- `Pending Hours`: shows `Recorded` service records.
+- `Processed Hours`: shows `Billed` service records.
+- `Projects`: shows project contract/hour summary.
+- `Service Records`: shows the latest service records.
 
 ### API Examples
 
