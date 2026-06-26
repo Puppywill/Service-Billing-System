@@ -1035,6 +1035,18 @@ The dashboard displays recent:
 - `Projects`: shows project contract/hour summary.
 - `Service Records`: shows the latest service records.
 
+### Project Dashboard
+
+The Dashboard includes an internal `Project Dashboard` panel for demo review:
+
+- Search projects by `ProjectName` or `ClientName`.
+- Select a project from the filtered dropdown.
+- View project and contract details, including `ContractNumber`, `ContractType`, `ContractStartDate`, `ContractEndDate`, `ContractedHours`, `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus`, `ContractStatus`, and `IsActive`.
+- View project hour totals for total hours, current month hours, pending hours, processed hours, and canceled hours.
+- View the latest service records for the selected project.
+- Uses existing endpoints only: `GET /api/projects` and `GET /api/reports/service-hours?projectId=`.
+- Does not display money, invoice data, rates, or monetary totals.
+
 ### API Examples
 
 ```http
@@ -1056,6 +1068,7 @@ GET /api/dashboard/recent-activity
 3. Confirm all summary cards are populated.
 4. Confirm chart sections render data or empty states.
 5. Confirm recent activity lists service records, clients, and projects.
+6. Use `Project Dashboard`, search by project or client, select a project, and confirm contract alerts and service-hour totals render.
 
 ## Demo Adjustment: Reports and Invoices Visibility
 

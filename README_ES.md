@@ -1035,6 +1035,18 @@ El dashboard muestra actividad reciente de:
 - `Proyectos`: muestra resumen de proyectos con horas y estado contractual.
 - `Registros de servicio`: muestra los registros de servicio mas recientes.
 
+### Project Dashboard
+
+El Dashboard incluye un panel interno `Project Dashboard` para revision de demo:
+
+- Permite buscar proyectos por `ProjectName` o `ClientName`.
+- Permite seleccionar un proyecto desde un dropdown filtrado.
+- Muestra detalles del proyecto y contrato: `ContractNumber`, `ContractType`, `ContractStartDate`, `ContractEndDate`, `ContractedHours`, `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus`, `ContractStatus` e `IsActive`.
+- Muestra resumen de horas del proyecto: total, mes actual, pendientes, procesadas y canceladas.
+- Muestra los ultimos registros de servicio del proyecto seleccionado.
+- Usa solo endpoints existentes: `GET /api/projects` y `GET /api/reports/service-hours?projectId=`.
+- No muestra dinero, facturas, tarifas ni totales monetarios.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
@@ -1073,9 +1085,10 @@ GET /api/dashboard/recent-activity
 2. Abrir `Dashboard`.
 3. Confirmar que todas las tarjetas de resumen cargan datos.
 4. Confirmar que las secciones visuales muestran datos o estados vacios.
-5. Confirmar que la actividad reciente muestra registros de servicio, facturas, clientes y proyectos.
-6. Iniciar sesion como tecnico y confirmar que el dashboard esta limitado por permisos del backend.
-7. Interrumpir temporalmente una API o conexion local de base de datos durante pruebas y confirmar que aparece el mensaje de error del dashboard.
+5. Confirmar que la actividad reciente muestra registros de servicio, clientes y proyectos.
+6. Usar `Project Dashboard`, buscar por proyecto o cliente, seleccionar un proyecto y confirmar alertas contractuales y totales de horas.
+7. Iniciar sesion como tecnico y confirmar que el dashboard esta limitado por permisos del backend.
+8. Interrumpir temporalmente una API o conexion local de base de datos durante pruebas y confirmar que aparece el mensaje de error del dashboard.
 
 Proxima fase: Fase 17D - Advertencias contractuales en Service Records.
 

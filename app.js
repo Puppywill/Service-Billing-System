@@ -180,6 +180,14 @@ const dashboardDetailMessage = document.querySelector("#dashboardDetailMessage")
 const dashboardDetailHeaderRow = document.querySelector("#dashboardDetailHeaderRow");
 const dashboardDetailTableBody = document.querySelector("#dashboardDetailTableBody");
 const closeDashboardDetailButton = document.querySelector("#closeDashboardDetailButton");
+const dashboardProjectSearchInput = document.querySelector("#dashboardProjectSearchInput");
+const dashboardProjectSelect = document.querySelector("#dashboardProjectSelect");
+const dashboardProjectMessage = document.querySelector("#dashboardProjectMessage");
+const dashboardProjectSummaryGrid = document.querySelector("#dashboardProjectSummaryGrid");
+const dashboardProjectInfoGrid = document.querySelector("#dashboardProjectInfoGrid");
+const dashboardProjectRecordsTitle = document.querySelector("#dashboardProjectRecordsTitle");
+const dashboardProjectRecordsCount = document.querySelector("#dashboardProjectRecordsCount");
+const dashboardProjectRecordsBody = document.querySelector("#dashboardProjectRecordsBody");
 const hoursByMonthTitle = document.querySelector("#hoursByMonthTitle");
 const billingByMonthTitle = document.querySelector("#billingByMonthTitle");
 const hoursByClientTitle = document.querySelector("#hoursByClientTitle");
@@ -253,6 +261,9 @@ let invoiceClients = [];
 let dashboardSummary = null;
 let dashboardCharts = null;
 let dashboardRecentActivity = null;
+let dashboardProjectOptions = [];
+let dashboardSelectedProject = null;
+let dashboardProjectServiceRecords = [];
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -289,6 +300,9 @@ function resetClientState({ render = true } = {}) {
   dashboardSummary = null;
   dashboardCharts = null;
   dashboardRecentActivity = null;
+  dashboardProjectOptions = [];
+  dashboardSelectedProject = null;
+  dashboardProjectServiceRecords = [];
   users = [];
   notifications = [];
   passwordResets = [];
@@ -388,6 +402,26 @@ const translations = {
       Invoices: "Facturas",
       Clients: "Clientes",
       Projects: "Proyectos"
+    },
+    projectDashboard: {
+      eyebrow: "Enfoque por proyecto",
+      title: "Project Dashboard",
+      searchLabel: "Buscar proyecto",
+      searchPlaceholder: "Proyecto o cliente",
+      projectLabel: "Proyecto",
+      selectProject: "Selecciona un proyecto",
+      selectedPrompt: "Selecciona un proyecto para ver detalles.",
+      loading: "Cargando informacion del proyecto...",
+      loadError: "No se pudo cargar la informacion del proyecto.",
+      noProjectMatches: "No hay proyectos que coincidan con la busqueda.",
+      latestRecords: "Ultimos registros de servicio",
+      recordsCount: "registros",
+      noRecords: "No hay registros de servicio para este proyecto.",
+      totalProjectHours: "Total horas del proyecto",
+      currentMonthProjectHours: "Horas del mes actual",
+      pendingProjectHours: "Horas pendientes",
+      processedProjectHours: "Horas procesadas",
+      canceledProjectHours: "Horas canceladas"
     },
     clientsEyebrow: "Catalogo de clientes",
     projectsEyebrow: "Catalogo de trabajo",
@@ -686,6 +720,26 @@ const translations = {
       Invoices: "Invoices",
       Clients: "Clients",
       Projects: "Projects"
+    },
+    projectDashboard: {
+      eyebrow: "Project focus",
+      title: "Project Dashboard",
+      searchLabel: "Search project",
+      searchPlaceholder: "Project or client",
+      projectLabel: "Project",
+      selectProject: "Select a project",
+      selectedPrompt: "Select a project to view details.",
+      loading: "Loading project information...",
+      loadError: "Project information could not be loaded.",
+      noProjectMatches: "No projects match the search.",
+      latestRecords: "Latest Service Records",
+      recordsCount: "records",
+      noRecords: "No service records for this project.",
+      totalProjectHours: "Total project hours",
+      currentMonthProjectHours: "Current month hours",
+      pendingProjectHours: "Pending hours",
+      processedProjectHours: "Processed hours",
+      canceledProjectHours: "Canceled hours"
     },
     clientsEyebrow: "Customer catalog",
     projectsEyebrow: "Work catalog",
@@ -2708,6 +2762,7 @@ async function loadDashboardData() {
     dashboardRecentActivity = activityData;
     dashboardMessage.textContent = "";
     renderDashboard();
+    await loadDashboardProjectOptions();
   } catch (error) {
     console.error(error);
     dashboardSummary = null;
@@ -2722,8 +2777,268 @@ function renderDashboard() {
   if (!dashboardSummaryGrid) return;
 
   renderDashboardSummary();
+  renderDashboardProjectPanel();
   renderDashboardCharts();
   renderDashboardRecentActivity();
+}
+
+function showDashboardProjectMessage(message, type = "info") {
+  if (!dashboardProjectMessage) return;
+
+  dashboardProjectMessage.textContent = message;
+  dashboardProjectMessage.classList.toggle("success", type === "success");
+}
+
+function getDashboardProjectPlaceholder() {
+  return escapeHTML(tNested("projectDashboard", "selectedPrompt"));
+}
+
+function renderDashboardProjectPrompt(message = getDashboardProjectPlaceholder()) {
+  if (dashboardProjectSummaryGrid) {
+    dashboardProjectSummaryGrid.innerHTML = "";
+  }
+
+  if (dashboardProjectInfoGrid) {
+    dashboardProjectInfoGrid.innerHTML = `<p class="empty-state">${message}</p>`;
+  }
+
+  if (dashboardProjectRecordsCount) {
+    dashboardProjectRecordsCount.textContent = "0";
+    dashboardProjectRecordsCount.parentElement.lastChild.textContent = ` ${tNested("projectDashboard", "recordsCount")}`;
+  }
+
+  if (dashboardProjectRecordsBody) {
+    dashboardProjectRecordsBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-state">${message}</td>
+      </tr>
+    `;
+  }
+}
+
+function getFilteredDashboardProjects() {
+  const search = (dashboardProjectSearchInput?.value || "").trim().toLowerCase();
+
+  if (!search) return dashboardProjectOptions;
+
+  return dashboardProjectOptions.filter((project) => [
+    project.ProjectName,
+    project.ClientName
+  ].some((value) => String(value || "").toLowerCase().includes(search)));
+}
+
+function renderDashboardProjectOptions() {
+  if (!dashboardProjectSelect) return;
+
+  const selectedValue = dashboardProjectSelect.value;
+  const filteredProjects = getFilteredDashboardProjects();
+  dashboardProjectSelect.innerHTML = `
+    <option value="">${escapeHTML(tNested("projectDashboard", "selectProject"))}</option>
+    ${filteredProjects.map((project) => `
+      <option value="${project.ProjectID}">${escapeHTML(project.ProjectName || `#${project.ProjectID}`)} - ${escapeHTML(project.ClientName || "")}</option>
+    `).join("")}
+  `;
+
+  dashboardProjectSelect.value = filteredProjects.some((project) => String(project.ProjectID) === selectedValue)
+    ? selectedValue
+    : "";
+
+  if (!filteredProjects.length && dashboardProjectOptions.length) {
+    showDashboardProjectMessage(tNested("projectDashboard", "noProjectMatches"));
+  } else if (!dashboardSelectedProject) {
+    showDashboardProjectMessage("");
+  }
+}
+
+async function loadDashboardProjectOptions() {
+  if (!dashboardProjectSelect) return;
+
+  try {
+    const response = await fetch("/api/projects", { cache: "no-store" });
+    const data = await parseJsonResponse(response);
+
+    if (response.status === 401) {
+      currentUser = null;
+      showLogin();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || tNested("projectDashboard", "loadError"));
+    }
+
+    dashboardProjectOptions = Array.isArray(data) ? data : [];
+    if (dashboardSelectedProject) {
+      dashboardSelectedProject = dashboardProjectOptions.find((project) => Number(project.ProjectID) === Number(dashboardSelectedProject.ProjectID)) || null;
+    }
+
+    renderDashboardProjectOptions();
+    renderDashboardProjectPanel();
+  } catch (error) {
+    console.error(error);
+    dashboardProjectOptions = [];
+    dashboardSelectedProject = null;
+    dashboardProjectServiceRecords = [];
+    renderDashboardProjectOptions();
+    renderDashboardProjectPrompt(escapeHTML(error.message || tNested("projectDashboard", "loadError")));
+    showDashboardProjectMessage(error.message || tNested("projectDashboard", "loadError"), "error");
+  }
+}
+
+function getDashboardProjectHoursSummary(records) {
+  const range = getCurrentMonthDateRange();
+  const currentMonthPrefix = range.from.slice(0, 7);
+  const summary = {
+    total: 0,
+    currentMonth: 0,
+    pending: 0,
+    processed: 0,
+    canceled: 0
+  };
+
+  records.forEach((record) => {
+    const hours = Number(record.TotalHours || 0);
+    const status = record.Status;
+
+    summary.total += hours;
+    if (String(record.ServiceDate || "").slice(0, 7) === currentMonthPrefix) summary.currentMonth += hours;
+    if (status === "Recorded") summary.pending += hours;
+    if (status === "Billed") summary.processed += hours;
+    if (status === "Canceled") summary.canceled += hours;
+  });
+
+  return summary;
+}
+
+function renderDashboardProjectSummary(records) {
+  if (!dashboardProjectSummaryGrid) return;
+
+  const summary = getDashboardProjectHoursSummary(records);
+  const metrics = [
+    { label: tNested("projectDashboard", "totalProjectHours"), value: summary.total },
+    { label: tNested("projectDashboard", "currentMonthProjectHours"), value: summary.currentMonth },
+    { label: tNested("projectDashboard", "pendingProjectHours"), value: summary.pending },
+    { label: tNested("projectDashboard", "processedProjectHours"), value: summary.processed },
+    { label: tNested("projectDashboard", "canceledProjectHours"), value: summary.canceled }
+  ];
+
+  dashboardProjectSummaryGrid.innerHTML = metrics.map((metric, index) => `
+    <article class="stat-card dashboard-summary-card">
+      <div class="stat-icon ${index % 3 === 0 ? "stat-open" : index % 3 === 1 ? "stat-progress" : "stat-closed"}" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
+      </div>
+      <div>
+        <span>${escapeHTML(metric.label)}</span>
+        <strong>${formatDashboardMetric(metric.value, "hours")}</strong>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderDashboardProjectInfo(project) {
+  if (!dashboardProjectInfoGrid) return;
+
+  const fields = [
+    ["ProjectName", project.ProjectName],
+    ["ClientName", project.ClientName],
+    ["Description", project.Description],
+    ["ContractNumber", project.ContractNumber],
+    ["ContractType", project.ContractType],
+    ["ContractStartDate", formatDateOnly(project.ContractStartDate)],
+    ["ContractEndDate", formatDateOnly(project.ContractEndDate)],
+    ["ContractedHours", formatProjectHours(project.ContractedHours)],
+    ["UsedHours", formatProjectHours(project.UsedHours)],
+    ["RemainingHours", formatProjectHours(project.RemainingHours)],
+    ["HoursAlertStatus", project.HoursAlertStatus, "badge"],
+    ["ExpirationAlertStatus", project.ExpirationAlertStatus, "badge"],
+    ["ContractStatus", project.ContractStatus, "badge"],
+    ["IsActive", project.IsActive ? "Active" : "Inactive"]
+  ];
+
+  dashboardProjectInfoGrid.innerHTML = fields.map(([label, value, type]) => `
+    <article class="project-dashboard-info-item">
+      <span>${escapeHTML(label)}</span>
+      <strong>${type === "badge" ? renderContractBadge(value) : escapeHTML(value || "-")}</strong>
+    </article>
+  `).join("");
+}
+
+function renderDashboardProjectRecords(records) {
+  if (!dashboardProjectRecordsBody) return;
+
+  const visibleRecords = records.slice(0, 8);
+  dashboardProjectRecordsCount.textContent = records.length;
+  dashboardProjectRecordsCount.parentElement.lastChild.textContent = ` ${tNested("projectDashboard", "recordsCount")}`;
+
+  if (!visibleRecords.length) {
+    dashboardProjectRecordsBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-state">${escapeHTML(tNested("projectDashboard", "noRecords"))}</td>
+      </tr>
+    `;
+    return;
+  }
+
+  dashboardProjectRecordsBody.innerHTML = visibleRecords.map((record) => `
+    <tr>
+      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+      <td>${escapeHTML(record.TechnicianName || "")}</td>
+      <td>${escapeHTML(record.ClientName || "")}</td>
+      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+    </tr>
+  `).join("");
+}
+
+function renderDashboardProjectPanel() {
+  if (!dashboardProjectSelect) return;
+
+  renderDashboardProjectOptions();
+
+  if (!dashboardSelectedProject) {
+    renderDashboardProjectPrompt();
+    return;
+  }
+
+  renderDashboardProjectSummary(dashboardProjectServiceRecords);
+  renderDashboardProjectInfo(dashboardSelectedProject);
+  renderDashboardProjectRecords(dashboardProjectServiceRecords);
+}
+
+async function selectDashboardProject(projectId) {
+  dashboardSelectedProject = dashboardProjectOptions.find((project) => Number(project.ProjectID) === Number(projectId)) || null;
+  dashboardProjectServiceRecords = [];
+
+  if (!dashboardSelectedProject) {
+    renderDashboardProjectPanel();
+    return;
+  }
+
+  showDashboardProjectMessage(tNested("projectDashboard", "loading"));
+  renderDashboardProjectSummary([]);
+  renderDashboardProjectInfo(dashboardSelectedProject);
+  renderDashboardProjectRecords([]);
+
+  try {
+    const params = new URLSearchParams({ projectId: String(dashboardSelectedProject.ProjectID) });
+    dashboardProjectServiceRecords = await fetchDashboardServiceHours(params.toString());
+    renderDashboardProjectPanel();
+    showDashboardProjectMessage("");
+  } catch (error) {
+    console.error(error);
+    dashboardProjectServiceRecords = [];
+    renderDashboardProjectPanel();
+    showDashboardProjectMessage(error.message || tNested("projectDashboard", "loadError"), "error");
+  }
+}
+
+function handleDashboardProjectSearch() {
+  renderDashboardProjectOptions();
+}
+
+function handleDashboardProjectSelect() {
+  selectDashboardProject(dashboardProjectSelect.value);
 }
 
 function getCurrentMonthKey() {
@@ -3343,6 +3658,20 @@ function applyStaticLanguage() {
   document.querySelectorAll("#dashboardTabPanel .activity-panel .eyebrow").forEach((element) => {
     element.textContent = t("recentActivity");
   });
+  setText(".project-dashboard-panel .section-title .eyebrow", tNested("projectDashboard", "eyebrow"));
+  setText("#projectDashboardTitle", tNested("projectDashboard", "title"));
+  setText('label[for="dashboardProjectSearchInput"]', tNested("projectDashboard", "searchLabel"));
+  setPlaceholder("#dashboardProjectSearchInput", tNested("projectDashboard", "searchPlaceholder"));
+  setText('label[for="dashboardProjectSelect"]', tNested("projectDashboard", "projectLabel"));
+  setText("#dashboardProjectRecordsTitle", tNested("projectDashboard", "latestRecords"));
+  setTableHeaders(".project-dashboard-panel table", [
+    currentLanguage === "es" ? "Fecha" : "Date",
+    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Cliente" : "Client",
+    currentLanguage === "es" ? "Horas" : "Hours",
+    currentLanguage === "es" ? "Estado" : "Status",
+    currentLanguage === "es" ? "Descripcion" : "Description"
+  ]);
 
   setText("#clientsTabPanel .section-title .eyebrow", t("clientsEyebrow"));
   setText("#clients-title", t("clients"));
@@ -4594,6 +4923,8 @@ invoiceDetailModal.addEventListener("click", (event) => {
 dashboardSummaryGrid.addEventListener("click", handleDashboardCardAction);
 dashboardSummaryGrid.addEventListener("keydown", handleDashboardCardKeydown);
 closeDashboardDetailButton.addEventListener("click", closeDashboardDetail);
+dashboardProjectSearchInput.addEventListener("input", handleDashboardProjectSearch);
+dashboardProjectSelect.addEventListener("change", handleDashboardProjectSelect);
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);

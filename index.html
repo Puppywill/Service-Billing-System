@@ -236,6 +236,61 @@
         </div>
       </section>
 
+      <section class="panel table-panel project-dashboard-panel" aria-labelledby="projectDashboardTitle">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Project focus</p>
+            <h2 id="projectDashboardTitle">Project Dashboard</h2>
+          </div>
+        </div>
+
+        <div class="client-toolbar project-dashboard-toolbar" aria-label="Project dashboard search">
+          <div class="search-field">
+            <label for="dashboardProjectSearchInput">Search project</label>
+            <input type="search" id="dashboardProjectSearchInput" placeholder="Project or client">
+          </div>
+          <div class="filter-field">
+            <label for="dashboardProjectSelect">Project</label>
+            <select id="dashboardProjectSelect">
+              <option value="">Select a project</option>
+            </select>
+          </div>
+        </div>
+
+        <p id="dashboardProjectMessage" class="form-message" aria-live="polite"></p>
+        <div id="dashboardProjectSummaryGrid" class="stats-grid dashboard-grid project-hours-grid"></div>
+        <div id="dashboardProjectInfoGrid" class="project-dashboard-info-grid">
+          <p class="empty-state">Select a project to view details.</p>
+        </div>
+
+        <div class="table-header compact-table-header">
+          <div class="section-title">
+            <p class="eyebrow">Service records</p>
+            <h3 id="dashboardProjectRecordsTitle">Latest Service Records</h3>
+          </div>
+          <p class="ticket-total"><span id="dashboardProjectRecordsCount">0</span> records</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Technician</th>
+                <th>Client</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody id="dashboardProjectRecordsBody">
+              <tr>
+                <td colspan="6" class="empty-state">Select a project to view service records.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="dashboard-chart-grid" aria-label="Dashboard charts">
         <article class="panel chart-panel">
           <div class="section-title">
