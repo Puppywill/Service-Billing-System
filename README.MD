@@ -994,7 +994,7 @@ Demo adjustment: invoice-specific dashboard cards, charts, and recent activity a
 - Shows a complete dashboard for `Admin`.
 - Shows a backend-limited dashboard for `Technician`.
 - Handles API errors with a visible dashboard message.
-- Keeps the dashboard responsive and consistent with Clients, Projects, Service Records, and Invoices.
+- Keeps the dashboard responsive and focused on Clients, Projects, Service Records, and service hours.
 
 ### Summary Cards
 
@@ -1003,11 +1003,11 @@ The dashboard displays:
 - `TotalClients`
 - `TotalProjects`
 - `TotalServiceRecords`
-- `TotalInvoices`
 - `TotalHours`
-- `BilledHours`
-- `UnbilledHours`
-- Monetary summary values are hidden in the UI for the current demo.
+- `CurrentMonthHours`
+- `UnbilledHours` shown as pending hours.
+- `BilledHours` shown as processed hours.
+- Invoice and monetary summary values are hidden in the UI for the current demo.
 
 ### Visual Sections
 
@@ -1017,14 +1017,12 @@ The dashboard includes lightweight frontend chart sections without adding new li
 - `HoursByClient`
 - `HoursByProject`
 - `HoursByTechnician`
-- `InvoicesByStatus`
 
 ### Recent Activity
 
 The dashboard displays recent:
 
 - `ServiceRecords`
-- `Invoices`
 - `Clients`
 - `Projects`
 

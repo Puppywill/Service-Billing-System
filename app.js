@@ -367,14 +367,15 @@ const translations = {
       TotalProjects: "Proyectos",
       TotalServiceRecords: "Registros",
       TotalHours: "Horas totales",
-      UnbilledHours: "Horas sin facturar",
-      BilledHours: "Horas facturadas"
+      CurrentMonthHours: "Horas del mes actual",
+      UnbilledHours: "Horas pendientes",
+      BilledHours: "Horas procesadas"
     },
     dashboardCharts: {
-      HoursByMonth: "Horas por mes",
-      HoursByClient: "Horas por cliente",
-      HoursByProject: "Horas por proyecto",
-      HoursByTechnician: "Horas por tecnico"
+      HoursByMonth: "Horas de servicio por mes",
+      HoursByClient: "Horas de servicio por cliente",
+      HoursByProject: "Horas por proyecto de servicio",
+      HoursByTechnician: "Horas de servicio por tecnico"
     },
     dashboardActivity: {
       ServiceRecords: "Registros de servicio",
@@ -664,14 +665,15 @@ const translations = {
       TotalProjects: "Projects",
       TotalServiceRecords: "Service Records",
       TotalHours: "Total Hours",
-      UnbilledHours: "Unbilled Hours",
-      BilledHours: "Billed Hours"
+      CurrentMonthHours: "Current Month Hours",
+      UnbilledHours: "Pending Hours",
+      BilledHours: "Processed Hours"
     },
     dashboardCharts: {
-      HoursByMonth: "Hours by Month",
-      HoursByClient: "Hours by Client",
-      HoursByProject: "Hours by Project",
-      HoursByTechnician: "Hours by Technician"
+      HoursByMonth: "Service Hours by Month",
+      HoursByClient: "Service Hours by Client",
+      HoursByProject: "Service Hours by Project",
+      HoursByTechnician: "Service Hours by Technician"
     },
     dashboardActivity: {
       ServiceRecords: "Service Records",
@@ -2718,12 +2720,26 @@ function renderDashboard() {
   renderDashboardRecentActivity();
 }
 
+function getCurrentMonthKey() {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getCurrentMonthHours() {
+  const currentMonth = getCurrentMonthKey();
+  const monthRow = dashboardCharts?.HoursByMonth?.find((row) => String(row.Month) === currentMonth);
+
+  return Number(monthRow?.TotalHours || 0);
+}
+
 function renderDashboardSummary() {
   const metrics = [
     { key: "TotalClients", type: "count" },
     { key: "TotalProjects", type: "count" },
     { key: "TotalServiceRecords", type: "count" },
     { key: "TotalHours", type: "hours" },
+    { key: "CurrentMonthHours", type: "hours", value: getCurrentMonthHours() },
     { key: "UnbilledHours", type: "hours" },
     { key: "BilledHours", type: "hours" }
   ];
@@ -2735,7 +2751,7 @@ function renderDashboardSummary() {
       </div>
       <div>
         <span>${escapeHTML(tNested("dashboardMetrics", metric.key))}</span>
-        <strong>${formatDashboardMetric(dashboardSummary?.[metric.key], metric.type)}</strong>
+        <strong>${formatDashboardMetric(metric.value ?? dashboardSummary?.[metric.key], metric.type)}</strong>
       </div>
     </article>
   `).join("");

@@ -994,7 +994,7 @@ Ajuste de demo: las tarjetas, graficas y actividad reciente especificas de factu
 - Muestra dashboard completo para `Admin`.
 - Muestra dashboard limitado para `Technician` segun permisos del backend.
 - Maneja errores de API con un mensaje visible en el dashboard.
-- Mantiene diseno responsive y consistente con Clients, Projects, Service Records e Invoices.
+- Mantiene diseno responsive enfocado en Clients, Projects, Service Records y horas de servicio.
 
 ### Tarjetas De Resumen
 
@@ -1003,11 +1003,11 @@ El dashboard muestra:
 - `TotalClients`
 - `TotalProjects`
 - `TotalServiceRecords`
-- `TotalInvoices`
 - `TotalHours`
-- `BilledHours`
-- `UnbilledHours`
-- Los valores monetarios de resumen estan ocultos en la UI para la demo actual.
+- `CurrentMonthHours`
+- `UnbilledHours` mostrado como horas pendientes.
+- `BilledHours` mostrado como horas procesadas.
+- Los valores de facturas y montos monetarios estan ocultos en la UI para la demo actual.
 
 ### Secciones Visuales
 
@@ -1017,7 +1017,6 @@ El dashboard incluye secciones visuales ligeras sin agregar librerias nuevas:
 - `HoursByClient`
 - `HoursByProject`
 - `HoursByTechnician`
-- `InvoicesByStatus`
 
 ### Actividad Reciente
 
