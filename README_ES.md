@@ -33,8 +33,11 @@ Invoices tambien queda oculto de la navegacion visible del frontend para la demo
 - Fase 13: Service Records Frontend ✅
 - Fase 14: Invoices Frontend ✅
 - Fase 15: Dashboard Frontend ✅
+- Fase 17A: Migracion SQL de contratos por proyecto ✅
+- Fase 17B: Backend de contratos por proyecto ✅
+- Fase 17C: Frontend de contratos en Projects ✅
 
-Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion para demo local
+Proxima fase: Fase 17D - Advertencias contractuales en Service Records
 
 ## Estado Actual Del Proyecto
 
@@ -67,6 +70,7 @@ Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion p
 - Frontend Foundation con branding Service Billing, nueva navegacion y pantallas iniciales.
 - Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
 - Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
+- Projects Frontend ahora muestra resumen contractual, informacion contractual editable para Admin y alertas visuales de contrato.
 - Service Records Frontend conectado al backend real con busqueda, filtros, modal de crear/editar, cancelacion logica, vista previa automatica de horas y acciones segun rol.
 - La implementacion frontend de Invoices permanece en el codigo, pero queda oculta de la navegacion visible para la demo actual.
 - Dashboard Frontend conectado al backend real con tarjetas y secciones enfocadas en servicios, actividad reciente, manejo de errores de API y datos limitados por rol.
@@ -1033,6 +1037,14 @@ El dashboard muestra actividad reciente de:
 - La navegacion visible del frontend oculta `Invoices` temporalmente para claridad de demo.
 - Las APIs de Invoices, la logica backend, las tablas SQL y la implementacion frontend existente permanecen en el codigo.
 
+## Fase 17C: Frontend De Contratos En Projects
+
+- Projects ahora muestra resumen contractual: `ContractNumber`, `ContractedHours`, `UsedHours`, `RemainingHours`, `ContractEndDate` y `ContractStatus`.
+- El modal de Project incluye la seccion `Contract Information` para usuarios Admin.
+- Los valores calculados permanecen solo lectura: `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus` y `ContractStatus`.
+- Las alertas visuales usan verde para `OK`, amarillo para `LOW_HOURS`, naranja para `EXPIRING_SOON`, rojo para estados sin horas/expirados y gris para `NO_CONTRACT`.
+- No se muestran campos monetarios ni tarifas por hora.
+
 ### Ejemplos De API
 
 ```http
@@ -1057,7 +1069,7 @@ GET /api/dashboard/recent-activity
 6. Iniciar sesion como tecnico y confirmar que el dashboard esta limitado por permisos del backend.
 7. Interrumpir temporalmente una API o conexion local de base de datos durante pruebas y confirmar que aparece el mensaje de error del dashboard.
 
-Proxima fase: Fase 16 - Validacion completa, pruebas funcionales y preparacion para demo local.
+Proxima fase: Fase 17D - Advertencias contractuales en Service Records.
 
 ## Autor
 

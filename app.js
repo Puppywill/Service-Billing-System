@@ -70,6 +70,19 @@ const projectName = document.querySelector("#projectName");
 const projectDescription = document.querySelector("#projectDescription");
 const projectHourlyRate = document.querySelector("#projectHourlyRate");
 const projectIsActive = document.querySelector("#projectIsActive");
+const projectContractNumber = document.querySelector("#projectContractNumber");
+const projectContractType = document.querySelector("#projectContractType");
+const projectSignedBy = document.querySelector("#projectSignedBy");
+const projectContractStartDate = document.querySelector("#projectContractStartDate");
+const projectContractEndDate = document.querySelector("#projectContractEndDate");
+const projectContractedHours = document.querySelector("#projectContractedHours");
+const projectLowHoursThreshold = document.querySelector("#projectLowHoursThreshold");
+const projectExpirationAlertDays = document.querySelector("#projectExpirationAlertDays");
+const projectUsedHoursDisplay = document.querySelector("#projectUsedHoursDisplay");
+const projectRemainingHoursDisplay = document.querySelector("#projectRemainingHoursDisplay");
+const projectHoursAlertStatusDisplay = document.querySelector("#projectHoursAlertStatusDisplay");
+const projectExpirationAlertStatusDisplay = document.querySelector("#projectExpirationAlertStatusDisplay");
+const projectContractStatusDisplay = document.querySelector("#projectContractStatusDisplay");
 const projectFormMessage = document.querySelector("#projectFormMessage");
 const saveProjectButton = document.querySelector("#saveProjectButton");
 
@@ -1491,6 +1504,24 @@ function renderProjectClientOptions() {
   projectClientId.innerHTML = `<option value="">${escapeHTML(t("selectClient"))}</option>${options}`;
 }
 
+function formatProjectHours(value) {
+  return value === null || value === undefined || value === "" ? "-" : Number(value || 0).toFixed(2);
+}
+
+function getContractAlertClass(status) {
+  if (status === "OK") return "contract-ok";
+  if (status === "LOW_HOURS" || status === "WARNING") return "contract-low";
+  if (status === "EXPIRING_SOON") return "contract-warning";
+  if (status === "NO_HOURS_REMAINING" || status === "EXPIRED" || status === "CRITICAL") return "contract-danger";
+  return "contract-neutral";
+}
+
+function renderContractBadge(status) {
+  const value = status || "NO_CONTRACT";
+
+  return `<span class="badge ${getContractAlertClass(value)}">${escapeHTML(value)}</span>`;
+}
+
 function renderProjects() {
   if (!projectsTableBody) return;
 
@@ -1510,6 +1541,12 @@ function renderProjects() {
       <td>${escapeHTML(project.ProjectName || "")}</td>
       <td>${escapeHTML(project.ClientName || "")}</td>
       <td class="ticket-description">${escapeHTML(project.Description || "")}</td>
+      <td>${escapeHTML(project.ContractNumber || "-")}</td>
+      <td>${formatProjectHours(project.ContractedHours)}</td>
+      <td>${formatProjectHours(project.UsedHours)}</td>
+      <td>${formatProjectHours(project.RemainingHours)}</td>
+      <td>${escapeHTML(formatDateOnly(project.ContractEndDate) || "-")}</td>
+      <td>${renderContractBadge(project.ContractStatus)}</td>
       <td><span class="badge ${project.IsActive ? "status-abierto" : "status-cerrado"}">${project.IsActive ? "Active" : "Inactive"}</span></td>
       <td>
         ${canManageProjects ? `
@@ -1527,7 +1564,7 @@ function showProjectsTableMessage(message) {
   projectsTotalCount.textContent = projects.length;
   projectsTableBody.innerHTML = `
     <tr>
-      <td colspan="5" class="empty-state">${escapeHTML(message)}</td>
+      <td colspan="11" class="empty-state">${escapeHTML(message)}</td>
     </tr>
   `;
 }
@@ -1543,8 +1580,39 @@ function getProjectPayloadFromForm() {
     ProjectName: projectName.value.trim(),
     Description: projectDescription.value.trim(),
     HourlyRate: projectHourlyRate.value === "" ? 0 : Number(projectHourlyRate.value),
+    ContractNumber: projectContractNumber.value.trim(),
+    ContractType: projectContractType.value,
+    SignedBy: projectSignedBy.value.trim(),
+    ContractStartDate: projectContractStartDate.value,
+    ContractEndDate: projectContractEndDate.value,
+    ContractedHours: projectContractedHours.value === "" ? null : Number(projectContractedHours.value),
+    LowHoursThreshold: projectLowHoursThreshold.value === "" ? null : Number(projectLowHoursThreshold.value),
+    ExpirationAlertDays: projectExpirationAlertDays.value === "" ? null : Number(projectExpirationAlertDays.value),
     IsActive: projectIsActive.checked
   };
+}
+
+function setProjectContractFieldsDisabled(disabled) {
+  [
+    projectContractNumber,
+    projectContractType,
+    projectSignedBy,
+    projectContractStartDate,
+    projectContractEndDate,
+    projectContractedHours,
+    projectLowHoursThreshold,
+    projectExpirationAlertDays
+  ].forEach((field) => {
+    field.disabled = disabled;
+  });
+}
+
+function renderProjectContractStatus(project = {}) {
+  projectUsedHoursDisplay.textContent = formatProjectHours(project.UsedHours);
+  projectRemainingHoursDisplay.textContent = formatProjectHours(project.RemainingHours);
+  projectHoursAlertStatusDisplay.innerHTML = renderContractBadge(project.HoursAlertStatus);
+  projectExpirationAlertStatusDisplay.innerHTML = renderContractBadge(project.ExpirationAlertStatus);
+  projectContractStatusDisplay.innerHTML = renderContractBadge(project.ContractStatus);
 }
 
 async function openProjectEditor(mode, selectedProject = null) {
@@ -1558,12 +1626,22 @@ async function openProjectEditor(mode, selectedProject = null) {
   projectModalTitle.textContent = mode === "edit" ? t("editProject") : t("addProject");
   projectIsActive.checked = selectedProject?.IsActive ?? true;
   projectHourlyRate.value = "0";
+  setProjectContractFieldsDisabled(!isAdmin());
+  renderProjectContractStatus(selectedProject || {});
 
   if (selectedProject) {
     projectClientId.value = selectedProject.ClientID || "";
     projectName.value = selectedProject.ProjectName || "";
     projectDescription.value = selectedProject.Description || "";
     projectHourlyRate.value = selectedProject.HourlyRate ?? "";
+    projectContractNumber.value = selectedProject.ContractNumber || "";
+    projectContractType.value = selectedProject.ContractType || "";
+    projectSignedBy.value = selectedProject.SignedBy || "";
+    projectContractStartDate.value = formatDateOnly(selectedProject.ContractStartDate) || "";
+    projectContractEndDate.value = formatDateOnly(selectedProject.ContractEndDate) || "";
+    projectContractedHours.value = selectedProject.ContractedHours ?? "";
+    projectLowHoursThreshold.value = selectedProject.LowHoursThreshold ?? "";
+    projectExpirationAlertDays.value = selectedProject.ExpirationAlertDays ?? "";
   }
 
   projectModal.classList.remove("hidden");
@@ -1610,6 +1688,30 @@ async function saveProject(event) {
   if (payload.HourlyRate < 0) {
     projectFormMessage.textContent = t("projectRateNegative");
     projectHourlyRate.focus();
+    return;
+  }
+
+  if (payload.ContractedHours !== null && (!Number.isFinite(payload.ContractedHours) || payload.ContractedHours < 0)) {
+    projectFormMessage.textContent = currentLanguage === "es" ? "ContractedHours no puede ser negativo." : "ContractedHours cannot be negative.";
+    projectContractedHours.focus();
+    return;
+  }
+
+  if (payload.LowHoursThreshold !== null && (!Number.isFinite(payload.LowHoursThreshold) || payload.LowHoursThreshold < 0)) {
+    projectFormMessage.textContent = currentLanguage === "es" ? "LowHoursThreshold no puede ser negativo." : "LowHoursThreshold cannot be negative.";
+    projectLowHoursThreshold.focus();
+    return;
+  }
+
+  if (payload.ExpirationAlertDays !== null && (!Number.isInteger(payload.ExpirationAlertDays) || payload.ExpirationAlertDays < 0)) {
+    projectFormMessage.textContent = currentLanguage === "es" ? "ExpirationAlertDays no puede ser negativo." : "ExpirationAlertDays cannot be negative.";
+    projectExpirationAlertDays.focus();
+    return;
+  }
+
+  if (payload.ContractStartDate && payload.ContractEndDate && payload.ContractStartDate > payload.ContractEndDate) {
+    projectFormMessage.textContent = currentLanguage === "es" ? "ContractStartDate no puede ser mayor que ContractEndDate." : "ContractStartDate cannot be after ContractEndDate.";
+    projectContractStartDate.focus();
     return;
   }
 
@@ -3043,6 +3145,15 @@ function applyStaticLanguage() {
   setText('label[for="projectClientId"]', "ClientID");
   setText('label[for="projectName"]', "ProjectName");
   setText('label[for="projectDescription"]', "Description");
+  setText("#project-contract-title", currentLanguage === "es" ? "Informacion del contrato" : "Contract Information");
+  setText('label[for="projectContractNumber"]', "ContractNumber");
+  setText('label[for="projectContractType"]', "ContractType");
+  setText('label[for="projectSignedBy"]', "SignedBy");
+  setText('label[for="projectContractStartDate"]', "ContractStartDate");
+  setText('label[for="projectContractEndDate"]', "ContractEndDate");
+  setText('label[for="projectContractedHours"]', "ContractedHours");
+  setText('label[for="projectLowHoursThreshold"]', "LowHoursThreshold");
+  setText('label[for="projectExpirationAlertDays"]', "ExpirationAlertDays");
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
   setText('label[for="invoiceSearchInput"]', t("search"));
@@ -3126,7 +3237,7 @@ function applyStaticLanguage() {
   setTableHeaders(".service-records-panel table", ["TechnicianName", "ClientName", "ProjectName", "ServiceDate", "MorningStart", "MorningEnd", "AfternoonStart", "AfternoonEnd", "TotalHours", "ServiceDescription", "Status", t("actions")]);
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
   setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
-  setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "IsActive", t("actions")]);
+  setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "ContractNumber", "ContractedHours", "UsedHours", "RemainingHours", "ContractEndDate", "ContractStatus", "IsActive", t("actions")]);
   setTableHeaders("#invoicesTabPanel table", ["InvoiceNumber", "ClientName", "InvoiceDate", "PeriodFrom", "PeriodTo", "Status", t("actions")]);
   setTableHeaders("#invoiceDetailModal table", ["ServiceDate", "ProjectName", "Description", "Hours"]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);

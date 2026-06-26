@@ -33,8 +33,11 @@ Invoices are also hidden from the visible frontend navigation for the current de
 - Phase 13: Service Records Frontend ✅
 - Phase 14: Invoices Frontend ✅
 - Phase 15: Dashboard Frontend ✅
+- Phase 17A: Project Contract SQL Migration ✅
+- Phase 17B: Project Contract Backend ✅
+- Phase 17C: Projects Contract Frontend ✅
 
-Next phase: Phase 16 - Complete validation, functional testing, and local demo preparation
+Next phase: Phase 17D - Service Record contract warnings
 
 ## Current Project Status
 
@@ -67,6 +70,7 @@ Next phase: Phase 16 - Complete validation, functional testing, and local demo p
 - Frontend foundation with Service Billing branding, navigation, and initial module screens.
 - Connected Clients frontend with search, create, edit, and logical deactivation.
 - Connected Projects frontend with search, client filtering, create, edit, and logical deactivation.
+- Projects frontend now shows contract summary fields, editable contract information for Admin, and visual contract alerts.
 - Connected Service Records frontend with search, filters, create/edit modal, logical cancellation, automatic hour preview, and role-aware actions.
 - Invoices frontend implementation remains in the codebase but is hidden from visible navigation for the current demo.
 - Connected Dashboard frontend with service-focused summary cards, visual chart sections, recent activity, API error handling, and role-limited data.
@@ -1055,10 +1059,18 @@ GET /api/dashboard/recent-activity
 - PDF and Excel buttons remain visible, disabled, and labeled `PDF (Coming soon)` and `Excel (Coming soon)` until service-hour exports are implemented.
 - The visible frontend navigation hides `Invoices` temporarily for demo clarity.
 - Invoice APIs, backend logic, SQL tables, and existing frontend implementation remain in the codebase.
+
+## Phase 17C: Projects Contract Frontend
+
+- Projects now displays contract summary fields: `ContractNumber`, `ContractedHours`, `UsedHours`, `RemainingHours`, `ContractEndDate`, and `ContractStatus`.
+- The Project modal includes `Contract Information` fields for Admin users.
+- Calculated values remain read-only: `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus`, and `ContractStatus`.
+- Visual alerts use green for `OK`, yellow for `LOW_HOURS`, orange for `EXPIRING_SOON`, red for exhausted/expired states, and gray for `NO_CONTRACT`.
+- No monetary fields or hourly rates are shown.
 6. Sign in as a technician and confirm the dashboard is limited by backend permissions.
 7. Temporarily interrupt an API or database connection during local testing and confirm the dashboard error message appears.
 
-Next phase: Phase 16 - Complete validation, functional testing, and local demo preparation.
+Next phase: Phase 17D - Service Record contract warnings.
 
 ## Author
 

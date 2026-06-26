@@ -374,13 +374,19 @@
                 <th>ProjectName</th>
                 <th>ClientName</th>
                 <th>Description</th>
+                <th>ContractNumber</th>
+                <th>ContractedHours</th>
+                <th>UsedHours</th>
+                <th>RemainingHours</th>
+                <th>ContractEndDate</th>
+                <th>ContractStatus</th>
                 <th>IsActive</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="projectsTableBody">
               <tr>
-                <td colspan="5" class="empty-state">No projects loaded.</td>
+                <td colspan="11" class="empty-state">No projects loaded.</td>
               </tr>
             </tbody>
           </table>
@@ -1087,6 +1093,87 @@
           <span>IsActive</span>
         </label>
       </div>
+
+      <section class="contract-section" aria-label="Contract Information">
+        <div class="section-title compact-title">
+          <p class="eyebrow">Contract</p>
+          <h3 id="project-contract-title">Contract Information</h3>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="projectContractNumber">ContractNumber</label>
+            <input type="text" id="projectContractNumber">
+          </div>
+
+          <div class="form-group">
+            <label for="projectContractType">ContractType</label>
+            <select id="projectContractType">
+              <option value="">No contract</option>
+              <option value="Direct">Direct</option>
+              <option value="Signed">Signed</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="projectSignedBy">SignedBy</label>
+            <input type="text" id="projectSignedBy">
+          </div>
+
+          <div class="form-group">
+            <label for="projectContractStartDate">ContractStartDate</label>
+            <input type="date" id="projectContractStartDate">
+          </div>
+
+          <div class="form-group">
+            <label for="projectContractEndDate">ContractEndDate</label>
+            <input type="date" id="projectContractEndDate">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="projectContractedHours">ContractedHours</label>
+            <input type="number" id="projectContractedHours" min="0" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label for="projectLowHoursThreshold">LowHoursThreshold</label>
+            <input type="number" id="projectLowHoursThreshold" min="0" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label for="projectExpirationAlertDays">ExpirationAlertDays</label>
+            <input type="number" id="projectExpirationAlertDays" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="contract-status-grid">
+          <div>
+            <span>UsedHours</span>
+            <strong id="projectUsedHoursDisplay">0.00</strong>
+          </div>
+          <div>
+            <span>RemainingHours</span>
+            <strong id="projectRemainingHoursDisplay">0.00</strong>
+          </div>
+          <div>
+            <span>HoursAlertStatus</span>
+            <strong id="projectHoursAlertStatusDisplay">NO_CONTRACT</strong>
+          </div>
+          <div>
+            <span>ExpirationAlertStatus</span>
+            <strong id="projectExpirationAlertStatusDisplay">NO_CONTRACT</strong>
+          </div>
+          <div>
+            <span>ContractStatus</span>
+            <strong id="projectContractStatusDisplay">NO_CONTRACT</strong>
+          </div>
+        </div>
+      </section>
 
       <p id="projectFormMessage" class="form-message" aria-live="polite"></p>
       <button type="submit" id="saveProjectButton" class="btn btn-primary">

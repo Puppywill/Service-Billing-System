@@ -538,6 +538,49 @@ button,
   gap: 14px;
 }
 
+.contract-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.compact-title h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1rem;
+}
+
+.contract-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.contract-status-grid div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 13, 24, 0.46);
+  padding: 10px;
+}
+
+.contract-status-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.contract-status-grid strong {
+  color: #f8fafc;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
 .form-group {
   display: grid;
   gap: 8px;
@@ -1008,6 +1051,31 @@ tbody tr:last-child td {
   color: #bbf7d0;
 }
 
+.contract-ok {
+  background: rgba(34, 197, 94, 0.14);
+  color: #bbf7d0;
+}
+
+.contract-low {
+  background: rgba(234, 179, 8, 0.17);
+  color: #fef08a;
+}
+
+.contract-warning {
+  background: rgba(249, 115, 22, 0.17);
+  color: #fed7aa;
+}
+
+.contract-danger {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fecdd3;
+}
+
+.contract-neutral {
+  background: rgba(148, 163, 184, 0.14);
+  color: #dbe4ef;
+}
+
 .role-admin {
   background: rgba(56, 189, 248, 0.15);
   color: #bae6fd;
@@ -1325,6 +1393,10 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 680px) {
+  .contract-status-grid {
+    grid-template-columns: 1fr;
+  }
+
   .app-header {
     padding-top: 24px;
     padding-inline: 12px;
