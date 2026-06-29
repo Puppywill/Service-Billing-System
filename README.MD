@@ -1047,6 +1047,19 @@ The Dashboard includes an internal `Project Dashboard` panel for demo review:
 - Uses existing endpoints only: `GET /api/projects` and `GET /api/reports/service-hours?projectId=`.
 - Does not display money, invoice data, rates, or monetary totals.
 
+### Technician Dashboard
+
+The Dashboard also includes an internal `Technician Dashboard` panel:
+
+- Admin users can search technicians by name and select one from a filtered dropdown.
+- Technician users see their own dashboard scope.
+- Shows technician name, role, active/inactive status, total worked hours, current month hours, pending hours, processed hours, canceled hours, and total service records.
+- Shows `Hours By Project` with `ProjectName`, `ClientName`, `TotalHours`, and `LastServiceDate`.
+- Shows `Hours By Client` with `ClientName`, `TotalHours`, and `TotalRecords`.
+- Shows the latest service records for the selected technician.
+- Uses existing endpoints: `GET /api/users` for Admin technician selection and `GET /api/reports/service-hours?technicianUserId=`.
+- Does not display money, invoice data, rates, or monetary totals.
+
 ### API Examples
 
 ```http
@@ -1069,6 +1082,7 @@ GET /api/dashboard/recent-activity
 4. Confirm chart sections render data or empty states.
 5. Confirm recent activity lists service records, clients, and projects.
 6. Use `Project Dashboard`, search by project or client, select a project, and confirm contract alerts and service-hour totals render.
+7. Use `Technician Dashboard`, search by technician name, select a technician, and confirm project/client hour summaries and latest service records render.
 
 ## Demo Adjustment: Reports and Invoices Visibility
 

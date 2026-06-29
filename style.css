@@ -870,13 +870,42 @@ textarea:focus {
   margin-top: 16px;
 }
 
+.technician-dashboard-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
 .project-dashboard-toolbar {
+  align-items: end;
+}
+
+.technician-dashboard-toolbar {
   align-items: end;
 }
 
 .project-hours-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-bottom: 0;
+}
+
+.technician-hours-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.technician-dashboard-grid {
+  margin-top: 0;
+}
+
+.technician-dashboard-table-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 13, 24, 0.34);
 }
 
 .project-dashboard-info-grid {

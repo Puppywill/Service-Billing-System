@@ -291,6 +291,114 @@
         </div>
       </section>
 
+      <section class="panel table-panel technician-dashboard-panel" aria-labelledby="technicianDashboardTitle">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Technician focus</p>
+            <h2 id="technicianDashboardTitle">Technician Dashboard</h2>
+          </div>
+        </div>
+
+        <div class="client-toolbar technician-dashboard-toolbar" aria-label="Technician dashboard search">
+          <div class="search-field">
+            <label for="dashboardTechnicianSearchInput">Search technician</label>
+            <input type="search" id="dashboardTechnicianSearchInput" placeholder="Technician name">
+          </div>
+          <div class="filter-field">
+            <label for="dashboardTechnicianSelect">Technician</label>
+            <select id="dashboardTechnicianSelect">
+              <option value="">Select a technician</option>
+            </select>
+          </div>
+        </div>
+
+        <p id="dashboardTechnicianMessage" class="form-message" aria-live="polite"></p>
+        <div id="dashboardTechnicianSummaryGrid" class="stats-grid dashboard-grid technician-hours-grid"></div>
+        <div id="dashboardTechnicianInfoGrid" class="project-dashboard-info-grid">
+          <p class="empty-state">Select a technician to view details.</p>
+        </div>
+
+        <section class="dashboard-chart-grid technician-dashboard-grid" aria-label="Technician dashboard details">
+          <article class="technician-dashboard-table-panel">
+            <div class="table-header compact-table-header">
+              <div class="section-title">
+                <p class="eyebrow">Projects</p>
+                <h3 id="dashboardTechnicianProjectsTitle">Hours By Project</h3>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ProjectName</th>
+                    <th>ClientName</th>
+                    <th>TotalHours</th>
+                    <th>LastServiceDate</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTechnicianProjectsBody">
+                  <tr>
+                    <td colspan="4" class="empty-state">Select a technician.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="technician-dashboard-table-panel">
+            <div class="table-header compact-table-header">
+              <div class="section-title">
+                <p class="eyebrow">Clients</p>
+                <h3 id="dashboardTechnicianClientsTitle">Hours By Client</h3>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ClientName</th>
+                    <th>TotalHours</th>
+                    <th>TotalRecords</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTechnicianClientsBody">
+                  <tr>
+                    <td colspan="3" class="empty-state">Select a technician.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <div class="table-header compact-table-header">
+          <div class="section-title">
+            <p class="eyebrow">Service records</p>
+            <h3 id="dashboardTechnicianRecordsTitle">Latest Service Records</h3>
+          </div>
+          <p class="ticket-total"><span id="dashboardTechnicianRecordsCount">0</span> records</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Project</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody id="dashboardTechnicianRecordsBody">
+              <tr>
+                <td colspan="6" class="empty-state">Select a technician to view service records.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="dashboard-chart-grid" aria-label="Dashboard charts">
         <article class="panel chart-panel">
           <div class="section-title">
