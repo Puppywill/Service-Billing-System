@@ -190,6 +190,7 @@ const dashboardProjectRecordsCount = document.querySelector("#dashboardProjectRe
 const dashboardProjectRecordsBody = document.querySelector("#dashboardProjectRecordsBody");
 const dashboardTechnicianSearchInput = document.querySelector("#dashboardTechnicianSearchInput");
 const dashboardTechnicianSelect = document.querySelector("#dashboardTechnicianSelect");
+const dashboardTechnicianProjectSelect = document.querySelector("#dashboardTechnicianProjectSelect");
 const dashboardTechnicianMessage = document.querySelector("#dashboardTechnicianMessage");
 const dashboardTechnicianSummaryGrid = document.querySelector("#dashboardTechnicianSummaryGrid");
 const dashboardTechnicianInfoGrid = document.querySelector("#dashboardTechnicianInfoGrid");
@@ -279,6 +280,7 @@ let dashboardProjectServiceRecords = [];
 let dashboardTechnicianOptions = [];
 let dashboardSelectedTechnician = null;
 let dashboardTechnicianServiceRecords = [];
+let dashboardSelectedTechnicianProject = "";
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -321,6 +323,7 @@ function resetClientState({ render = true } = {}) {
   dashboardTechnicianOptions = [];
   dashboardSelectedTechnician = null;
   dashboardTechnicianServiceRecords = [];
+  dashboardSelectedTechnicianProject = "";
   users = [];
   notifications = [];
   passwordResets = [];
@@ -447,7 +450,9 @@ const translations = {
       searchLabel: "Buscar tecnico",
       searchPlaceholder: "Nombre del tecnico",
       technicianLabel: "Tecnico",
+      projectLabel: "Proyecto",
       selectTechnician: "Selecciona un tecnico",
+      allProjects: "Todos los proyectos",
       selectedPrompt: "Selecciona un tecnico para ver detalles.",
       loading: "Cargando informacion del tecnico...",
       loadError: "No se pudo cargar la informacion del tecnico.",
@@ -790,7 +795,9 @@ const translations = {
       searchLabel: "Search technician",
       searchPlaceholder: "Technician name",
       technicianLabel: "Technician",
+      projectLabel: "Project",
       selectTechnician: "Select a technician",
+      allProjects: "All projects",
       selectedPrompt: "Select a technician to view details.",
       loading: "Loading technician information...",
       loadError: "Technician information could not be loaded.",
@@ -3123,6 +3130,12 @@ function getDashboardTechnicianPlaceholder() {
 }
 
 function renderDashboardTechnicianPrompt(message = getDashboardTechnicianPlaceholder()) {
+  if (dashboardTechnicianProjectSelect) {
+    dashboardTechnicianProjectSelect.innerHTML = `<option value="">${escapeHTML(tNested("technicianDashboard", "allProjects"))}</option>`;
+    dashboardTechnicianProjectSelect.value = "";
+    dashboardTechnicianProjectSelect.disabled = true;
+  }
+
   if (dashboardTechnicianSummaryGrid) {
     dashboardTechnicianSummaryGrid.innerHTML = "";
   }
@@ -3159,6 +3172,57 @@ function renderDashboardTechnicianPrompt(message = getDashboardTechnicianPlaceho
       </tr>
     `;
   }
+}
+
+function getDashboardTechnicianProjectValue(record) {
+  if (record.ProjectID !== undefined && record.ProjectID !== null && record.ProjectID !== "") {
+    return `id:${record.ProjectID}`;
+  }
+
+  return `name:${record.ClientName || ""}|${record.ProjectName || ""}`;
+}
+
+function getDashboardTechnicianProjectOptions() {
+  const projectsByKey = new Map();
+
+  dashboardTechnicianServiceRecords.forEach((record) => {
+    const key = getDashboardTechnicianProjectValue(record);
+    if (!key || projectsByKey.has(key)) return;
+
+    projectsByKey.set(key, {
+      value: key,
+      ProjectName: record.ProjectName || "",
+      ClientName: record.ClientName || ""
+    });
+  });
+
+  return Array.from(projectsByKey.values())
+    .sort((a, b) => String(a.ProjectName || "").localeCompare(String(b.ProjectName || "")) || String(a.ClientName || "").localeCompare(String(b.ClientName || "")));
+}
+
+function renderDashboardTechnicianProjectOptions() {
+  if (!dashboardTechnicianProjectSelect) return;
+
+  const projectOptions = getDashboardTechnicianProjectOptions();
+  const selectedValue = dashboardSelectedTechnicianProject;
+  dashboardTechnicianProjectSelect.innerHTML = `
+    <option value="">${escapeHTML(tNested("technicianDashboard", "allProjects"))}</option>
+    ${projectOptions.map((project) => `
+      <option value="${escapeHTML(project.value)}">${escapeHTML([project.ProjectName, project.ClientName].filter(Boolean).join(" - ") || project.value)}</option>
+    `).join("")}
+  `;
+
+  dashboardSelectedTechnicianProject = projectOptions.some((project) => project.value === selectedValue)
+    ? selectedValue
+    : "";
+  dashboardTechnicianProjectSelect.value = dashboardSelectedTechnicianProject;
+  dashboardTechnicianProjectSelect.disabled = !dashboardSelectedTechnician || projectOptions.length === 0;
+}
+
+function getDashboardTechnicianFilteredRecords() {
+  if (!dashboardSelectedTechnicianProject) return dashboardTechnicianServiceRecords;
+
+  return dashboardTechnicianServiceRecords.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
 }
 
 function getFilteredDashboardTechnicians() {
@@ -3429,22 +3493,26 @@ function renderDashboardTechnicianPanel() {
   if (!dashboardTechnicianSelect) return;
 
   renderDashboardTechnicianOptions();
+  renderDashboardTechnicianProjectOptions();
 
   if (!dashboardSelectedTechnician) {
     renderDashboardTechnicianPrompt();
     return;
   }
 
-  renderDashboardTechnicianSummary(dashboardTechnicianServiceRecords);
+  const filteredRecords = getDashboardTechnicianFilteredRecords();
+
+  renderDashboardTechnicianSummary(filteredRecords);
   renderDashboardTechnicianInfo(dashboardSelectedTechnician);
-  renderDashboardTechnicianProjects(dashboardTechnicianServiceRecords);
-  renderDashboardTechnicianClients(dashboardTechnicianServiceRecords);
-  renderDashboardTechnicianRecords(dashboardTechnicianServiceRecords);
+  renderDashboardTechnicianProjects(filteredRecords);
+  renderDashboardTechnicianClients(filteredRecords);
+  renderDashboardTechnicianRecords(filteredRecords);
 }
 
 async function selectDashboardTechnician(technicianId) {
   dashboardSelectedTechnician = dashboardTechnicianOptions.find((technician) => Number(technician.UserID) === Number(technicianId)) || null;
   dashboardTechnicianServiceRecords = [];
+  dashboardSelectedTechnicianProject = "";
 
   if (!dashboardSelectedTechnician) {
     renderDashboardTechnicianPanel();
@@ -3477,6 +3545,11 @@ function handleDashboardTechnicianSearch() {
 
 function handleDashboardTechnicianSelect() {
   selectDashboardTechnician(dashboardTechnicianSelect.value);
+}
+
+function handleDashboardTechnicianProjectSelect() {
+  dashboardSelectedTechnicianProject = dashboardTechnicianProjectSelect.value;
+  renderDashboardTechnicianPanel();
 }
 
 function getCurrentMonthKey() {
@@ -4115,6 +4188,7 @@ function applyStaticLanguage() {
   setText('label[for="dashboardTechnicianSearchInput"]', tNested("technicianDashboard", "searchLabel"));
   setPlaceholder("#dashboardTechnicianSearchInput", tNested("technicianDashboard", "searchPlaceholder"));
   setText('label[for="dashboardTechnicianSelect"]', tNested("technicianDashboard", "technicianLabel"));
+  setText('label[for="dashboardTechnicianProjectSelect"]', tNested("technicianDashboard", "projectLabel"));
   setText("#dashboardTechnicianProjectsTitle", tNested("technicianDashboard", "hoursByProject"));
   setText("#dashboardTechnicianClientsTitle", tNested("technicianDashboard", "hoursByClient"));
   setText("#dashboardTechnicianRecordsTitle", tNested("technicianDashboard", "latestRecords"));
@@ -5392,6 +5466,7 @@ dashboardProjectSearchInput.addEventListener("input", handleDashboardProjectSear
 dashboardProjectSelect.addEventListener("change", handleDashboardProjectSelect);
 dashboardTechnicianSearchInput.addEventListener("input", handleDashboardTechnicianSearch);
 dashboardTechnicianSelect.addEventListener("change", handleDashboardTechnicianSelect);
+dashboardTechnicianProjectSelect.addEventListener("change", handleDashboardTechnicianProjectSelect);
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);
