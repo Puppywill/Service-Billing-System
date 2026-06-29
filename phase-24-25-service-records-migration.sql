@@ -178,6 +178,12 @@ PreparedRecords AS (
   WHERE ClientID IS NOT NULL
     AND ProjectID IS NOT NULL
     AND TechnicianUserID IS NOT NULL
+    AND NOT (MorningStart IS NOT NULL AND MorningEnd IS NOT NULL AND MorningStart >= MorningEnd)
+    AND NOT (AfternoonStart IS NOT NULL AND AfternoonEnd IS NOT NULL AND AfternoonStart >= AfternoonEnd)
+    AND TotalHours IS NOT NULL
+    AND TotalHours >= 0
+    AND TotalHours <= 24
+    AND Status IN (N'Recorded', N'Billed', N'Canceled')
 )
 MERGE dbo.ServiceRecords AS target
 USING PreparedRecords AS source
@@ -311,6 +317,40 @@ DECLARE @WithoutTechnicianCount INT = (
     AND tech.UserID IS NULL
 );
 
+DECLARE @InvalidTimeRangeCount INT = (
+  SELECT COUNT(*)
+  FROM dbo.vw_RealServiceRecords s
+  WHERE s.IsValidForMigration = 1
+    AND s.LegacyServiceID IS NOT NULL
+    AND (
+      (s.MorningStart IS NOT NULL AND s.MorningEnd IS NOT NULL AND s.MorningStart >= s.MorningEnd)
+      OR (s.AfternoonStart IS NOT NULL AND s.AfternoonEnd IS NOT NULL AND s.AfternoonStart >= s.AfternoonEnd)
+    )
+);
+
+DECLARE @InvalidTotalHoursCount INT = (
+  SELECT COUNT(*)
+  FROM dbo.vw_RealServiceRecords s
+  WHERE s.IsValidForMigration = 1
+    AND s.LegacyServiceID IS NOT NULL
+    AND (
+      s.TotalHours IS NULL
+      OR s.TotalHours < 0
+      OR s.TotalHours > 24
+    )
+);
+
+DECLARE @InvalidStatusCount INT = (
+  SELECT COUNT(*)
+  FROM dbo.vw_RealServiceRecords s
+  WHERE s.IsValidForMigration = 1
+    AND s.LegacyServiceID IS NOT NULL
+    AND (
+      s.Status IS NULL
+      OR s.Status NOT IN (N'Recorded', N'Billed', N'Canceled')
+    )
+);
+
 DECLARE @ResolvableSourceCount INT = (
   SELECT COUNT(*)
   FROM dbo.vw_RealServiceRecords s
@@ -331,6 +371,12 @@ DECLARE @ResolvableSourceCount INT = (
   WHERE s.IsValidForMigration = 1
     AND s.LegacyServiceID IS NOT NULL
     AND tech.UserID IS NOT NULL
+    AND NOT (s.MorningStart IS NOT NULL AND s.MorningEnd IS NOT NULL AND s.MorningStart >= s.MorningEnd)
+    AND NOT (s.AfternoonStart IS NOT NULL AND s.AfternoonEnd IS NOT NULL AND s.AfternoonStart >= s.AfternoonEnd)
+    AND s.TotalHours IS NOT NULL
+    AND s.TotalHours >= 0
+    AND s.TotalHours <= 24
+    AND s.Status IN (N'Recorded', N'Billed', N'Canceled')
 );
 
 DECLARE @InsertedCount INT = (
@@ -355,7 +401,10 @@ SELECT
   @WithoutClientCount AS ServiceRecordsWithoutClient,
   @WithoutProjectCount AS ServiceRecordsWithoutProject,
   @WithoutTechnicianCount AS ServiceRecordsWithoutTechnician,
-  @InvalidSourceCount AS ServiceRecordsInvalid;
+  @InvalidSourceCount AS ServiceRecordsInvalid,
+  @InvalidTimeRangeCount AS ServiceRecordsInvalidTimeRange,
+  @InvalidTotalHoursCount AS ServiceRecordsInvalidTotalHours,
+  @InvalidStatusCount AS ServiceRecordsInvalidStatus;
 
 SELECT
   ActionName,
@@ -383,4 +432,28 @@ INNER JOIN dbo.Clients c ON c.ClientID = sr.ClientID
 INNER JOIN dbo.Projects p ON p.ProjectID = sr.ProjectID
 WHERE sr.LegacyServiceID IS NOT NULL
 ORDER BY sr.ServiceDate DESC, sr.LegacyServiceID DESC;
+
+SELECT TOP 100
+  s.LegacyServiceID,
+  s.LegacyOrderNumber,
+  s.ServiceDate,
+  s.MorningStart,
+  s.MorningEnd,
+  s.AfternoonStart,
+  s.AfternoonEnd,
+  s.TotalHours,
+  s.Status,
+  CASE
+    WHEN s.MorningStart IS NOT NULL AND s.MorningEnd IS NOT NULL AND s.MorningStart >= s.MorningEnd THEN N'INVALID_MORNING_RANGE'
+    WHEN s.AfternoonStart IS NOT NULL AND s.AfternoonEnd IS NOT NULL AND s.AfternoonStart >= s.AfternoonEnd THEN N'INVALID_AFTERNOON_RANGE'
+    ELSE s.MigrationIssue
+  END AS MigrationIssue
+FROM dbo.vw_RealServiceRecords s
+WHERE s.IsValidForMigration = 1
+  AND s.LegacyServiceID IS NOT NULL
+  AND (
+    (s.MorningStart IS NOT NULL AND s.MorningEnd IS NOT NULL AND s.MorningStart >= s.MorningEnd)
+    OR (s.AfternoonStart IS NOT NULL AND s.AfternoonEnd IS NOT NULL AND s.AfternoonStart >= s.AfternoonEnd)
+  )
+ORDER BY s.ServiceDate DESC, s.LegacyServiceID DESC;
 GO
