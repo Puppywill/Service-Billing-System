@@ -5350,8 +5350,8 @@ async function toggleUserStatus(userId, nextIsActive) {
   }
 
   try {
-    const response = await fetch(`/api/users/${userId}`, {
-      method: "DELETE",
+    const response = await fetch(`/api/users/${userId}/status`, {
+      method: "PUT",
       cache: "no-store",
       headers: {
         "Content-Type": "application/json"

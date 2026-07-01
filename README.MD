@@ -1093,6 +1093,15 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Technician/User roles can view descriptions but cannot edit them from Technician Dashboard.
 - The service-hours report API now includes internal IDs needed by dashboard filters and editing actions.
 
+### Phase 27.3: User Activation and Deactivation Fix
+
+- Users activation/deactivation now uses `PUT /api/users/:id/status` to update `IsActive` in `ServiceBillingDB`.
+- The Users table refreshes after the status change and shows `Active` or `Inactive`.
+- The action button changes between `Deactivate` and `Activate` based on the current status.
+- Admin users cannot deactivate their own logged-in account.
+- Inactive users are blocked by `POST /api/login` and active users can sign in normally.
+- No users or historical service records are deleted.
+
 ### API Examples
 
 ```http

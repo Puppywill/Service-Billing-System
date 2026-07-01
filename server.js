@@ -1713,6 +1713,7 @@ app.get("/api/users", requireAdmin, async (req, res) => {
         u.FullName,
         u.Email,
         u.Role,
+        u.IsActive,
         u.CreatedAt,
         u.CreatedByUserID,
         creator.FullName AS CreatedByFullName
@@ -1848,7 +1849,7 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
   }
 });
 
-app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+async function updateUserActiveStatus(req, res) {
   const userId = Number(req.params.id);
   const isActive = parseOptionalBoolean(req.body?.isActive ?? req.body?.IsActive);
 
@@ -1898,6 +1899,12 @@ app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Error al actualizar estado del usuario." });
   }
+}
+
+app.put("/api/users/:id/status", requireAdmin, updateUserActiveStatus);
+
+app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+  await updateUserActiveStatus(req, res);
 });
 
 app.get("/api/clients", requireAuth, async (req, res) => {

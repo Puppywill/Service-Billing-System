@@ -1093,6 +1093,15 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Roles Technician/User pueden ver descripciones, pero no editarlas desde Technician Dashboard.
 - La API de reportes de horas ahora incluye IDs internos necesarios para filtros del dashboard y acciones de edicion.
 
+### Fase 27.3: Correccion De Activacion Y Desactivacion De Usuarios
+
+- La activacion/desactivacion de Users ahora usa `PUT /api/users/:id/status` para actualizar `IsActive` en `ServiceBillingDB`.
+- La tabla Users se refresca despues del cambio y muestra `Active` o `Inactive`.
+- El boton cambia entre `Desactivar` y `Activar` segun el estado actual.
+- Usuarios Admin no pueden desactivar su propia cuenta activa mientras estan logueados.
+- Usuarios inactivos son bloqueados por `POST /api/login` y usuarios activos pueden iniciar sesion normalmente.
+- No se borran usuarios ni registros historicos de servicio.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
