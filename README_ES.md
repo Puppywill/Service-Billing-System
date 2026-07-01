@@ -1076,6 +1076,18 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Se crean notificaciones para Admin cuando registros de servicio se marcan como `Billed`/procesados, incluyendo tecnico, proyecto, cliente, fecha de servicio y cantidad de registros procesados.
 - Dinero, pantallas de invoices, tarifas y totales monetarios permanecen ocultos en el dashboard visible.
 
+### Fase 27.1: Service Records, Users Y Limpieza De Descripcion
+
+- Las descripciones de Service Records se limpian al mostrarse para que etiquetas HTML heredadas como `<div>`, `</div>` y `<br>` no aparezcan visibles en tablas, dashboard o reportes.
+- El valor original en base de datos no se modifica; la limpieza es solo visual y conserva saltos de linea legibles.
+- Service Records se pueden editar desde la tabla de Service Records.
+- Usuarios Admin pueden editar cualquier Service Record y cambiar estado cuando aplique.
+- Roles Technician/User pueden editar sus propios registros sin cambiar tecnico asignado ni estado.
+- Users ahora muestra estado `Active`/`Inactive` en la tabla.
+- Usuarios Admin pueden activar o desactivar usuarios sin borrar filas de la base de datos.
+- Usuarios inactivos no pueden iniciar sesion, pero sus registros historicos permanecen disponibles.
+- Los dropdowns de tecnicos prefieren usuarios activos para ocultar personal inactivo de nuevas selecciones operativas.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

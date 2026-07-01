@@ -220,6 +220,7 @@ function mapUser(record) {
     FullName: record.FullName,
     Email: record.Email,
     Role: record.Role,
+    IsActive: record.IsActive === undefined ? true : Boolean(record.IsActive),
     CreatedAt: record.CreatedAt,
     CreatedByUserID: record.CreatedByUserID,
     CreatedByFullName: record.CreatedByFullName
@@ -805,7 +806,7 @@ function requireAdminOrTechnician(req, res, next) {
     return res.status(401).json({ message: "Debes iniciar sesion." });
   }
 
-  if (!["Admin", "Technician"].includes(req.session.user.Role)) {
+  if (!["Admin", "Technician", "User"].includes(req.session.user.Role)) {
     return res.status(403).json({ message: "No tienes permisos para acceder a registros de servicio." });
   }
 
@@ -1050,6 +1051,7 @@ async function getUserById(pool, userId) {
         u.FullName,
         u.Email,
         u.Role,
+        u.IsActive,
         u.CreatedAt,
         u.CreatedByUserID,
         creator.FullName AS CreatedByFullName
@@ -1474,7 +1476,7 @@ app.post("/api/login", async (req, res) => {
     const result = await pool.request()
       .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
       .query(`
-        SELECT UserID, FullName, Email, Password, Role
+        SELECT UserID, FullName, Email, Password, Role, IsActive
         FROM dbo.Users
         WHERE Email = @Email
       `);
@@ -1484,6 +1486,10 @@ app.post("/api/login", async (req, res) => {
     }
 
     const user = result.recordset[0];
+    if (user.IsActive === false || Number(user.IsActive) === 0) {
+      return res.status(403).json({ message: "Usuario inactivo. Contacta a un administrador." });
+    }
+
     const passwordMatches = await bcrypt.compare(password, user.Password);
 
     if (!passwordMatches) {
@@ -1520,7 +1526,7 @@ app.get("/api/me", async (req, res) => {
     const pool = await getPool();
     const sessionUser = await getUserById(pool, Number(req.session.user.UserID));
 
-    if (!sessionUser) {
+    if (!sessionUser || sessionUser.IsActive === false) {
       req.session.destroy(() => {});
       return res.json({ user: null });
     }
@@ -1727,7 +1733,7 @@ app.post("/api/users", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "Todos los campos son obligatorios." });
   }
 
-  if (!["Admin", "User"].includes(role)) {
+  if (!["Admin", "Technician", "User"].includes(role)) {
     return res.status(400).json({ message: "Rol invalido." });
   }
 
@@ -1769,6 +1775,7 @@ app.post("/api/users", requireAdmin, async (req, res) => {
 app.put("/api/users/:id", requireAdmin, async (req, res) => {
   const userId = Number(req.params.id);
   const { fullName, email, password, role } = req.body;
+  const isActive = parseOptionalBoolean(req.body?.isActive ?? req.body?.IsActive);
 
   if (!Number.isInteger(userId)) {
     return res.status(400).json({ message: "ID de usuario invalido." });
@@ -1778,7 +1785,7 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "Nombre, email y rol son obligatorios." });
   }
 
-  if (!["Admin", "User"].includes(role)) {
+  if (!["Admin", "Technician", "User"].includes(role)) {
     return res.status(400).json({ message: "Rol invalido." });
   }
 
@@ -1788,7 +1795,8 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
       .input("UserID", sql.Int, userId)
       .input("FullName", sql.NVarChar(120), fullName.trim())
       .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
-      .input("Role", sql.NVarChar(20), role);
+      .input("Role", sql.NVarChar(20), role)
+      .input("IsActive", sql.Bit, isActive);
 
     let passwordUpdate = "";
 
@@ -1802,7 +1810,8 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
       UPDATE dbo.Users
       SET FullName = @FullName,
           Email = @Email,
-          Role = @Role
+          Role = @Role,
+          IsActive = COALESCE(@IsActive, IsActive)
           ${passwordUpdate}
       WHERE UserID = @UserID
     `);
@@ -1838,30 +1847,53 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
 
 app.delete("/api/users/:id", requireAdmin, async (req, res) => {
   const userId = Number(req.params.id);
+  const isActive = parseOptionalBoolean(req.body?.isActive ?? req.body?.IsActive);
 
   if (!Number.isInteger(userId)) {
     return res.status(400).json({ message: "ID de usuario invalido." });
   }
 
-  if (req.session.user.UserID === userId) {
-    return res.status(400).json({ message: "No puedes eliminar tu propio usuario." });
+  if (Number(req.session.user.UserID) === userId && isActive !== true) {
+    return res.status(400).json({ message: "No puedes desactivar tu propio usuario." });
   }
 
   try {
     const pool = await getPool();
+    const currentUserResult = await pool.request()
+      .input("UserID", sql.Int, userId)
+      .query(`
+        SELECT UserID, IsActive
+        FROM dbo.Users
+        WHERE UserID = @UserID
+      `);
+
+    const targetUser = currentUserResult.recordset[0];
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "Usuario no encontrado." });
+    }
+
+    const nextIsActive = isActive === null ? !Boolean(targetUser.IsActive) : isActive;
     const result = await pool.request()
       .input("UserID", sql.Int, userId)
-      .query("DELETE FROM dbo.Users WHERE UserID = @UserID");
+      .input("IsActive", sql.Bit, nextIsActive)
+      .query(`
+        UPDATE dbo.Users
+        SET IsActive = @IsActive,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE UserID = @UserID
+      `);
 
     if (result.rowsAffected[0] === 0) {
       return res.status(404).json({ message: "Usuario no encontrado." });
     }
 
-    res.status(204).send();
+    const updatedUser = await getUserById(pool, userId);
+    res.json(updatedUser);
   } catch (error) {
     poolPromise = null;
     console.error(error);
-    res.status(500).json({ message: "Error al eliminar usuario." });
+    res.status(500).json({ message: "Error al actualizar estado del usuario." });
   }
 });
 
@@ -2566,19 +2598,13 @@ app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
     return res.status(400).json({ message: validationError });
   }
 
-  if (req.session.user.Role === "Technician"
+  if (req.session.user.Role !== "Admin"
     && Number(req.session.user.UserID) !== serviceRecord.technicianUserId) {
-    return res.status(403).json({ message: "Los tecnicos solo pueden crear registros a su propio nombre." });
+    return res.status(403).json({ message: "Solo puedes crear registros a tu propio nombre." });
   }
 
   try {
     const pool = await getPool();
-    const previousRecord = await getServiceRecordById(pool, serviceRecordId);
-
-    if (!previousRecord) {
-      return res.status(404).json({ message: "Registro de servicio no encontrado." });
-    }
-
     const referenceError = await validateServiceRecordReferences(pool, serviceRecord);
 
     if (referenceError) {
@@ -2639,7 +2665,7 @@ app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
   }
 });
 
-app.put("/api/service-records/:id", requireAdmin, async (req, res) => {
+app.put("/api/service-records/:id", requireAdminOrTechnician, async (req, res) => {
   const serviceRecordId = Number(req.params.id);
   const serviceRecord = getServiceRecordPayload(req.body || {});
 
@@ -2655,6 +2681,30 @@ app.put("/api/service-records/:id", requireAdmin, async (req, res) => {
 
   try {
     const pool = await getPool();
+    const previousRecord = await getServiceRecordById(pool, serviceRecordId);
+
+    if (!previousRecord) {
+      return res.status(404).json({ message: "Registro de servicio no encontrado." });
+    }
+
+    const isAdminUser = req.session.user.Role === "Admin";
+
+    if (!isAdminUser) {
+      const sessionUserId = Number(req.session.user.UserID);
+
+      if (Number(previousRecord.TechnicianUserID) !== sessionUserId) {
+        return res.status(403).json({ message: "Solo puedes editar tus propios registros." });
+      }
+
+      if (Number(serviceRecord.technicianUserId) !== sessionUserId) {
+        return res.status(403).json({ message: "No puedes cambiar el tecnico del registro." });
+      }
+
+      if (serviceRecord.status && serviceRecord.status !== previousRecord.Status) {
+        return res.status(403).json({ message: "No tienes permiso para cambiar el estado del registro." });
+      }
+    }
+
     const referenceError = await validateServiceRecordReferences(pool, serviceRecord);
 
     if (referenceError) {
@@ -2673,7 +2723,7 @@ app.put("/api/service-records/:id", requireAdmin, async (req, res) => {
       .input("AfternoonEnd", sql.VarChar(8), serviceRecord.afternoonEnd)
       .input("TotalHours", sql.Decimal(6, 2), serviceRecord.totalHours)
       .input("ServiceDescription", sql.NVarChar(sql.MAX), serviceRecord.serviceDescription)
-      .input("Status", sql.NVarChar(20), serviceRecord.status)
+      .input("Status", sql.NVarChar(20), isAdminUser ? serviceRecord.status : previousRecord.Status)
       .query(`
         UPDATE dbo.ServiceRecords
         SET TechnicianUserID = @TechnicianUserID,

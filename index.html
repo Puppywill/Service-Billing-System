@@ -990,6 +990,7 @@
               <label for="userRole">Rol</label>
               <select id="userRole" required>
                 <option value="User" selected>User</option>
+                <option value="Technician">Technician</option>
                 <option value="Admin">Admin</option>
               </select>
             </div>
@@ -1025,6 +1026,7 @@
                 <th>FullName</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Status</th>
                 <th>CreatedAt</th>
                 <th>Creado por</th>
                 <th>Acciones</th>
@@ -1032,7 +1034,7 @@
             </thead>
             <tbody id="usersTableBody">
               <tr>
-                <td colspan="7" class="empty-state">No hay usuarios registrados.</td>
+                <td colspan="8" class="empty-state">No hay usuarios registrados.</td>
               </tr>
             </tbody>
           </table>
@@ -1702,6 +1704,7 @@
           <label for="editRole">Rol</label>
           <select id="editRole" required>
             <option value="User">User</option>
+            <option value="Technician">Technician</option>
             <option value="Admin">Admin</option>
           </select>
         </div>

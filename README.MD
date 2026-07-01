@@ -1076,6 +1076,18 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Admin notifications are created when service records are marked as `Billed`/processed, including technician, project, client, service date, and processed record count.
 - Money, invoice screens, rates, and monetary totals remain hidden from the visible dashboard.
 
+### Phase 27.1: Service Records, Users, and Description Cleanup
+
+- Service Record descriptions are cleaned for display so legacy HTML tags such as `<div>`, `</div>`, and `<br>` are not shown in visible tables or dashboard/report panels.
+- The original database value is not changed; cleanup is presentation-only and preserves readable line breaks.
+- Service Records can be edited from the Service Records table.
+- Admin users can edit any Service Record and can change status when appropriate.
+- Technician/User roles can edit their own records without changing the assigned technician or status.
+- Users now show `Active`/`Inactive` status in the Users table.
+- Admin users can activate or deactivate users without deleting database rows.
+- Inactive users cannot sign in, but their historical Service Records remain available.
+- Technician dropdowns prefer active users so inactive staff are hidden from new operational selection lists.
+
 ### API Examples
 
 ```http

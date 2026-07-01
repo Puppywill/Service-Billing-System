@@ -734,8 +734,12 @@ const translations = {
     userNotFound: "No se encontro el usuario seleccionado.",
     createUserError: "No se pudo crear el usuario.",
     editUserError: "No se pudo editar el usuario.",
-    deleteUserError: "No se pudo eliminar el usuario.",
-    deleteUserConfirm: "Seguro que deseas eliminar este usuario?",
+    deleteUserError: "No se pudo actualizar el estado del usuario.",
+    deleteUserConfirm: "Seguro que deseas cambiar el estado de este usuario?",
+    activateUser: "Activar",
+    deactivateUser: "Desactivar",
+    active: "Active",
+    inactive: "Inactive",
     updateTicketError: "No se pudo editar el ticket.",
     updateTicketAlertError: "Ocurrio un error al editar el ticket.",
     closeTicketError: "No se pudo cerrar el ticket.",
@@ -1082,8 +1086,12 @@ const translations = {
     userNotFound: "The selected user was not found.",
     createUserError: "Could not create the user.",
     editUserError: "Could not edit the user.",
-    deleteUserError: "Could not delete the user.",
-    deleteUserConfirm: "Are you sure you want to delete this user?",
+    deleteUserError: "Could not update the user status.",
+    deleteUserConfirm: "Are you sure you want to change this user's status?",
+    activateUser: "Activate",
+    deactivateUser: "Deactivate",
+    active: "Active",
+    inactive: "Inactive",
     updateTicketError: "Could not edit the ticket.",
     updateTicketAlertError: "An error occurred while editing the ticket.",
     closeTicketError: "Could not close the ticket.",
@@ -1251,8 +1259,12 @@ function isTechnician() {
   return currentUser?.Role === "Technician";
 }
 
+function canManageOwnServiceRecords() {
+  return ["Technician", "User"].includes(currentUser?.Role);
+}
+
 function canCreateServiceRecords() {
-  return isAdmin() || isTechnician();
+  return isAdmin() || canManageOwnServiceRecords();
 }
 
 async function loadUsersIfAdmin() {
@@ -2003,7 +2015,7 @@ async function loadServiceRecordLookups() {
         await loadUsers();
       }
 
-      serviceRecordTechnicians = users.filter((user) => user.Role === "Technician");
+      serviceRecordTechnicians = users.filter((user) => user.IsActive !== false && (user.Role === "Technician" || user.Role === "User"));
     } else {
       serviceRecordTechnicians = currentUser ? [currentUser] : [];
     }
@@ -2145,7 +2157,7 @@ function renderServiceRecords() {
   }
 
   serviceRecordsTableBody.innerHTML = serviceRecords.map((record) => {
-    const canEdit = isAdmin();
+    const canEdit = isAdmin() || (canManageOwnServiceRecords() && Number(record.TechnicianUserID) === Number(currentUser?.UserID));
     const canCancel = isAdmin() && record.Status !== "Canceled";
 
     return `
@@ -2159,7 +2171,7 @@ function renderServiceRecords() {
         <td>${escapeHTML(formatServiceRecordTime(record.AfternoonStart))}</td>
         <td>${escapeHTML(formatServiceRecordTime(record.AfternoonEnd))}</td>
         <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
-        <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+        <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
         <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
         <td>
           ${canEdit ? `
@@ -2199,7 +2211,7 @@ function getServiceRecordPayloadFromForm() {
     AfternoonStart: afternoonStart.value || null,
     AfternoonEnd: afternoonEnd.value || null,
     ServiceDescription: serviceDescription.value.trim(),
-    Status: isAdmin() ? serviceRecordStatus.value : "Recorded"
+    Status: isAdmin() ? serviceRecordStatus.value : (serviceRecordStatus.value || "Recorded")
   };
 }
 
@@ -3114,7 +3126,7 @@ function renderDashboardProjectRecords(records) {
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
-      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `).join("");
 }
@@ -3344,7 +3356,7 @@ async function loadDashboardTechnicianOptions() {
     }
 
     dashboardTechnicianOptions = users
-      .filter((user) => user.Role === "Admin" || user.Role === "Technician" || user.IsTechnician)
+      .filter((user) => user.IsActive !== false && (user.Role === "Admin" || user.Role === "Technician" || user.IsTechnician))
       .sort((a, b) => String(a.FullName || "").localeCompare(String(b.FullName || "")));
 
     if (dashboardSelectedTechnician) {
@@ -3547,7 +3559,7 @@ function renderDashboardTechnicianRecords(records) {
       <td>${escapeHTML(record.ProjectName || "")}</td>
       <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
-      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `).join("");
 }
@@ -3804,7 +3816,7 @@ function renderDashboardServiceRecordDetail(records, variant = "full") {
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
-      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   ` : `
     <tr>
@@ -3814,7 +3826,7 @@ function renderDashboardServiceRecordDetail(records, variant = "full") {
       <td>${escapeHTML(record.ProjectName || "")}</td>
       <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
-      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `);
 
@@ -4472,7 +4484,7 @@ function applyStaticLanguage() {
   setTableHeaders("#invoicesTabPanel table", ["InvoiceNumber", "ClientName", "InvoiceDate", "PeriodFrom", "PeriodTo", "Status", t("actions")]);
   setTableHeaders("#invoiceDetailModal table", ["ServiceDate", "ProjectName", "Description", "Hours"]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
-  setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), t("date"), t("createdBy"), t("actions")]);
+  setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), "Status", t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
   setTableHeaders("#reportsTabPanel table", ["ServiceRecordID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
 }
@@ -4670,35 +4682,41 @@ function renderUsers() {
     return;
   }
 
-  usersTableBody.innerHTML = users.map((user) => `
-    <tr>
-      <td>#${user.UserID}</td>
-      <td>${escapeHTML(user.FullName)}</td>
-      <td>${escapeHTML(user.Email)}</td>
-      <td><span class="badge ${getUserRoleClass(user.Role)}">${user.Role}</span></td>
-      <td>${formatDate(user.CreatedAt)}</td>
-      <td>${formatPerson(user.CreatedByFullName, user.CreatedByUserID)}</td>
-      <td>
-        <div class="actions">
-          <button class="action-btn edit-btn" data-user-action="edit" data-id="${user.UserID}">
-            ${getActionIcon("edit")}
-            ${t("edit")}
-          </button>
-          <button class="action-btn delete-btn" data-user-action="delete" data-id="${user.UserID}">
-            ${getActionIcon("delete")}
-            ${t("delete")}
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join("");
+  usersTableBody.innerHTML = users.map((user) => {
+    const isActive = user.IsActive !== false;
+    const isCurrentUser = Number(currentUser?.UserID) === Number(user.UserID);
+
+    return `
+      <tr>
+        <td>#${user.UserID}</td>
+        <td>${escapeHTML(user.FullName)}</td>
+        <td>${escapeHTML(user.Email)}</td>
+        <td><span class="badge ${getUserRoleClass(user.Role)}">${user.Role}</span></td>
+        <td><span class="badge ${isActive ? "status-abierto" : "status-cerrado"}">${isActive ? t("active") : t("inactive")}</span></td>
+        <td>${formatDate(user.CreatedAt)}</td>
+        <td>${formatPerson(user.CreatedByFullName, user.CreatedByUserID)}</td>
+        <td>
+          <div class="actions">
+            <button class="action-btn edit-btn" data-user-action="edit" data-id="${user.UserID}">
+              ${getActionIcon("edit")}
+              ${t("edit")}
+            </button>
+            <button class="action-btn ${isActive ? "delete-btn" : "close-btn"}" data-user-action="toggle-active" data-id="${user.UserID}" data-next-active="${isActive ? "false" : "true"}" ${isCurrentUser && isActive ? "disabled" : ""}>
+              ${getActionIcon(isActive ? "close" : "edit")}
+              ${isActive ? t("deactivateUser") : t("activateUser")}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function showUsersMessage(message) {
   usersTotalCount.textContent = users.length;
   usersTableBody.innerHTML = `
     <tr>
-      <td colspan="7" class="empty-state">${message}</td>
+      <td colspan="8" class="empty-state">${message}</td>
     </tr>
   `;
 }
@@ -4888,7 +4906,7 @@ function renderServiceHoursReport() {
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
-      <td class="ticket-description">${escapeHTML(record.ServiceDescription || "")}</td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `).join("");
 }
@@ -4944,6 +4962,7 @@ function applyReportPeriod() {
 }
 
 function getUserRoleClass(role) {
+  if (role === "Technician") return "role-technician";
   return role === "Admin" ? "role-admin" : "role-user";
 }
 
@@ -5131,8 +5150,8 @@ function handleUsersTableClick(event) {
     openUserEditor(userId);
   }
 
-  if (action === "delete") {
-    deleteUser(userId);
+  if (action === "toggle-active") {
+    toggleUserStatus(userId, button.dataset.nextActive === "true");
   }
 }
 
@@ -5205,7 +5224,7 @@ async function updateUser(event) {
   }
 }
 
-async function deleteUser(userId) {
+async function toggleUserStatus(userId, nextIsActive) {
   const confirmed = confirm(t("deleteUserConfirm"));
 
   if (!confirmed) {
@@ -5215,7 +5234,11 @@ async function deleteUser(userId) {
   try {
     const response = await fetch(`/api/users/${userId}`, {
       method: "DELETE",
-      cache: "no-store"
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ IsActive: nextIsActive })
     });
 
     const data = await parseJsonResponse(response);
@@ -5476,6 +5499,23 @@ function escapeHTML(text) {
   const temporaryElement = document.createElement("div");
   temporaryElement.textContent = text;
   return temporaryElement.innerHTML;
+}
+
+function cleanDisplayText(value) {
+  const raw = String(value || "");
+  const withReadableBreaks = raw
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\s*\/\s*(div|p|li|tr|section|article)\s*>/gi, "\n")
+    .replace(/<\s*(div|p|li|tr|section|article)(\s[^>]*)?>/gi, "");
+  const withoutTags = withReadableBreaks.replace(/<[^>]*>/g, "");
+  const decoder = document.createElement("textarea");
+  decoder.innerHTML = withoutTags;
+
+  return decoder.value
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 async function parseJsonResponse(response) {
