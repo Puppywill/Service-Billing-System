@@ -191,6 +191,8 @@ const dashboardProjectRecordsBody = document.querySelector("#dashboardProjectRec
 const dashboardTechnicianSearchInput = document.querySelector("#dashboardTechnicianSearchInput");
 const dashboardTechnicianSelect = document.querySelector("#dashboardTechnicianSelect");
 const dashboardTechnicianProjectSelect = document.querySelector("#dashboardTechnicianProjectSelect");
+const dashboardTechnicianDateFrom = document.querySelector("#dashboardTechnicianDateFrom");
+const dashboardTechnicianDateTo = document.querySelector("#dashboardTechnicianDateTo");
 const dashboardTechnicianMessage = document.querySelector("#dashboardTechnicianMessage");
 const dashboardTechnicianSummaryGrid = document.querySelector("#dashboardTechnicianSummaryGrid");
 const dashboardTechnicianInfoGrid = document.querySelector("#dashboardTechnicianInfoGrid");
@@ -274,6 +276,7 @@ let invoiceClients = [];
 let dashboardSummary = null;
 let dashboardCharts = null;
 let dashboardRecentActivity = null;
+let dashboardOfficialServiceRecords = [];
 let dashboardProjectOptions = [];
 let dashboardSelectedProject = null;
 let dashboardProjectServiceRecords = [];
@@ -281,6 +284,8 @@ let dashboardTechnicianOptions = [];
 let dashboardSelectedTechnician = null;
 let dashboardTechnicianServiceRecords = [];
 let dashboardSelectedTechnicianProject = "";
+let dashboardTechnicianDateFromValue = "";
+let dashboardTechnicianDateToValue = "";
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -290,6 +295,35 @@ let hasGeneratedReport = false;
 let currentUser = null;
 let activeTab = "tickets";
 let currentLanguage = localStorage.getItem("helpdeskLanguage") || "es";
+
+const officialDashboardProjectNames = [
+  "WIOA de Bayamon",
+  "Departamento de la Familia COC",
+  "WIOA de Humacao",
+  "WIOA de San Juan"
+];
+const officialDashboardProjectKeys = new Set(officialDashboardProjectNames.map(normalizeDashboardProjectName));
+
+function normalizeDashboardProjectName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isOfficialDashboardProjectName(projectName) {
+  return officialDashboardProjectKeys.has(normalizeDashboardProjectName(projectName));
+}
+
+function isOfficialDashboardProject(row) {
+  return isOfficialDashboardProjectName(row?.ProjectName);
+}
+
+function getOfficialDashboardRecords(records = []) {
+  return records.filter(isOfficialDashboardProject);
+}
 
 function clearTransientStorage() {
   sessionStorage.clear();
@@ -317,6 +351,7 @@ function resetClientState({ render = true } = {}) {
   dashboardSummary = null;
   dashboardCharts = null;
   dashboardRecentActivity = null;
+  dashboardOfficialServiceRecords = [];
   dashboardProjectOptions = [];
   dashboardSelectedProject = null;
   dashboardProjectServiceRecords = [];
@@ -324,6 +359,8 @@ function resetClientState({ render = true } = {}) {
   dashboardSelectedTechnician = null;
   dashboardTechnicianServiceRecords = [];
   dashboardSelectedTechnicianProject = "";
+  dashboardTechnicianDateFromValue = "";
+  dashboardTechnicianDateToValue = "";
   users = [];
   notifications = [];
   passwordResets = [];
@@ -451,6 +488,8 @@ const translations = {
       searchPlaceholder: "Nombre del tecnico",
       technicianLabel: "Tecnico",
       projectLabel: "Proyecto",
+      dateFromLabel: "Fecha desde",
+      dateToLabel: "Fecha hasta",
       selectTechnician: "Selecciona un tecnico",
       allProjects: "Todos los proyectos",
       selectedPrompt: "Selecciona un tecnico para ver detalles.",
@@ -712,7 +751,8 @@ const translations = {
       USER_CREATED: "Usuario creado",
       USER_UPDATED: "Usuario editado",
       PASSWORD_RESET_REQUESTED: "Recuperacion de contrasena",
-      REPORT_GENERATED: "Reporte generado"
+      REPORT_GENERATED: "Reporte generado",
+      SERVICE_RECORDS_PROCESSED: "Registros procesados"
     },
     statuses: {
       Abierto: "Abierto",
@@ -796,6 +836,8 @@ const translations = {
       searchPlaceholder: "Technician name",
       technicianLabel: "Technician",
       projectLabel: "Project",
+      dateFromLabel: "Date from",
+      dateToLabel: "Date to",
       selectTechnician: "Select a technician",
       allProjects: "All projects",
       selectedPrompt: "Select a technician to view details.",
@@ -1057,7 +1099,8 @@ const translations = {
       USER_CREATED: "User created",
       USER_UPDATED: "User updated",
       PASSWORD_RESET_REQUESTED: "Password recovery",
-      REPORT_GENERATED: "Report generated"
+      REPORT_GENERATED: "Report generated",
+      SERVICE_RECORDS_PROCESSED: "Processed records"
     },
     statuses: {
       Abierto: "Open",
@@ -2805,16 +2848,18 @@ async function resolvePasswordResetNotification(notificationId) {
 
 async function loadDashboardData() {
   try {
-    const [summaryResponse, chartsResponse, activityResponse] = await Promise.all([
+    const [summaryResponse, chartsResponse, activityResponse, serviceHoursResponse] = await Promise.all([
       fetch("/api/dashboard/summary", { cache: "no-store" }),
       fetch("/api/dashboard/charts", { cache: "no-store" }),
-      fetch("/api/dashboard/recent-activity", { cache: "no-store" })
+      fetch("/api/dashboard/recent-activity", { cache: "no-store" }),
+      fetch("/api/reports/service-hours", { cache: "no-store" })
     ]);
     const summaryData = await parseJsonResponse(summaryResponse);
     const chartsData = await parseJsonResponse(chartsResponse);
     const activityData = await parseJsonResponse(activityResponse);
+    const serviceHoursData = await parseJsonResponse(serviceHoursResponse);
 
-    if ([summaryResponse, chartsResponse, activityResponse].some((response) => response.status === 401)) {
+    if ([summaryResponse, chartsResponse, activityResponse, serviceHoursResponse].some((response) => response.status === 401)) {
       currentUser = null;
       showLogin();
       return;
@@ -2832,9 +2877,14 @@ async function loadDashboardData() {
       throw new Error(translateServerMessage(activityData.message) || t("dashboardLoadError"));
     }
 
+    if (!serviceHoursResponse.ok) {
+      throw new Error(translateServerMessage(serviceHoursData.message) || t("dashboardLoadError"));
+    }
+
     dashboardSummary = summaryData;
     dashboardCharts = chartsData;
     dashboardRecentActivity = activityData;
+    dashboardOfficialServiceRecords = getOfficialDashboardRecords(Array.isArray(serviceHoursData) ? serviceHoursData : []);
     dashboardMessage.textContent = "";
     renderDashboard();
     await loadDashboardProjectOptions();
@@ -2844,6 +2894,7 @@ async function loadDashboardData() {
     dashboardSummary = null;
     dashboardCharts = null;
     dashboardRecentActivity = null;
+    dashboardOfficialServiceRecords = [];
     dashboardMessage.textContent = error.message || t("dashboardLoadError");
     renderDashboard();
   }
@@ -2944,7 +2995,7 @@ async function loadDashboardProjectOptions() {
       throw new Error(translateServerMessage(data.message) || tNested("projectDashboard", "loadError"));
     }
 
-    dashboardProjectOptions = Array.isArray(data) ? data : [];
+    dashboardProjectOptions = (Array.isArray(data) ? data : []).filter(isOfficialDashboardProject);
     if (dashboardSelectedProject) {
       dashboardSelectedProject = dashboardProjectOptions.find((project) => Number(project.ProjectID) === Number(dashboardSelectedProject.ProjectID)) || null;
     }
@@ -3185,7 +3236,7 @@ function getDashboardTechnicianProjectValue(record) {
 function getDashboardTechnicianProjectOptions() {
   const projectsByKey = new Map();
 
-  dashboardTechnicianServiceRecords.forEach((record) => {
+  getOfficialDashboardRecords(dashboardTechnicianServiceRecords).forEach((record) => {
     const key = getDashboardTechnicianProjectValue(record);
     if (!key || projectsByKey.has(key)) return;
 
@@ -3220,9 +3271,21 @@ function renderDashboardTechnicianProjectOptions() {
 }
 
 function getDashboardTechnicianFilteredRecords() {
-  if (!dashboardSelectedTechnicianProject) return dashboardTechnicianServiceRecords;
+  let records = getOfficialDashboardRecords(dashboardTechnicianServiceRecords);
 
-  return dashboardTechnicianServiceRecords.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
+  if (dashboardSelectedTechnicianProject) {
+    records = records.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
+  }
+
+  if (dashboardTechnicianDateFromValue) {
+    records = records.filter((record) => String(record.ServiceDate || "").slice(0, 10) >= dashboardTechnicianDateFromValue);
+  }
+
+  if (dashboardTechnicianDateToValue) {
+    records = records.filter((record) => String(record.ServiceDate || "").slice(0, 10) <= dashboardTechnicianDateToValue);
+  }
+
+  return records;
 }
 
 function getFilteredDashboardTechnicians() {
@@ -3552,6 +3615,12 @@ function handleDashboardTechnicianProjectSelect() {
   renderDashboardTechnicianPanel();
 }
 
+function handleDashboardTechnicianDateChange() {
+  dashboardTechnicianDateFromValue = dashboardTechnicianDateFrom?.value || "";
+  dashboardTechnicianDateToValue = dashboardTechnicianDateTo?.value || "";
+  renderDashboardTechnicianPanel();
+}
+
 function getCurrentMonthKey() {
   const now = new Date();
 
@@ -3560,12 +3629,73 @@ function getCurrentMonthKey() {
 
 function getCurrentMonthHours() {
   const currentMonth = getCurrentMonthKey();
-  const monthRow = dashboardCharts?.HoursByMonth?.find((row) => String(row.Month) === currentMonth);
+  const monthRow = getDashboardOfficialChartRows().HoursByMonth.find((row) => String(row.Month) === currentMonth);
 
   return Number(monthRow?.TotalHours || 0);
 }
 
+function getOfficialDashboardSummary() {
+  const clientNames = new Set();
+  const projectNames = new Set();
+  const summary = {
+    TotalClients: 0,
+    TotalProjects: officialDashboardProjectNames.length,
+    TotalServiceRecords: dashboardOfficialServiceRecords.length,
+    TotalHours: 0,
+    UnbilledHours: 0,
+    BilledHours: 0
+  };
+
+  dashboardOfficialServiceRecords.forEach((record) => {
+    const hours = Number(record.TotalHours || 0);
+
+    if (record.ClientName) clientNames.add(record.ClientName);
+    if (record.ProjectName) projectNames.add(normalizeDashboardProjectName(record.ProjectName));
+    summary.TotalHours += hours;
+    if (record.Status === "Recorded") summary.UnbilledHours += hours;
+    if (record.Status === "Billed") summary.BilledHours += hours;
+  });
+
+  summary.TotalClients = clientNames.size;
+  summary.TotalProjects = isAdmin()
+    ? Math.max(projectNames.size, officialDashboardProjectNames.length)
+    : projectNames.size;
+
+  return summary;
+}
+
+function getDashboardOfficialChartRows() {
+  const rowsByMonth = new Map();
+  const rowsByClient = new Map();
+  const rowsByProject = new Map();
+  const rowsByTechnician = new Map();
+
+  dashboardOfficialServiceRecords.forEach((record) => {
+    const hours = Number(record.TotalHours || 0);
+    const month = String(record.ServiceDate || "").slice(0, 7);
+    const client = record.ClientName || "";
+    const project = record.ProjectName || "";
+    const technician = record.TechnicianName || "";
+
+    if (month) rowsByMonth.set(month, (rowsByMonth.get(month) || 0) + hours);
+    if (client) rowsByClient.set(client, (rowsByClient.get(client) || 0) + hours);
+    if (project) rowsByProject.set(project, (rowsByProject.get(project) || 0) + hours);
+    if (technician) rowsByTechnician.set(technician, (rowsByTechnician.get(technician) || 0) + hours);
+  });
+
+  const byHoursDesc = (a, b) => b.TotalHours - a.TotalHours;
+
+  return {
+    HoursByMonth: Array.from(rowsByMonth, ([Month, TotalHours]) => ({ Month, TotalHours }))
+      .sort((a, b) => String(a.Month).localeCompare(String(b.Month))),
+    HoursByClient: Array.from(rowsByClient, ([ClientName, TotalHours]) => ({ ClientName, TotalHours })).sort(byHoursDesc),
+    HoursByProject: Array.from(rowsByProject, ([ProjectName, TotalHours]) => ({ ProjectName, TotalHours })).sort(byHoursDesc),
+    HoursByTechnician: Array.from(rowsByTechnician, ([TechnicianName, TotalHours]) => ({ TechnicianName, TotalHours })).sort(byHoursDesc)
+  };
+}
+
 function renderDashboardSummary() {
+  const officialSummary = getOfficialDashboardSummary();
   const metrics = [
     { key: "TotalClients", type: "count" },
     { key: "TotalProjects", type: "count", detail: "projects" },
@@ -3586,17 +3716,19 @@ function renderDashboardSummary() {
       </div>
       <div>
         <span>${escapeHTML(tNested("dashboardMetrics", metric.key))}</span>
-        <strong>${formatDashboardMetric(metric.value ?? dashboardSummary?.[metric.key], metric.type)}</strong>
+        <strong>${formatDashboardMetric(metric.value ?? officialSummary?.[metric.key] ?? dashboardSummary?.[metric.key], metric.type)}</strong>
       </div>
     </article>
   `).join("");
 }
 
 function renderDashboardCharts() {
-  renderBarChart(hoursByMonthChart, dashboardCharts?.HoursByMonth, "Month", "TotalHours", "hours");
-  renderBarChart(hoursByClientChart, dashboardCharts?.HoursByClient, "ClientName", "TotalHours", "hours");
-  renderBarChart(hoursByProjectChart, dashboardCharts?.HoursByProject, "ProjectName", "TotalHours", "hours");
-  renderBarChart(hoursByTechnicianChart, dashboardCharts?.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
+  const officialCharts = getDashboardOfficialChartRows();
+
+  renderBarChart(hoursByMonthChart, officialCharts.HoursByMonth, "Month", "TotalHours", "hours");
+  renderBarChart(hoursByClientChart, officialCharts.HoursByClient, "ClientName", "TotalHours", "hours");
+  renderBarChart(hoursByProjectChart, officialCharts.HoursByProject, "ProjectName", "TotalHours", "hours");
+  renderBarChart(hoursByTechnicianChart, officialCharts.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
 }
 
 function getCurrentMonthDateRange() {
@@ -3737,7 +3869,7 @@ async function showDashboardDetail(detailType) {
         throw new Error(translateServerMessage(data.message) || t("loadProjectsError"));
       }
 
-      renderDashboardProjectsDetail(Array.isArray(data) ? data : []);
+      renderDashboardProjectsDetail((Array.isArray(data) ? data : []).filter(isOfficialDashboardProject));
       dashboardDetailMessage.textContent = "";
       return;
     }
@@ -3758,7 +3890,7 @@ async function showDashboardDetail(detailType) {
       params.set("status", "Billed");
     }
 
-    const records = await fetchDashboardServiceHours(params.toString());
+    const records = getOfficialDashboardRecords(await fetchDashboardServiceHours(params.toString()));
     const visibleRecords = detailType === "records" ? records.slice(0, 20) : records;
 
     renderDashboardServiceRecordDetail(visibleRecords, detailType === "pending" || detailType === "processed" ? "status" : "full");
@@ -3823,9 +3955,15 @@ function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
 }
 
 function renderDashboardRecentActivity() {
-  renderActivityList(recentServiceRecordsList, dashboardRecentActivity?.ServiceRecords, renderServiceRecordActivity);
-  renderActivityList(recentClientsList, dashboardRecentActivity?.Clients, renderClientActivity);
-  renderActivityList(recentProjectsList, dashboardRecentActivity?.Projects, renderProjectActivity);
+  const officialClientNames = new Set(dashboardOfficialServiceRecords.map((record) => record.ClientName).filter(Boolean));
+
+  renderActivityList(recentServiceRecordsList, getOfficialDashboardRecords(dashboardRecentActivity?.ServiceRecords || []), renderServiceRecordActivity);
+  renderActivityList(
+    recentClientsList,
+    (dashboardRecentActivity?.Clients || []).filter((client) => officialClientNames.has(client.ClientName)),
+    renderClientActivity
+  );
+  renderActivityList(recentProjectsList, (dashboardRecentActivity?.Projects || []).filter(isOfficialDashboardProject), renderProjectActivity);
 }
 
 function renderActivityList(container, rows = [], renderer) {
@@ -4189,6 +4327,8 @@ function applyStaticLanguage() {
   setPlaceholder("#dashboardTechnicianSearchInput", tNested("technicianDashboard", "searchPlaceholder"));
   setText('label[for="dashboardTechnicianSelect"]', tNested("technicianDashboard", "technicianLabel"));
   setText('label[for="dashboardTechnicianProjectSelect"]', tNested("technicianDashboard", "projectLabel"));
+  setText('label[for="dashboardTechnicianDateFrom"]', tNested("technicianDashboard", "dateFromLabel"));
+  setText('label[for="dashboardTechnicianDateTo"]', tNested("technicianDashboard", "dateToLabel"));
   setText("#dashboardTechnicianProjectsTitle", tNested("technicianDashboard", "hoursByProject"));
   setText("#dashboardTechnicianClientsTitle", tNested("technicianDashboard", "hoursByClient"));
   setText("#dashboardTechnicianRecordsTitle", tNested("technicianDashboard", "latestRecords"));
@@ -5467,6 +5607,8 @@ dashboardProjectSelect.addEventListener("change", handleDashboardProjectSelect);
 dashboardTechnicianSearchInput.addEventListener("input", handleDashboardTechnicianSearch);
 dashboardTechnicianSelect.addEventListener("change", handleDashboardTechnicianSelect);
 dashboardTechnicianProjectSelect.addEventListener("change", handleDashboardTechnicianProjectSelect);
+dashboardTechnicianDateFrom.addEventListener("change", handleDashboardTechnicianDateChange);
+dashboardTechnicianDateTo.addEventListener("change", handleDashboardTechnicianDateChange);
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);

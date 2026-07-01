@@ -967,6 +967,59 @@ async function createReportNotification(pool, req, messagePrefix) {
   );
 }
 
+function formatNotificationDate(value) {
+  if (!value) return "-";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+async function getAdminNotificationUsers(pool) {
+  const result = await pool.request().query(`
+    SELECT UserID
+    FROM dbo.Users
+    WHERE Role = N'Admin'
+      AND IsActive = 1
+  `);
+
+  return result.recordset;
+}
+
+async function createAdminServiceRecordsProcessedNotifications(pool, records) {
+  if (!Array.isArray(records) || records.length === 0) return;
+
+  const admins = await getAdminNotificationUsers(pool);
+  if (!admins.length) return;
+
+  const groupedRecords = new Map();
+
+  records.forEach((record) => {
+    const key = [
+      record.TechnicianName || "",
+      record.ProjectName || "",
+      record.ClientName || "",
+      formatNotificationDate(record.ServiceDate)
+    ].join("|");
+    const existing = groupedRecords.get(key) || {
+      TechnicianName: record.TechnicianName || "-",
+      ProjectName: record.ProjectName || "-",
+      ClientName: record.ClientName || "-",
+      ServiceDate: formatNotificationDate(record.ServiceDate),
+      Count: 0
+    };
+
+    existing.Count += 1;
+    groupedRecords.set(key, existing);
+  });
+
+  for (const group of groupedRecords.values()) {
+    const message = `Registros procesados: Tecnico ${group.TechnicianName} | Proyecto ${group.ProjectName} | Cliente ${group.ClientName} | Fecha ${group.ServiceDate} | Cantidad ${group.Count}`;
+
+    for (const admin of admins) {
+      await createNotification(pool, Number(admin.UserID), message.slice(0, 300), "SERVICE_RECORDS_PROCESSED");
+    }
+  }
+}
+
 async function getTicketById(pool, ticketId) {
   const result = await pool.request()
     .input("TicketID", sql.Int, ticketId)
@@ -1100,6 +1153,49 @@ async function getServiceRecordById(pool, serviceRecordId) {
     `);
 
   return result.recordset[0] ? mapServiceRecord(result.recordset[0]) : null;
+}
+
+async function getServiceRecordsByIds(pool, serviceRecordIds) {
+  const ids = Array.from(new Set((serviceRecordIds || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0)));
+
+  if (!ids.length) return [];
+
+  const request = pool.request();
+  const placeholders = ids.map((id, index) => {
+    const inputName = `ServiceRecordID${index}`;
+    request.input(inputName, sql.Int, id);
+    return `@${inputName}`;
+  });
+  const result = await request.query(`
+    SELECT
+      sr.ServiceRecordID,
+      sr.TechnicianUserID,
+      technician.FullName AS TechnicianName,
+      sr.ClientID,
+      client.ClientName,
+      sr.ProjectID,
+      project.ProjectName,
+      sr.ServiceDate,
+      sr.MorningStart,
+      sr.MorningEnd,
+      sr.AfternoonStart,
+      sr.AfternoonEnd,
+      sr.TotalHours,
+      sr.ServiceDescription,
+      sr.Status,
+      sr.InvoiceID,
+      sr.CreatedAt,
+      sr.UpdatedAt
+    FROM dbo.ServiceRecords sr
+    INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+    INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+    INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+    WHERE sr.ServiceRecordID IN (${placeholders.join(", ")})
+  `);
+
+  return result.recordset.map(mapServiceRecord);
 }
 
 async function getInvoiceLines(pool, invoiceId) {
@@ -2477,6 +2573,12 @@ app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
 
   try {
     const pool = await getPool();
+    const previousRecord = await getServiceRecordById(pool, serviceRecordId);
+
+    if (!previousRecord) {
+      return res.status(404).json({ message: "Registro de servicio no encontrado." });
+    }
+
     const referenceError = await validateServiceRecordReferences(pool, serviceRecord);
 
     if (referenceError) {
@@ -2594,6 +2696,14 @@ app.put("/api/service-records/:id", requireAdmin, async (req, res) => {
     }
 
     const updatedRecord = await getServiceRecordById(pool, serviceRecordId);
+    if (updatedRecord?.Status === "Billed" && previousRecord.Status !== "Billed") {
+      try {
+        await createAdminServiceRecordsProcessedNotifications(pool, [updatedRecord]);
+      } catch (notificationError) {
+        console.error(notificationError);
+      }
+    }
+
     res.json(updatedRecord);
   } catch (error) {
     poolPromise = null;
@@ -2897,6 +3007,16 @@ app.post("/api/invoices/generate", requireAdmin, async (req, res) => {
       await transaction.commit();
 
       const createdInvoice = await getInvoiceById(pool, invoiceId, true);
+      try {
+        const processedRecords = await getServiceRecordsByIds(
+          pool,
+          billableRecords.map((record) => record.ServiceRecordID)
+        );
+        await createAdminServiceRecordsProcessedNotifications(pool, processedRecords);
+      } catch (notificationError) {
+        console.error(notificationError);
+      }
+
       res.status(201).json(createdInvoice);
     } catch (error) {
       await transaction.rollback();

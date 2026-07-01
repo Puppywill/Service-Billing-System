@@ -1062,6 +1062,20 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Uses existing endpoints: `GET /api/users` for Admin technician selection and `GET /api/reports/service-hours?technicianUserId=`.
 - Does not display money, invoice data, rates, or monetary totals.
 
+### Phase 27: Dashboard Active Projects and Technician Date Filters
+
+- The visible Dashboard now focuses its summary charts, project dashboard, dashboard detail panels, and recent activity on the official active project list:
+  - `WIOA de Bayamón`
+  - `Departamento de la Familia COC`
+  - `WIOA de Humacao`
+  - `WIOA de San Juan`
+- This is a frontend/dashboard presentation filter only. No database records are deleted or modified.
+- Technician Dashboard now includes `Date from` and `Date to` filters.
+- Admin users can combine technician, project, and date range filters to review worked hours, client totals, latest records, total records, pending hours, processed hours, and canceled hours.
+- The project dropdown continues to show only projects where the selected technician has service records, scoped to the official dashboard project list.
+- Admin notifications are created when service records are marked as `Billed`/processed, including technician, project, client, service date, and processed record count.
+- Money, invoice screens, rates, and monetary totals remain hidden from the visible dashboard.
+
 ### API Examples
 
 ```http
@@ -1084,7 +1098,7 @@ GET /api/dashboard/recent-activity
 4. Confirm chart sections render data or empty states.
 5. Confirm recent activity lists service records, clients, and projects.
 6. Use `Project Dashboard`, search by project or client, select a project, and confirm contract alerts and service-hour totals render.
-7. Use `Technician Dashboard`, search by technician name, select a technician, then filter by `Project` and confirm totals, hours by client, hours by project, and latest service records update.
+7. Use `Technician Dashboard`, search by technician name, select a technician, then filter by `Project`, `Date from`, and `Date to`; confirm totals, hours by client, hours by project, and latest service records update.
 
 ## Demo Adjustment: Reports and Invoices Visibility
 

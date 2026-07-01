@@ -1062,6 +1062,20 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Usa endpoints existentes: `GET /api/users` para seleccion Admin y `GET /api/reports/service-hours?technicianUserId=`.
 - No muestra dinero, facturas, tarifas ni totales monetarios.
 
+### Fase 27: Proyectos Activos Del Dashboard Y Filtros De Fecha Por Tecnico
+
+- El Dashboard visible ahora enfoca sus graficas de resumen, Project Dashboard, paneles de detalle y actividad reciente en la lista oficial de proyectos activos:
+  - `WIOA de Bayamón`
+  - `Departamento de la Familia COC`
+  - `WIOA de Humacao`
+  - `WIOA de San Juan`
+- Este filtro es solo de presentacion en Dashboard/frontend. No se eliminan ni modifican registros de base de datos.
+- Technician Dashboard ahora incluye filtros `Fecha desde` y `Fecha hasta`.
+- Usuarios Admin pueden combinar tecnico, proyecto y rango de fechas para revisar horas trabajadas, totales por cliente, ultimos registros, total de registros, horas pendientes, horas procesadas y horas canceladas.
+- El dropdown de proyecto sigue mostrando solo proyectos donde el tecnico seleccionado tiene registros, limitado a la lista oficial del dashboard.
+- Se crean notificaciones para Admin cuando registros de servicio se marcan como `Billed`/procesados, incluyendo tecnico, proyecto, cliente, fecha de servicio y cantidad de registros procesados.
+- Dinero, pantallas de invoices, tarifas y totales monetarios permanecen ocultos en el dashboard visible.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
@@ -1102,7 +1116,7 @@ GET /api/dashboard/recent-activity
 4. Confirmar que las secciones visuales muestran datos o estados vacios.
 5. Confirmar que la actividad reciente muestra registros de servicio, clientes y proyectos.
 6. Usar `Project Dashboard`, buscar por proyecto o cliente, seleccionar un proyecto y confirmar alertas contractuales y totales de horas.
-7. Usar `Technician Dashboard`, buscar por nombre de tecnico, seleccionar uno, filtrar por `Proyecto` y confirmar que totales, horas por cliente, horas por proyecto y ultimos registros se actualizan.
+7. Usar `Technician Dashboard`, buscar por nombre de tecnico, seleccionar uno, filtrar por `Proyecto`, `Fecha desde` y `Fecha hasta`, y confirmar que totales, horas por cliente, horas por proyecto y ultimos registros se actualizan.
 8. Iniciar sesion como tecnico y confirmar que el dashboard esta limitado por permisos del backend.
 9. Interrumpir temporalmente una API o conexion local de base de datos durante pruebas y confirmar que aparece el mensaje de error del dashboard.
 
