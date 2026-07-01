@@ -4810,7 +4810,7 @@ function renderUsers() {
         <td>${escapeHTML(user.FullName)}</td>
         <td>${escapeHTML(user.Email)}</td>
         <td><span class="badge ${getUserRoleClass(user.Role)}">${user.Role}</span></td>
-        <td><span class="badge ${isActive ? "status-abierto" : "status-cerrado"}">${isActive ? t("active") : t("inactive")}</span></td>
+        <td><span class="badge ${isActive ? "user-status-active" : "user-status-inactive"}">${isActive ? t("active") : t("inactive")}</span></td>
         <td>${formatDate(user.CreatedAt)}</td>
         <td>${formatPerson(user.CreatedByFullName, user.CreatedByUserID)}</td>
         <td>
