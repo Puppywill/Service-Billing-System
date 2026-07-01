@@ -1102,6 +1102,15 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Inactive users are blocked by `POST /api/login` and active users can sign in normally.
 - No users or historical service records are deleted.
 
+### Phase 28: Simplified Technician Dashboard
+
+- Dashboard is simplified around the daily workflow: select Technician, Project, Date from, and Date to.
+- General dashboard charts, recent activity panels, Project Dashboard, and extra technician breakdown tables are hidden from the visible Dashboard.
+- Technician Dashboard now shows only project-scoped information: Technician, Client, Project, total hours, total records, pending hours, processed hours, and canceled hours.
+- The visible table is limited to `Latest Service Records` with Date, Client, Project, Hours, Status, Description, and Admin-only Edit.
+- Changing the selected project or date range updates all totals and the table automatically.
+- Admin description editing from the Technician Dashboard remains available.
+
 ### API Examples
 
 ```http

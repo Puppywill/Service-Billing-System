@@ -1102,6 +1102,15 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Usuarios inactivos son bloqueados por `POST /api/login` y usuarios activos pueden iniciar sesion normalmente.
 - No se borran usuarios ni registros historicos de servicio.
 
+### Fase 28: Technician Dashboard Simplificado
+
+- Dashboard se simplifica alrededor del flujo diario: seleccionar Tecnico, Proyecto, Fecha desde y Fecha hasta.
+- Las graficas generales, paneles de actividad reciente, Project Dashboard y tablas auxiliares del tecnico quedan ocultas del Dashboard visible.
+- Technician Dashboard ahora muestra solo informacion del proyecto seleccionado: tecnico, cliente, proyecto, total de horas, total de registros, horas pendientes, horas procesadas y horas canceladas.
+- La unica tabla visible es `Ultimos Service Records` con Fecha, Cliente, Proyecto, Horas, Estado, Descripcion y Editar solo para Admin.
+- Al cambiar proyecto o rango de fechas, los totales y la tabla se actualizan automaticamente.
+- La edicion de descripcion desde Technician Dashboard para Admin se mantiene disponible.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
