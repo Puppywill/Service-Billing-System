@@ -203,6 +203,12 @@ const dashboardTechnicianClientsBody = document.querySelector("#dashboardTechnic
 const dashboardTechnicianRecordsTitle = document.querySelector("#dashboardTechnicianRecordsTitle");
 const dashboardTechnicianRecordsCount = document.querySelector("#dashboardTechnicianRecordsCount");
 const dashboardTechnicianRecordsBody = document.querySelector("#dashboardTechnicianRecordsBody");
+const dashboardTechnicianDescriptionModal = document.querySelector("#dashboardTechnicianDescriptionModal");
+const dashboardTechnicianDescriptionForm = document.querySelector("#dashboardTechnicianDescriptionForm");
+const closeDashboardTechnicianDescriptionModal = document.querySelector("#closeDashboardTechnicianDescriptionModal");
+const dashboardTechnicianDescriptionRecordId = document.querySelector("#dashboardTechnicianDescriptionRecordId");
+const dashboardTechnicianDescriptionText = document.querySelector("#dashboardTechnicianDescriptionText");
+const dashboardTechnicianDescriptionMessage = document.querySelector("#dashboardTechnicianDescriptionMessage");
 const hoursByMonthTitle = document.querySelector("#hoursByMonthTitle");
 const billingByMonthTitle = document.querySelector("#billingByMonthTitle");
 const hoursByClientTitle = document.querySelector("#hoursByClientTitle");
@@ -286,6 +292,7 @@ let dashboardTechnicianServiceRecords = [];
 let dashboardSelectedTechnicianProject = "";
 let dashboardTechnicianDateFromValue = "";
 let dashboardTechnicianDateToValue = "";
+let dashboardTechnicianDescriptionRecord = null;
 let users = [];
 let notifications = [];
 let passwordResets = [];
@@ -295,6 +302,22 @@ let hasGeneratedReport = false;
 let currentUser = null;
 let activeTab = "tickets";
 let currentLanguage = localStorage.getItem("helpdeskLanguage") || "es";
+
+const technicianDashboardMainProjectKeys = [
+  "hosting y mantenimiento 2025-2026 - municipio de bayamon - programa wioa",
+  "desarrollo de pagina web 2025 - aldl la montana",
+  "webpage 2025 - conexion laboral area local sureste",
+  "programa continuo de cuidado (coc) - departamento de la familia"
+];
+
+function normalizeSearchKey(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
 
 function clearTransientStorage() {
   sessionStorage.clear();
@@ -332,6 +355,7 @@ function resetClientState({ render = true } = {}) {
   dashboardSelectedTechnicianProject = "";
   dashboardTechnicianDateFromValue = "";
   dashboardTechnicianDateToValue = "";
+  dashboardTechnicianDescriptionRecord = null;
   users = [];
   notifications = [];
   passwordResets = [];
@@ -3202,7 +3226,7 @@ function renderDashboardTechnicianPrompt(message = getDashboardTechnicianPlaceho
   if (dashboardTechnicianRecordsBody) {
     dashboardTechnicianRecordsBody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty-state">${message}</td>
+        <td colspan="7" class="empty-state">${message}</td>
       </tr>
     `;
   }
@@ -3230,8 +3254,37 @@ function getDashboardTechnicianProjectOptions() {
     });
   });
 
+  dashboardProjectOptions
+    .filter((project) => project.IsActive !== false && getDashboardTechnicianProjectPriority(project) < Number.MAX_SAFE_INTEGER)
+    .forEach((project) => {
+      const key = `id:${project.ProjectID}`;
+      if (projectsByKey.has(key)) return;
+
+      projectsByKey.set(key, {
+        value: key,
+        ProjectName: project.ProjectName || "",
+        ClientName: project.ClientName || ""
+      });
+    });
+
   return Array.from(projectsByKey.values())
-    .sort((a, b) => String(a.ProjectName || "").localeCompare(String(b.ProjectName || "")) || String(a.ClientName || "").localeCompare(String(b.ClientName || "")));
+    .sort((a, b) => {
+      const priorityDiff = getDashboardTechnicianProjectPriority(a) - getDashboardTechnicianProjectPriority(b);
+      if (priorityDiff !== 0) return priorityDiff;
+
+      return String(a.ProjectName || "").localeCompare(String(b.ProjectName || ""))
+        || String(a.ClientName || "").localeCompare(String(b.ClientName || ""));
+    });
+}
+
+function getDashboardTechnicianProjectPriority(project) {
+  const labelKey = normalizeSearchKey([project.ProjectName, project.ClientName].filter(Boolean).join(" - "));
+  const projectKey = normalizeSearchKey(project.ProjectName);
+  const labelIndex = technicianDashboardMainProjectKeys.indexOf(labelKey);
+  const projectIndex = technicianDashboardMainProjectKeys.findIndex((key) => key.startsWith(`${projectKey} -`) || key === projectKey);
+  const priority = labelIndex >= 0 ? labelIndex : projectIndex;
+
+  return priority >= 0 ? priority : Number.MAX_SAFE_INTEGER;
 }
 
 function renderDashboardTechnicianProjectOptions() {
@@ -3517,7 +3570,7 @@ function renderDashboardTechnicianRecords(records) {
   if (!visibleRecords.length) {
     dashboardTechnicianRecordsBody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty-state">${escapeHTML(tNested("technicianDashboard", "noRecords"))}</td>
+        <td colspan="7" class="empty-state">${escapeHTML(tNested("technicianDashboard", "noRecords"))}</td>
       </tr>
     `;
     return;
@@ -3531,6 +3584,13 @@ function renderDashboardTechnicianRecords(records) {
       <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
+      <td>
+        ${isAdmin() ? `
+          <button type="button" class="action-btn edit-btn" data-dashboard-technician-record-action="edit-description" data-id="${record.ServiceRecordID}">
+            ${t("edit")}
+          </button>
+        ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+      </td>
     </tr>
   `).join("");
 }
@@ -3602,6 +3662,119 @@ function handleDashboardTechnicianDateChange() {
   dashboardTechnicianDateFromValue = dashboardTechnicianDateFrom?.value || "";
   dashboardTechnicianDateToValue = dashboardTechnicianDateTo?.value || "";
   renderDashboardTechnicianPanel();
+}
+
+async function openDashboardTechnicianDescriptionEditor(recordId) {
+  if (!isAdmin() || !dashboardTechnicianDescriptionModal) return;
+
+  let selectedRecord = dashboardTechnicianServiceRecords.find((record) => Number(record.ServiceRecordID) === Number(recordId));
+
+  if (!selectedRecord) {
+    showDashboardTechnicianMessage(t("serviceRecordNotFound"), "error");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/service-records/${recordId}`, { cache: "no-store" });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("serviceRecordNotFound"));
+    }
+
+    selectedRecord = data;
+    dashboardTechnicianDescriptionRecord = selectedRecord;
+    dashboardTechnicianDescriptionRecordId.value = selectedRecord.ServiceRecordID;
+    dashboardTechnicianDescriptionText.value = cleanDisplayText(selectedRecord.ServiceDescription);
+    dashboardTechnicianDescriptionMessage.textContent = "";
+    dashboardTechnicianDescriptionModal.classList.remove("hidden");
+    dashboardTechnicianDescriptionText.focus();
+  } catch (error) {
+    console.error(error);
+    showDashboardTechnicianMessage(error.message || t("serviceRecordNotFound"), "error");
+  }
+}
+
+function closeDashboardTechnicianDescriptionEditor() {
+  if (!dashboardTechnicianDescriptionModal) return;
+
+  dashboardTechnicianDescriptionModal.classList.add("hidden");
+  dashboardTechnicianDescriptionForm.reset();
+  dashboardTechnicianDescriptionRecordId.value = "";
+  dashboardTechnicianDescriptionMessage.textContent = "";
+  dashboardTechnicianDescriptionRecord = null;
+}
+
+function getDashboardTechnicianDescriptionPayload(record, description) {
+  return {
+    TechnicianUserID: Number(record.TechnicianUserID),
+    ClientID: Number(record.ClientID),
+    ProjectID: Number(record.ProjectID),
+    ServiceDate: formatDateOnly(record.ServiceDate),
+    MorningStart: record.MorningStart || null,
+    MorningEnd: record.MorningEnd || null,
+    AfternoonStart: record.AfternoonStart || null,
+    AfternoonEnd: record.AfternoonEnd || null,
+    ServiceDescription: description,
+    Status: record.Status || "Recorded"
+  };
+}
+
+async function saveDashboardTechnicianDescription(event) {
+  event.preventDefault();
+
+  if (!isAdmin()) return;
+
+  dashboardTechnicianDescriptionMessage.textContent = "";
+  const recordId = Number(dashboardTechnicianDescriptionRecordId.value);
+  const selectedRecord = dashboardTechnicianDescriptionRecord;
+  const description = dashboardTechnicianDescriptionText.value.trim();
+
+  if (!selectedRecord || Number(selectedRecord.ServiceRecordID) !== recordId) {
+    dashboardTechnicianDescriptionMessage.textContent = t("serviceRecordNotFound");
+    return;
+  }
+
+  if (!description) {
+    dashboardTechnicianDescriptionMessage.textContent = t("serviceRecordDescriptionRequired");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/service-records/${recordId}`, {
+      method: "PUT",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(getDashboardTechnicianDescriptionPayload(selectedRecord, description))
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("updateServiceRecordError"));
+    }
+
+    dashboardTechnicianServiceRecords = dashboardTechnicianServiceRecords.map((record) => (
+      Number(record.ServiceRecordID) === recordId ? data : record
+    ));
+    closeDashboardTechnicianDescriptionEditor();
+    renderDashboardTechnicianPanel();
+    showDashboardTechnicianMessage(t("updateServiceRecordSuccess"), "success");
+  } catch (error) {
+    console.error(error);
+    dashboardTechnicianDescriptionMessage.textContent = error.message || t("updateServiceRecordError");
+  }
+}
+
+function handleDashboardTechnicianRecordsClick(event) {
+  const button = event.target.closest("button[data-dashboard-technician-record-action]");
+
+  if (!button) return;
+
+  if (button.dataset.dashboardTechnicianRecordAction === "edit-description") {
+    openDashboardTechnicianDescriptionEditor(Number(button.dataset.id));
+  }
 }
 
 function getCurrentMonthKey() {
@@ -4253,6 +4426,11 @@ function applyStaticLanguage() {
   setText("#hoursByProjectTitle", tNested("dashboardCharts", "HoursByProject"));
   setText("#hoursByTechnicianTitle", tNested("dashboardCharts", "HoursByTechnician"));
   setText("#recentServiceRecordsTitle", tNested("dashboardActivity", "ServiceRecords"));
+  setText("#dashboardTechnicianDescriptionModal .section-title .eyebrow", tNested("technicianDashboard", "title"));
+  setText("#dashboard-technician-description-title", currentLanguage === "es" ? "Editar descripcion" : "Edit description");
+  setText('label[for="dashboardTechnicianDescriptionText"]', currentLanguage === "es" ? "Descripcion" : "Description");
+  setButtonText(dashboardTechnicianDescriptionForm?.querySelector(".btn-primary"), t("saveChanges"));
+  setAriaLabel("#closeDashboardTechnicianDescriptionModal", t("closeEditor"));
   setText("#recentClientsTitle", tNested("dashboardActivity", "Clients"));
   setText("#recentProjectsTitle", tNested("dashboardActivity", "Projects"));
   document.querySelectorAll("#dashboardTabPanel .activity-panel .eyebrow").forEach((element) => {
@@ -4270,7 +4448,8 @@ function applyStaticLanguage() {
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
+    currentLanguage === "es" ? "Descripcion" : "Description",
+    t("actions")
   ]);
   setText(".technician-dashboard-panel .section-title .eyebrow", tNested("technicianDashboard", "eyebrow"));
   setText("#technicianDashboardTitle", tNested("technicianDashboard", "title"));
@@ -5588,6 +5767,14 @@ dashboardTechnicianSelect.addEventListener("change", handleDashboardTechnicianSe
 dashboardTechnicianProjectSelect.addEventListener("change", handleDashboardTechnicianProjectSelect);
 dashboardTechnicianDateFrom.addEventListener("change", handleDashboardTechnicianDateChange);
 dashboardTechnicianDateTo.addEventListener("change", handleDashboardTechnicianDateChange);
+dashboardTechnicianRecordsBody.addEventListener("click", handleDashboardTechnicianRecordsClick);
+dashboardTechnicianDescriptionForm.addEventListener("submit", saveDashboardTechnicianDescription);
+closeDashboardTechnicianDescriptionModal.addEventListener("click", closeDashboardTechnicianDescriptionEditor);
+dashboardTechnicianDescriptionModal.addEventListener("click", (event) => {
+  if (event.target === dashboardTechnicianDescriptionModal) {
+    closeDashboardTechnicianDescriptionEditor();
+  }
+});
 ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);

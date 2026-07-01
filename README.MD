@@ -1084,6 +1084,15 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Inactive users cannot sign in, but their historical Service Records remain available.
 - Technician dropdowns prefer active users so inactive staff are hidden from new operational selection lists.
 
+### Phase 27.2: Technician Dashboard Project Priority and Description Editing
+
+- Technician Dashboard prioritizes current main active projects at the top of the project dropdown while keeping other technician projects available.
+- Main projects are prioritized for selection only; no records are deleted, hidden from the database, or removed from other modules.
+- Admin users can edit the description from `Latest Service Records` in Technician Dashboard.
+- The description editor allows changing only `ServiceDescription` and saves back to `ServiceBillingDB`.
+- Technician/User roles can view descriptions but cannot edit them from Technician Dashboard.
+- The service-hours report API now includes internal IDs needed by dashboard filters and editing actions.
+
 ### API Examples
 
 ```http

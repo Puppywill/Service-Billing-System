@@ -624,8 +624,11 @@ function mapInvoiceLine(record) {
 function mapServiceHoursReport(record) {
   return {
     ServiceRecordID: record.ServiceRecordID,
+    TechnicianUserID: record.TechnicianUserID,
     TechnicianName: record.TechnicianName,
+    ClientID: record.ClientID,
     ClientName: record.ClientName,
+    ProjectID: record.ProjectID,
     ProjectName: record.ProjectName,
     ServiceDate: toDateOnly(record.ServiceDate),
     MorningStart: formatServiceTime(record.MorningStart),
@@ -3421,8 +3424,11 @@ app.get("/api/reports/service-hours", requireAdminOrTechnician, async (req, res)
     const result = await request.query(`
       SELECT
         sr.ServiceRecordID,
+        sr.TechnicianUserID,
         technician.FullName AS TechnicianName,
+        sr.ClientID,
         client.ClientName,
+        sr.ProjectID,
         project.ProjectName,
         sr.ServiceDate,
         sr.MorningStart,

@@ -1084,6 +1084,15 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Usuarios inactivos no pueden iniciar sesion, pero sus registros historicos permanecen disponibles.
 - Los dropdowns de tecnicos prefieren usuarios activos para ocultar personal inactivo de nuevas selecciones operativas.
 
+### Fase 27.2: Prioridad De Proyectos Y Edicion De Descripcion En Technician Dashboard
+
+- Technician Dashboard prioriza los proyectos activos principales al inicio del dropdown de proyectos, manteniendo disponibles los demas proyectos del tecnico.
+- Los proyectos principales solo se priorizan para seleccion; no se borran registros, no se ocultan en la base y no se eliminan de otros modulos.
+- Usuarios Admin pueden editar la descripcion desde `Ultimos registros de servicio` en Technician Dashboard.
+- El editor de descripcion permite cambiar solo `ServiceDescription` y guarda en `ServiceBillingDB`.
+- Roles Technician/User pueden ver descripciones, pero no editarlas desde Technician Dashboard.
+- La API de reportes de horas ahora incluye IDs internos necesarios para filtros del dashboard y acciones de edicion.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

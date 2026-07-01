@@ -402,11 +402,12 @@
                 <th>Hours</th>
                 <th>Status</th>
                 <th>Description</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="dashboardTechnicianRecordsBody">
               <tr>
-                <td colspan="6" class="empty-state">Select a technician to view service records.</td>
+                <td colspan="7" class="empty-state">Select a technician to view service records.</td>
               </tr>
             </tbody>
           </table>
@@ -1462,6 +1463,40 @@
           <path d="M7 3v5h8"/>
         </svg>
         Save Service Record
+      </button>
+    </form>
+  </div>
+
+  <div id="dashboardTechnicianDescriptionModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="dashboard-technician-description-title">
+    <form id="dashboardTechnicianDescriptionForm" class="panel modal-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p class="eyebrow">Technician Dashboard</p>
+          <h2 id="dashboard-technician-description-title">Edit description</h2>
+        </div>
+        <button type="button" id="closeDashboardTechnicianDescriptionModal" class="icon-button" aria-label="Close description editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <input type="hidden" id="dashboardTechnicianDescriptionRecordId">
+
+      <div class="form-group">
+        <label for="dashboardTechnicianDescriptionText">Description</label>
+        <textarea id="dashboardTechnicianDescriptionText" rows="8" required></textarea>
+      </div>
+
+      <p id="dashboardTechnicianDescriptionMessage" class="form-message" aria-live="polite"></p>
+      <button type="submit" class="btn btn-primary">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+          <path d="M17 21v-8H7v8"/>
+          <path d="M7 3v5h8"/>
+        </svg>
+        Save
       </button>
     </form>
   </div>
