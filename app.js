@@ -276,7 +276,7 @@ let invoiceClients = [];
 let dashboardSummary = null;
 let dashboardCharts = null;
 let dashboardRecentActivity = null;
-let dashboardOfficialServiceRecords = [];
+let dashboardServiceHourRecords = [];
 let dashboardProjectOptions = [];
 let dashboardSelectedProject = null;
 let dashboardProjectServiceRecords = [];
@@ -295,35 +295,6 @@ let hasGeneratedReport = false;
 let currentUser = null;
 let activeTab = "tickets";
 let currentLanguage = localStorage.getItem("helpdeskLanguage") || "es";
-
-const officialDashboardProjectNames = [
-  "WIOA de Bayamon",
-  "Departamento de la Familia COC",
-  "WIOA de Humacao",
-  "WIOA de San Juan"
-];
-const officialDashboardProjectKeys = new Set(officialDashboardProjectNames.map(normalizeDashboardProjectName));
-
-function normalizeDashboardProjectName(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function isOfficialDashboardProjectName(projectName) {
-  return officialDashboardProjectKeys.has(normalizeDashboardProjectName(projectName));
-}
-
-function isOfficialDashboardProject(row) {
-  return isOfficialDashboardProjectName(row?.ProjectName);
-}
-
-function getOfficialDashboardRecords(records = []) {
-  return records.filter(isOfficialDashboardProject);
-}
 
 function clearTransientStorage() {
   sessionStorage.clear();
@@ -351,7 +322,7 @@ function resetClientState({ render = true } = {}) {
   dashboardSummary = null;
   dashboardCharts = null;
   dashboardRecentActivity = null;
-  dashboardOfficialServiceRecords = [];
+  dashboardServiceHourRecords = [];
   dashboardProjectOptions = [];
   dashboardSelectedProject = null;
   dashboardProjectServiceRecords = [];
@@ -2896,7 +2867,7 @@ async function loadDashboardData() {
     dashboardSummary = summaryData;
     dashboardCharts = chartsData;
     dashboardRecentActivity = activityData;
-    dashboardOfficialServiceRecords = getOfficialDashboardRecords(Array.isArray(serviceHoursData) ? serviceHoursData : []);
+    dashboardServiceHourRecords = Array.isArray(serviceHoursData) ? serviceHoursData : [];
     dashboardMessage.textContent = "";
     renderDashboard();
     await loadDashboardProjectOptions();
@@ -2906,7 +2877,7 @@ async function loadDashboardData() {
     dashboardSummary = null;
     dashboardCharts = null;
     dashboardRecentActivity = null;
-    dashboardOfficialServiceRecords = [];
+    dashboardServiceHourRecords = [];
     dashboardMessage.textContent = error.message || t("dashboardLoadError");
     renderDashboard();
   }
@@ -3007,7 +2978,7 @@ async function loadDashboardProjectOptions() {
       throw new Error(translateServerMessage(data.message) || tNested("projectDashboard", "loadError"));
     }
 
-    dashboardProjectOptions = (Array.isArray(data) ? data : []).filter(isOfficialDashboardProject);
+    dashboardProjectOptions = Array.isArray(data) ? data : [];
     if (dashboardSelectedProject) {
       dashboardSelectedProject = dashboardProjectOptions.find((project) => Number(project.ProjectID) === Number(dashboardSelectedProject.ProjectID)) || null;
     }
@@ -3248,7 +3219,7 @@ function getDashboardTechnicianProjectValue(record) {
 function getDashboardTechnicianProjectOptions() {
   const projectsByKey = new Map();
 
-  getOfficialDashboardRecords(dashboardTechnicianServiceRecords).forEach((record) => {
+  dashboardTechnicianServiceRecords.forEach((record) => {
     const key = getDashboardTechnicianProjectValue(record);
     if (!key || projectsByKey.has(key)) return;
 
@@ -3283,7 +3254,7 @@ function renderDashboardTechnicianProjectOptions() {
 }
 
 function getDashboardTechnicianFilteredRecords() {
-  let records = getOfficialDashboardRecords(dashboardTechnicianServiceRecords);
+  let records = dashboardTechnicianServiceRecords.slice();
 
   if (dashboardSelectedTechnicianProject) {
     records = records.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
@@ -3641,48 +3612,22 @@ function getCurrentMonthKey() {
 
 function getCurrentMonthHours() {
   const currentMonth = getCurrentMonthKey();
-  const monthRow = getDashboardOfficialChartRows().HoursByMonth.find((row) => String(row.Month) === currentMonth);
+  const monthRow = getDashboardChartRows().HoursByMonth.find((row) => String(row.Month) === currentMonth);
 
   return Number(monthRow?.TotalHours || 0);
 }
 
-function getOfficialDashboardSummary() {
-  const clientNames = new Set();
-  const projectNames = new Set();
-  const summary = {
-    TotalClients: 0,
-    TotalProjects: officialDashboardProjectNames.length,
-    TotalServiceRecords: dashboardOfficialServiceRecords.length,
-    TotalHours: 0,
-    UnbilledHours: 0,
-    BilledHours: 0
-  };
-
-  dashboardOfficialServiceRecords.forEach((record) => {
-    const hours = Number(record.TotalHours || 0);
-
-    if (record.ClientName) clientNames.add(record.ClientName);
-    if (record.ProjectName) projectNames.add(normalizeDashboardProjectName(record.ProjectName));
-    summary.TotalHours += hours;
-    if (record.Status === "Recorded") summary.UnbilledHours += hours;
-    if (record.Status === "Billed") summary.BilledHours += hours;
-  });
-
-  summary.TotalClients = clientNames.size;
-  summary.TotalProjects = isAdmin()
-    ? Math.max(projectNames.size, officialDashboardProjectNames.length)
-    : projectNames.size;
-
-  return summary;
+function getDashboardSummaryMetrics() {
+  return dashboardSummary || {};
 }
 
-function getDashboardOfficialChartRows() {
+function getDashboardChartRows() {
   const rowsByMonth = new Map();
   const rowsByClient = new Map();
   const rowsByProject = new Map();
   const rowsByTechnician = new Map();
 
-  dashboardOfficialServiceRecords.forEach((record) => {
+  dashboardServiceHourRecords.forEach((record) => {
     const hours = Number(record.TotalHours || 0);
     const month = String(record.ServiceDate || "").slice(0, 7);
     const client = record.ClientName || "";
@@ -3707,7 +3652,7 @@ function getDashboardOfficialChartRows() {
 }
 
 function renderDashboardSummary() {
-  const officialSummary = getOfficialDashboardSummary();
+  const summaryMetrics = getDashboardSummaryMetrics();
   const metrics = [
     { key: "TotalClients", type: "count" },
     { key: "TotalProjects", type: "count", detail: "projects" },
@@ -3728,19 +3673,19 @@ function renderDashboardSummary() {
       </div>
       <div>
         <span>${escapeHTML(tNested("dashboardMetrics", metric.key))}</span>
-        <strong>${formatDashboardMetric(metric.value ?? officialSummary?.[metric.key] ?? dashboardSummary?.[metric.key], metric.type)}</strong>
+        <strong>${formatDashboardMetric(metric.value ?? summaryMetrics?.[metric.key], metric.type)}</strong>
       </div>
     </article>
   `).join("");
 }
 
 function renderDashboardCharts() {
-  const officialCharts = getDashboardOfficialChartRows();
+  const chartRows = getDashboardChartRows();
 
-  renderBarChart(hoursByMonthChart, officialCharts.HoursByMonth, "Month", "TotalHours", "hours");
-  renderBarChart(hoursByClientChart, officialCharts.HoursByClient, "ClientName", "TotalHours", "hours");
-  renderBarChart(hoursByProjectChart, officialCharts.HoursByProject, "ProjectName", "TotalHours", "hours");
-  renderBarChart(hoursByTechnicianChart, officialCharts.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
+  renderBarChart(hoursByMonthChart, chartRows.HoursByMonth, "Month", "TotalHours", "hours");
+  renderBarChart(hoursByClientChart, chartRows.HoursByClient, "ClientName", "TotalHours", "hours");
+  renderBarChart(hoursByProjectChart, chartRows.HoursByProject, "ProjectName", "TotalHours", "hours");
+  renderBarChart(hoursByTechnicianChart, chartRows.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
 }
 
 function getCurrentMonthDateRange() {
@@ -3881,7 +3826,7 @@ async function showDashboardDetail(detailType) {
         throw new Error(translateServerMessage(data.message) || t("loadProjectsError"));
       }
 
-      renderDashboardProjectsDetail((Array.isArray(data) ? data : []).filter(isOfficialDashboardProject));
+      renderDashboardProjectsDetail(Array.isArray(data) ? data : []);
       dashboardDetailMessage.textContent = "";
       return;
     }
@@ -3902,7 +3847,7 @@ async function showDashboardDetail(detailType) {
       params.set("status", "Billed");
     }
 
-    const records = getOfficialDashboardRecords(await fetchDashboardServiceHours(params.toString()));
+    const records = await fetchDashboardServiceHours(params.toString());
     const visibleRecords = detailType === "records" ? records.slice(0, 20) : records;
 
     renderDashboardServiceRecordDetail(visibleRecords, detailType === "pending" || detailType === "processed" ? "status" : "full");
@@ -3967,15 +3912,9 @@ function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
 }
 
 function renderDashboardRecentActivity() {
-  const officialClientNames = new Set(dashboardOfficialServiceRecords.map((record) => record.ClientName).filter(Boolean));
-
-  renderActivityList(recentServiceRecordsList, getOfficialDashboardRecords(dashboardRecentActivity?.ServiceRecords || []), renderServiceRecordActivity);
-  renderActivityList(
-    recentClientsList,
-    (dashboardRecentActivity?.Clients || []).filter((client) => officialClientNames.has(client.ClientName)),
-    renderClientActivity
-  );
-  renderActivityList(recentProjectsList, (dashboardRecentActivity?.Projects || []).filter(isOfficialDashboardProject), renderProjectActivity);
+  renderActivityList(recentServiceRecordsList, dashboardRecentActivity?.ServiceRecords || [], renderServiceRecordActivity);
+  renderActivityList(recentClientsList, dashboardRecentActivity?.Clients || [], renderClientActivity);
+  renderActivityList(recentProjectsList, dashboardRecentActivity?.Projects || [], renderProjectActivity);
 }
 
 function renderActivityList(container, rows = [], renderer) {

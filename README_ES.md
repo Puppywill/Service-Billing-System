@@ -1062,20 +1062,16 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Usa endpoints existentes: `GET /api/users` para seleccion Admin y `GET /api/reports/service-hours?technicianUserId=`.
 - No muestra dinero, facturas, tarifas ni totales monetarios.
 
-### Fase 27: Proyectos Activos Del Dashboard Y Filtros De Fecha Por Tecnico
+### Fase 27: Proyectos Del Dashboard Y Filtros De Fecha Por Tecnico
 
-- El Dashboard visible ahora enfoca sus graficas de resumen, Project Dashboard, paneles de detalle y actividad reciente en la lista oficial de proyectos activos:
-  - `WIOA de Bayamón`
-  - `Departamento de la Familia COC`
-  - `WIOA de Humacao`
-  - `WIOA de San Juan`
-- Este filtro es solo de presentacion en Dashboard/frontend. No se eliminan ni modifican registros de base de datos.
+- El Dashboard visible muestra todos los proyectos activos devueltos por `ServiceBillingDB` (`IsActive = 1`) mediante las APIs existentes de dashboard y proyectos.
+- El enfoque en proyectos especificos, como WIOA Bayamon, COC, WIOA Humacao o WIOA San Juan, debe manejarse con busqueda/filtros y no con exclusiones hardcodeadas del Dashboard.
+- No se eliminan ni modifican registros de base de datos.
 - Technician Dashboard ahora incluye filtros `Fecha desde` y `Fecha hasta`.
 - Usuarios Admin pueden combinar tecnico, proyecto y rango de fechas para revisar horas trabajadas, totales por cliente, ultimos registros, total de registros, horas pendientes, horas procesadas y horas canceladas.
-- El dropdown de proyecto sigue mostrando solo proyectos donde el tecnico seleccionado tiene registros, limitado a la lista oficial del dashboard.
+- El dropdown de proyecto sigue mostrando solo proyectos donde el tecnico seleccionado tiene registros.
 - Se crean notificaciones para Admin cuando registros de servicio se marcan como `Billed`/procesados, incluyendo tecnico, proyecto, cliente, fecha de servicio y cantidad de registros procesados.
 - Dinero, pantallas de invoices, tarifas y totales monetarios permanecen ocultos en el dashboard visible.
-
 ### Fase 27.1: Service Records, Users Y Limpieza De Descripcion
 
 - Las descripciones de Service Records se limpian al mostrarse para que etiquetas HTML heredadas como `<div>`, `</div>` y `<br>` no aparezcan visibles en tablas, dashboard o reportes.

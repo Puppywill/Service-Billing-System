@@ -1062,20 +1062,16 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Uses existing endpoints: `GET /api/users` for Admin technician selection and `GET /api/reports/service-hours?technicianUserId=`.
 - Does not display money, invoice data, rates, or monetary totals.
 
-### Phase 27: Dashboard Active Projects and Technician Date Filters
+### Phase 27: Dashboard Projects and Technician Date Filters
 
-- The visible Dashboard now focuses its summary charts, project dashboard, dashboard detail panels, and recent activity on the official active project list:
-  - `WIOA de Bayamón`
-  - `Departamento de la Familia COC`
-  - `WIOA de Humacao`
-  - `WIOA de San Juan`
-- This is a frontend/dashboard presentation filter only. No database records are deleted or modified.
+- The visible Dashboard shows all active projects returned by `ServiceBillingDB` (`IsActive = 1`) through the existing dashboard and project APIs.
+- Project-specific focus, such as WIOA Bayamon, COC, WIOA Humacao, or WIOA San Juan, should be handled through search/filter controls rather than hardcoded dashboard exclusions.
+- No database records are deleted or modified.
 - Technician Dashboard now includes `Date from` and `Date to` filters.
 - Admin users can combine technician, project, and date range filters to review worked hours, client totals, latest records, total records, pending hours, processed hours, and canceled hours.
-- The project dropdown continues to show only projects where the selected technician has service records, scoped to the official dashboard project list.
+- The project dropdown continues to show only projects where the selected technician has service records.
 - Admin notifications are created when service records are marked as `Billed`/processed, including technician, project, client, service date, and processed record count.
 - Money, invoice screens, rates, and monetary totals remain hidden from the visible dashboard.
-
 ### Phase 27.1: Service Records, Users, and Description Cleanup
 
 - Service Record descriptions are cleaned for display so legacy HTML tags such as `<div>`, `</div>`, and `<br>` are not shown in visible tables or dashboard/report panels.
