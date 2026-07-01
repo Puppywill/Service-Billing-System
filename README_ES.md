@@ -1104,12 +1104,20 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 
 ### Fase 28: Technician Dashboard Simplificado
 
-- Dashboard se simplifica alrededor del flujo diario: seleccionar Tecnico, Proyecto, Fecha desde y Fecha hasta.
-- Las graficas generales, paneles de actividad reciente, Project Dashboard y tablas auxiliares del tecnico quedan ocultas del Dashboard visible.
+- Technician Dashboard se simplifica alrededor del flujo diario: seleccionar Tecnico, Proyecto, Fecha desde y Fecha hasta.
+- El Dashboard General permanece visible con graficas globales de horas de servicio, tarjetas de resumen y actividad reciente.
 - Technician Dashboard ahora muestra solo informacion del proyecto seleccionado: tecnico, cliente, proyecto, total de horas, total de registros, horas pendientes, horas procesadas y horas canceladas.
 - La unica tabla visible es `Ultimos Service Records` con Fecha, Cliente, Proyecto, Horas, Estado, Descripcion y Editar solo para Admin.
 - Al cambiar proyecto o rango de fechas, los totales y la tabla se actualizan automaticamente.
 - La edicion de descripcion desde Technician Dashboard para Admin se mantiene disponible.
+
+### Fase 28.1: Dashboard General Restaurado
+
+- El Dashboard General queda restaurado junto al Technician Dashboard simplificado.
+- Las barras globales de horas vuelven a mostrarse: horas por mes, cliente, proyecto de servicio y tecnico.
+- Los paneles de actividad reciente de Service Records, Clients y Projects vuelven a estar visibles.
+- Las graficas generales siguen usando datos reales de horas desde `GET /api/reports/service-hours`.
+- Technician Dashboard permanece enfocado en un tecnico, un proyecto y un rango de fechas opcional.
 
 ## Ajuste De Demo: Reports E Invoices
 

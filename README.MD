@@ -1104,12 +1104,20 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 
 ### Phase 28: Simplified Technician Dashboard
 
-- Dashboard is simplified around the daily workflow: select Technician, Project, Date from, and Date to.
-- General dashboard charts, recent activity panels, Project Dashboard, and extra technician breakdown tables are hidden from the visible Dashboard.
+- Technician Dashboard is simplified around the daily workflow: select Technician, Project, Date from, and Date to.
+- The General Dashboard remains visible with company-wide service hour charts, summary cards, and recent activity.
 - Technician Dashboard now shows only project-scoped information: Technician, Client, Project, total hours, total records, pending hours, processed hours, and canceled hours.
 - The visible table is limited to `Latest Service Records` with Date, Client, Project, Hours, Status, Description, and Admin-only Edit.
 - Changing the selected project or date range updates all totals and the table automatically.
 - Admin description editing from the Technician Dashboard remains available.
+
+### Phase 28.1: General Dashboard Restored
+
+- The General Dashboard has been restored alongside the simplified Technician Dashboard.
+- Global service-hour bars are visible again for hours by month, client, service project, and technician.
+- Recent activity panels for service records, clients, and projects are visible again.
+- General charts continue to use real service-hour data from `GET /api/reports/service-hours`.
+- Technician Dashboard remains focused on one technician, one project, and an optional date range.
 
 ### API Examples
 
