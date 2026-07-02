@@ -1106,8 +1106,8 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 
 - Technician Dashboard se simplifica alrededor del flujo diario: seleccionar Tecnico, Proyecto, Fecha desde y Fecha hasta.
 - El Dashboard General permanece visible con graficas globales de horas de servicio, tarjetas de resumen y actividad reciente.
-- Technician Dashboard ahora muestra solo informacion del proyecto seleccionado: tecnico, cliente, proyecto, total de horas, total de registros, horas pendientes, horas procesadas y horas canceladas.
-- La unica tabla visible es `Ultimos Service Records` con Fecha, Cliente, Proyecto, Horas, Estado, Descripcion y Editar solo para Admin.
+- Technician Dashboard muestra informacion enfocada al proyecto cuando se selecciona uno: tecnico, cliente, proyecto, total de horas, total de registros, horas pendientes, horas procesadas y horas canceladas.
+- La tabla principal es `Ultimos Service Records` con Fecha, Cliente, Proyecto, Horas, Estado, Descripcion y Editar solo para Admin.
 - Al cambiar proyecto o rango de fechas, los totales y la tabla se actualizan automaticamente.
 - La edicion de descripcion desde Technician Dashboard para Admin se mantiene disponible.
 
@@ -1118,6 +1118,14 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Los paneles de actividad reciente de Service Records, Clients y Projects vuelven a estar visibles.
 - Las graficas generales siguen usando datos reales de horas desde `GET /api/reports/service-hours`.
 - Technician Dashboard permanece enfocado en un tecnico, un proyecto y un rango de fechas opcional.
+
+### Fase 28.2: Barras Filtradas Por Tecnico
+
+- Technician Dashboard ahora incluye barras visuales filtradas por el tecnico seleccionado.
+- Cuando solo se selecciona un tecnico, las barras muestran todos los proyectos, clientes, meses y ultimos registros de ese tecnico.
+- Cuando se selecciona proyecto o rango de fechas, las tarjetas, barras y registros del Technician Dashboard se recalculan con esos filtros.
+- Se agregan barras filtradas de horas por proyecto, horas por cliente y horas por mes.
+- La edicion de descripcion solo para Admin se mantiene disponible desde la tabla del Technician Dashboard.
 
 ## Ajuste De Demo: Reports E Invoices
 

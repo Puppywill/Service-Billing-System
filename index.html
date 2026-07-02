@@ -332,56 +332,29 @@
           <p class="empty-state">Select a technician to view details.</p>
         </div>
 
-        <section class="dashboard-chart-grid technician-dashboard-grid hidden" aria-label="Technician dashboard details">
-          <article class="technician-dashboard-table-panel">
-            <div class="table-header compact-table-header">
-              <div class="section-title">
-                <p class="eyebrow">Projects</p>
-                <h3 id="dashboardTechnicianProjectsTitle">Hours By Project</h3>
-              </div>
+        <section class="dashboard-chart-grid technician-dashboard-grid" aria-label="Technician dashboard details">
+          <article class="panel chart-panel">
+            <div class="section-title">
+              <p class="eyebrow">Projects</p>
+              <h3 id="dashboardTechnicianProjectsTitle">Hours By Project</h3>
             </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ProjectName</th>
-                    <th>ClientName</th>
-                    <th>TotalHours</th>
-                    <th>LastServiceDate</th>
-                  </tr>
-                </thead>
-                <tbody id="dashboardTechnicianProjectsBody">
-                  <tr>
-                    <td colspan="4" class="empty-state">Select a technician.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <div id="dashboardTechnicianProjectsChart" class="bar-chart"></div>
           </article>
 
-          <article class="technician-dashboard-table-panel">
-            <div class="table-header compact-table-header">
-              <div class="section-title">
-                <p class="eyebrow">Clients</p>
-                <h3 id="dashboardTechnicianClientsTitle">Hours By Client</h3>
-              </div>
+          <article class="panel chart-panel">
+            <div class="section-title">
+              <p class="eyebrow">Clients</p>
+              <h3 id="dashboardTechnicianClientsTitle">Hours By Client</h3>
             </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ClientName</th>
-                    <th>TotalHours</th>
-                    <th>TotalRecords</th>
-                  </tr>
-                </thead>
-                <tbody id="dashboardTechnicianClientsBody">
-                  <tr>
-                    <td colspan="3" class="empty-state">Select a technician.</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div id="dashboardTechnicianClientsChart" class="bar-chart"></div>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="section-title">
+              <p class="eyebrow">Months</p>
+              <h3 id="dashboardTechnicianMonthsTitle">Hours By Month</h3>
             </div>
+            <div id="dashboardTechnicianMonthsChart" class="bar-chart"></div>
           </article>
         </section>
 

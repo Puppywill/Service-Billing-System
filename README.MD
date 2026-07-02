@@ -1106,8 +1106,8 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 
 - Technician Dashboard is simplified around the daily workflow: select Technician, Project, Date from, and Date to.
 - The General Dashboard remains visible with company-wide service hour charts, summary cards, and recent activity.
-- Technician Dashboard now shows only project-scoped information: Technician, Client, Project, total hours, total records, pending hours, processed hours, and canceled hours.
-- The visible table is limited to `Latest Service Records` with Date, Client, Project, Hours, Status, Description, and Admin-only Edit.
+- Technician Dashboard shows project-scoped information when a project is selected: Technician, Client, Project, total hours, total records, pending hours, processed hours, and canceled hours.
+- The main record table is `Latest Service Records` with Date, Client, Project, Hours, Status, Description, and Admin-only Edit.
 - Changing the selected project or date range updates all totals and the table automatically.
 - Admin description editing from the Technician Dashboard remains available.
 
@@ -1118,6 +1118,14 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Recent activity panels for service records, clients, and projects are visible again.
 - General charts continue to use real service-hour data from `GET /api/reports/service-hours`.
 - Technician Dashboard remains focused on one technician, one project, and an optional date range.
+
+### Phase 28.2: Technician-Filtered Bars
+
+- Technician Dashboard now includes visual bars filtered by the selected technician.
+- When only a technician is selected, the bars show all projects, clients, months, and latest service records for that technician.
+- When a project or date range is selected, all Technician Dashboard cards, bars, and records recalculate using those filters.
+- Added technician-filtered bars for hours by project, hours by client, and hours by month.
+- Admin-only service record description editing remains available from the Technician Dashboard table.
 
 ### API Examples
 

@@ -198,8 +198,12 @@ const dashboardTechnicianSummaryGrid = document.querySelector("#dashboardTechnic
 const dashboardTechnicianInfoGrid = document.querySelector("#dashboardTechnicianInfoGrid");
 const dashboardTechnicianProjectsTitle = document.querySelector("#dashboardTechnicianProjectsTitle");
 const dashboardTechnicianProjectsBody = document.querySelector("#dashboardTechnicianProjectsBody");
+const dashboardTechnicianProjectsChart = document.querySelector("#dashboardTechnicianProjectsChart");
 const dashboardTechnicianClientsTitle = document.querySelector("#dashboardTechnicianClientsTitle");
 const dashboardTechnicianClientsBody = document.querySelector("#dashboardTechnicianClientsBody");
+const dashboardTechnicianClientsChart = document.querySelector("#dashboardTechnicianClientsChart");
+const dashboardTechnicianMonthsTitle = document.querySelector("#dashboardTechnicianMonthsTitle");
+const dashboardTechnicianMonthsChart = document.querySelector("#dashboardTechnicianMonthsChart");
 const dashboardTechnicianRecordsTitle = document.querySelector("#dashboardTechnicianRecordsTitle");
 const dashboardTechnicianRecordsCount = document.querySelector("#dashboardTechnicianRecordsCount");
 const dashboardTechnicianRecordsBody = document.querySelector("#dashboardTechnicianRecordsBody");
@@ -488,12 +492,13 @@ const translations = {
       selectTechnician: "Selecciona un tecnico",
       selectProject: "Selecciona un proyecto",
       allProjects: "Todos los proyectos",
-      selectedPrompt: "Selecciona un tecnico y un proyecto para ver detalles.",
+      selectedPrompt: "Selecciona un tecnico para ver sus estadisticas.",
       loading: "Cargando informacion del tecnico...",
       loadError: "No se pudo cargar la informacion del tecnico.",
       noTechnicianMatches: "No hay tecnicos que coincidan con la busqueda.",
       hoursByProject: "Horas por proyecto",
       hoursByClient: "Horas por cliente",
+      hoursByMonth: "Horas por mes",
       latestRecords: "Ultimos registros de servicio",
       recordsCount: "registros",
       noRecords: "No hay registros de servicio para este tecnico.",
@@ -841,12 +846,13 @@ const translations = {
       selectTechnician: "Select a technician",
       selectProject: "Select a project",
       allProjects: "All projects",
-      selectedPrompt: "Select a technician and project to view details.",
+      selectedPrompt: "Select a technician to view statistics.",
       loading: "Loading technician information...",
       loadError: "Technician information could not be loaded.",
       noTechnicianMatches: "No technicians match the search.",
       hoursByProject: "Hours By Project",
       hoursByClient: "Hours By Client",
+      hoursByMonth: "Hours By Month",
       latestRecords: "Latest Service Records",
       recordsCount: "records",
       noRecords: "No service records for this technician.",
@@ -3191,7 +3197,7 @@ function getDashboardTechnicianPlaceholder() {
 
 function renderDashboardTechnicianPrompt(message = getDashboardTechnicianPlaceholder()) {
   if (dashboardTechnicianProjectSelect) {
-    dashboardTechnicianProjectSelect.innerHTML = `<option value="">${escapeHTML(tNested("technicianDashboard", "selectProject"))}</option>`;
+    dashboardTechnicianProjectSelect.innerHTML = `<option value="">${escapeHTML(tNested("technicianDashboard", "allProjects"))}</option>`;
     dashboardTechnicianProjectSelect.value = "";
     dashboardTechnicianProjectSelect.disabled = true;
   }
@@ -3212,12 +3218,24 @@ function renderDashboardTechnicianPrompt(message = getDashboardTechnicianPlaceho
     `;
   }
 
+  if (dashboardTechnicianProjectsChart) {
+    dashboardTechnicianProjectsChart.innerHTML = `<p class="empty-state">${message}</p>`;
+  }
+
   if (dashboardTechnicianClientsBody) {
     dashboardTechnicianClientsBody.innerHTML = `
       <tr>
         <td colspan="3" class="empty-state">${message}</td>
       </tr>
     `;
+  }
+
+  if (dashboardTechnicianClientsChart) {
+    dashboardTechnicianClientsChart.innerHTML = `<p class="empty-state">${message}</p>`;
+  }
+
+  if (dashboardTechnicianMonthsChart) {
+    dashboardTechnicianMonthsChart.innerHTML = `<p class="empty-state">${message}</p>`;
   }
 
   if (dashboardTechnicianRecordsCount) {
@@ -3295,7 +3313,7 @@ function renderDashboardTechnicianProjectOptions() {
   const projectOptions = getDashboardTechnicianProjectOptions();
   const selectedValue = dashboardSelectedTechnicianProject;
   dashboardTechnicianProjectSelect.innerHTML = `
-    <option value="">${escapeHTML(tNested("technicianDashboard", "selectProject"))}</option>
+    <option value="">${escapeHTML(tNested("technicianDashboard", "allProjects"))}</option>
     ${projectOptions.map((project) => `
       <option value="${escapeHTML(project.value)}">${escapeHTML([project.ProjectName, project.ClientName].filter(Boolean).join(" - ") || project.value)}</option>
     `).join("")}
@@ -3309,11 +3327,11 @@ function renderDashboardTechnicianProjectOptions() {
 }
 
 function getDashboardTechnicianFilteredRecords() {
-  if (!dashboardSelectedTechnicianProject) return [];
-
   let records = dashboardTechnicianServiceRecords.slice();
 
-  records = records.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
+  if (dashboardSelectedTechnicianProject) {
+    records = records.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
+  }
 
   if (dashboardTechnicianDateFromValue) {
     records = records.filter((record) => String(record.ServiceDate || "").slice(0, 10) >= dashboardTechnicianDateFromValue);
@@ -3461,10 +3479,12 @@ function renderDashboardTechnicianInfo(technician, records = []) {
 
   const selectedProject = getSelectedDashboardTechnicianProjectOption();
   const firstRecord = records[0] || {};
+  const allProjectsLabel = tNested("technicianDashboard", "allProjects");
+  const allClientsLabel = currentLanguage === "es" ? "Todos los clientes" : "All clients";
   const fields = [
     [currentLanguage === "es" ? "Tecnico" : "Technician", technician.FullName],
-    [currentLanguage === "es" ? "Cliente" : "Client", firstRecord.ClientName || selectedProject?.ClientName],
-    [currentLanguage === "es" ? "Proyecto" : "Project", firstRecord.ProjectName || selectedProject?.ProjectName]
+    [currentLanguage === "es" ? "Cliente" : "Client", dashboardSelectedTechnicianProject ? firstRecord.ClientName || selectedProject?.ClientName : allClientsLabel],
+    [currentLanguage === "es" ? "Proyecto" : "Project", dashboardSelectedTechnicianProject ? firstRecord.ProjectName || selectedProject?.ProjectName : allProjectsLabel]
   ];
 
   dashboardTechnicianInfoGrid.innerHTML = fields.map(([label, value]) => `
@@ -3519,6 +3539,20 @@ function getDashboardTechnicianClientRows(records) {
     .sort((a, b) => b.TotalHours - a.TotalHours || b.TotalRecords - a.TotalRecords);
 }
 
+function getDashboardTechnicianMonthRows(records) {
+  const rowsByMonth = new Map();
+
+  records.forEach((record) => {
+    const month = String(record.ServiceDate || "").slice(0, 7);
+    if (!month) return;
+
+    rowsByMonth.set(month, (rowsByMonth.get(month) || 0) + Number(record.TotalHours || 0));
+  });
+
+  return Array.from(rowsByMonth, ([Month, TotalHours]) => ({ Month, TotalHours }))
+    .sort((a, b) => String(a.Month).localeCompare(String(b.Month)));
+}
+
 function renderDashboardTechnicianProjects(records) {
   if (!dashboardTechnicianProjectsBody) return;
 
@@ -3564,6 +3598,12 @@ function renderDashboardTechnicianClients(records) {
       <td>${row.TotalRecords}</td>
     </tr>
   `).join("");
+}
+
+function renderDashboardTechnicianCharts(records) {
+  renderBarChart(dashboardTechnicianProjectsChart, getDashboardTechnicianProjectRows(records), "ProjectName", "TotalHours", "hours");
+  renderBarChart(dashboardTechnicianClientsChart, getDashboardTechnicianClientRows(records), "ClientName", "TotalHours", "hours");
+  renderBarChart(dashboardTechnicianMonthsChart, getDashboardTechnicianMonthRows(records), "Month", "TotalHours", "hours");
 }
 
 function renderDashboardTechnicianRecords(records) {
@@ -3616,8 +3656,7 @@ function renderDashboardTechnicianPanel() {
 
   renderDashboardTechnicianSummary(filteredRecords);
   renderDashboardTechnicianInfo(dashboardSelectedTechnician, filteredRecords);
-  renderDashboardTechnicianProjects(filteredRecords);
-  renderDashboardTechnicianClients(filteredRecords);
+  renderDashboardTechnicianCharts(filteredRecords);
   renderDashboardTechnicianRecords(filteredRecords);
 }
 
@@ -3634,8 +3673,7 @@ async function selectDashboardTechnician(technicianId) {
   showDashboardTechnicianMessage(tNested("technicianDashboard", "loading"));
   renderDashboardTechnicianSummary([]);
   renderDashboardTechnicianInfo(dashboardSelectedTechnician, []);
-  renderDashboardTechnicianProjects([]);
-  renderDashboardTechnicianClients([]);
+  renderDashboardTechnicianCharts([]);
   renderDashboardTechnicianRecords([]);
 
   try {
@@ -4467,6 +4505,7 @@ function applyStaticLanguage() {
   setText('label[for="dashboardTechnicianDateTo"]', tNested("technicianDashboard", "dateToLabel"));
   setText("#dashboardTechnicianProjectsTitle", tNested("technicianDashboard", "hoursByProject"));
   setText("#dashboardTechnicianClientsTitle", tNested("technicianDashboard", "hoursByClient"));
+  setText("#dashboardTechnicianMonthsTitle", tNested("technicianDashboard", "hoursByMonth"));
   setText("#dashboardTechnicianRecordsTitle", tNested("technicianDashboard", "latestRecords"));
   setTableHeaders(".technician-dashboard-table-panel:first-of-type table", [
     "ProjectName",
