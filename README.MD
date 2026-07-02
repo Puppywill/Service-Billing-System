@@ -1157,6 +1157,13 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Client and project bars are clickable: client bars show active projects and hours; project bars show the client, total hours, and latest related Service Records.
 - Technician Dashboard behavior remains unchanged.
 
+### Phase 28.7: Dashboard Bar Detail Improvements
+
+- Clicking a General Dashboard client or project bar now scrolls smoothly to the detail panel.
+- Client detail shows selected client, related active projects, technicians, hours by technician/project, total hours, total records, and last service date.
+- Project detail shows selected project, related client, technicians, hours by technician, total hours, total records, last service date, and latest related Service Records.
+- Detail tables use `en-US` number formatting and keep active-data filters.
+
 ### API Examples
 
 ```http

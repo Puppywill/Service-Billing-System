@@ -1157,6 +1157,13 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Las barras de cliente y proyecto son clickeables: cliente muestra proyectos activos y horas; proyecto muestra cliente, horas totales y ultimos Service Records relacionados.
 - Technician Dashboard permanece sin cambios.
 
+### Fase 28.7: Mejoras Del Detalle De Barras Del Dashboard
+
+- Al hacer click en una barra de cliente o proyecto del Dashboard General, la pantalla baja automaticamente al panel de detalle con scroll suave.
+- El detalle de cliente muestra cliente seleccionado, proyectos activos relacionados, tecnicos, horas por tecnico/proyecto, total de horas, total de registros y ultima fecha de servicio.
+- El detalle de proyecto muestra proyecto seleccionado, cliente relacionado, tecnicos, horas por tecnico, total de horas, total de registros, ultima fecha y ultimos Service Records relacionados.
+- Las tablas de detalle mantienen formato numerico `en-US` y filtros de datos activos.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

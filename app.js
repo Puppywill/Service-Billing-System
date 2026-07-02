@@ -4075,6 +4075,13 @@ function showDashboardDetailLoading(detailType) {
   dashboardDetailMessage.textContent = currentLanguage === "es" ? "Cargando detalle..." : "Loading detail...";
   dashboardDetailHeaderRow.innerHTML = "";
   dashboardDetailTableBody.innerHTML = "";
+  scrollDashboardDetailIntoView();
+}
+
+function scrollDashboardDetailIntoView() {
+  if (!dashboardDetailPanel) return;
+
+  dashboardDetailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderDashboardDetailTable(headers, rows, emptyMessage) {
@@ -4236,6 +4243,118 @@ function renderDashboardProjectBarDetail(projectName) {
   dashboardDetailTitle.textContent = currentLanguage === "es" ? `Proyecto: ${projectName}` : `Project: ${projectName}`;
   dashboardDetailMessage.textContent = `${clientName}${clientName ? " · " : ""}${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"}`;
   renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay registros activos para este proyecto." : "No active records for this project.");
+}
+
+function getDashboardLastServiceDate(records) {
+  return records.reduce((latest, record) => {
+    const serviceDate = String(record.ServiceDate || "");
+    return serviceDate > latest ? serviceDate : latest;
+  }, "");
+}
+
+function getDashboardTechnicianProjectDetailHeaders() {
+  return [
+    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Cliente" : "Client",
+    currentLanguage === "es" ? "Proyecto" : "Project",
+    currentLanguage === "es" ? "Horas" : "Hours",
+    currentLanguage === "es" ? "Registros" : "Records",
+    currentLanguage === "es" ? "Ultima fecha" : "Last date"
+  ];
+}
+
+function getDashboardTechnicianProjectDetailRows(records) {
+  const rowsByTechnicianProject = new Map();
+
+  records.forEach((record) => {
+    const key = normalizeDashboardKey(`${record.TechnicianName}|${record.ClientName}|${record.ProjectName}`);
+    const existing = rowsByTechnicianProject.get(key) || {
+      TechnicianName: record.TechnicianName || "",
+      ClientName: record.ClientName || "",
+      ProjectName: record.ProjectName || "",
+      TotalHours: 0,
+      TotalRecords: 0,
+      LastServiceDate: ""
+    };
+
+    existing.TotalHours += Number(record.TotalHours || 0);
+    existing.TotalRecords += 1;
+    if (!existing.LastServiceDate || String(record.ServiceDate || "") > existing.LastServiceDate) {
+      existing.LastServiceDate = String(record.ServiceDate || "");
+    }
+    rowsByTechnicianProject.set(key, existing);
+  });
+
+  return Array.from(rowsByTechnicianProject.values())
+    .sort((a, b) => b.TotalHours - a.TotalHours || String(a.TechnicianName).localeCompare(String(b.TechnicianName)));
+}
+
+function renderDashboardTechnicianProjectDetailRow(row) {
+  return `
+    <tr>
+      <td>${escapeHTML(row.TechnicianName || "")}</td>
+      <td>${escapeHTML(row.ClientName || "")}</td>
+      <td>${escapeHTML(row.ProjectName || "")}</td>
+      <td>${formatNumber(row.TotalHours)}</td>
+      <td>${formatNumber(row.TotalRecords, 0)}</td>
+      <td>${escapeHTML(formatDateOnly(row.LastServiceDate) || "-")}</td>
+    </tr>
+  `;
+}
+
+function renderDashboardClientBarDetail(clientName) {
+  const records = getDashboardActiveServiceRecords()
+    .filter((record) => normalizeDashboardKey(record.ClientName) === normalizeDashboardKey(clientName));
+  const totalHours = sumDashboardHours(records);
+  const projectCount = new Set(records.map((record) => normalizeDashboardKey(record.ProjectName))).size;
+  const technicianCount = new Set(records.map((record) => normalizeDashboardKey(record.TechnicianName))).size;
+  const lastServiceDate = getDashboardLastServiceDate(records);
+  const rows = getDashboardTechnicianProjectDetailRows(records).map(renderDashboardTechnicianProjectDetailRow);
+
+  dashboardDetailPanel.classList.remove("hidden");
+  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Cliente: ${clientName}` : `Client: ${clientName}`;
+  dashboardDetailMessage.textContent = `${formatNumber(projectCount, 0)} ${currentLanguage === "es" ? "proyectos" : "projects"} · ${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos" : "technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima fecha" : "Last date"}: ${formatDateOnly(lastServiceDate) || "-"}`;
+  renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay proyectos activos para este cliente." : "No active projects for this client.");
+  scrollDashboardDetailIntoView();
+}
+
+function renderDashboardProjectBarDetail(projectName) {
+  const records = getDashboardActiveServiceRecords()
+    .filter((record) => normalizeDashboardKey(record.ProjectName) === normalizeDashboardKey(projectName));
+  const totalHours = sumDashboardHours(records);
+  const clientName = records[0]?.ClientName || "";
+  const technicianCount = new Set(records.map((record) => normalizeDashboardKey(record.TechnicianName))).size;
+  const lastServiceDate = getDashboardLastServiceDate(records);
+  const technicianRows = getDashboardTechnicianProjectDetailRows(records).map(renderDashboardTechnicianProjectDetailRow);
+  const serviceRecordHeaders = [
+    currentLanguage === "es" ? "Fecha" : "Date",
+    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Horas" : "Hours",
+    currentLanguage === "es" ? "Estado" : "Status",
+    currentLanguage === "es" ? "Descripcion" : "Description"
+  ];
+  const serviceRecordRows = records.slice(0, 10).map((record) => `
+    <tr>
+      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+      <td>${escapeHTML(record.TechnicianName || "")}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
+      <td></td>
+    </tr>
+  `);
+  const rows = [
+    ...technicianRows,
+    `<tr class="detail-section-row"><td colspan="6">${escapeHTML(currentLanguage === "es" ? "Ultimos Service Records relacionados" : "Latest related Service Records")}</td></tr>`,
+    `<tr class="detail-subheader-row">${serviceRecordHeaders.map((header) => `<th>${escapeHTML(header)}</th>`).join("")}<th></th></tr>`,
+    ...serviceRecordRows
+  ];
+
+  dashboardDetailPanel.classList.remove("hidden");
+  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Proyecto: ${projectName}` : `Project: ${projectName}`;
+  dashboardDetailMessage.textContent = `${clientName}${clientName ? " · " : ""}${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos" : "technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima fecha" : "Last date"}: ${formatDateOnly(lastServiceDate) || "-"}`;
+  renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay registros activos para este proyecto." : "No active records for this project.");
+  scrollDashboardDetailIntoView();
 }
 
 async function fetchDashboardServiceHours(params = "") {
