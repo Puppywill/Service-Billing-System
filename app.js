@@ -1454,7 +1454,7 @@ function renderClients() {
   if (!clientsTableBody) return;
 
   const canManageClients = isAdmin();
-  clientsTotalCount.textContent = clients.length;
+  clientsTotalCount.textContent = formatNumber(clients.length, 0);
   clientsTotalCount.parentElement.lastChild.textContent = ` ${t("clientsCount")}`;
   addClientButton.classList.toggle("hidden", !canManageClients);
 
@@ -1486,7 +1486,7 @@ function renderClients() {
 }
 
 function showClientsTableMessage(message) {
-  clientsTotalCount.textContent = clients.length;
+  clientsTotalCount.textContent = formatNumber(clients.length, 0);
   clientsTableBody.innerHTML = `
     <tr>
       <td colspan="8" class="empty-state">${escapeHTML(message)}</td>
@@ -1700,7 +1700,7 @@ function renderProjectClientOptions() {
 }
 
 function formatProjectHours(value) {
-  return value === null || value === undefined || value === "" ? "-" : Number(value || 0).toFixed(2);
+  return value === null || value === undefined || value === "" ? "-" : formatNumber(value);
 }
 
 function getContractAlertClass(status) {
@@ -1721,7 +1721,7 @@ function renderProjects() {
   if (!projectsTableBody) return;
 
   const canManageProjects = isAdmin();
-  projectsTotalCount.textContent = projects.length;
+  projectsTotalCount.textContent = formatNumber(projects.length, 0);
   projectsTotalCount.parentElement.lastChild.textContent = ` ${t("projectsCount")}`;
   addProjectButton.classList.toggle("hidden", !canManageProjects);
 
@@ -1756,7 +1756,7 @@ function renderProjects() {
 }
 
 function showProjectsTableMessage(message) {
-  projectsTotalCount.textContent = projects.length;
+  projectsTotalCount.textContent = formatNumber(projects.length, 0);
   projectsTableBody.innerHTML = `
     <tr>
       <td colspan="11" class="empty-state">${escapeHTML(message)}</td>
@@ -2144,7 +2144,7 @@ async function loadServiceRecords() {
 function renderServiceRecords() {
   if (!serviceRecordsTableBody) return;
 
-  serviceRecordsTotalCount.textContent = serviceRecords.length;
+  serviceRecordsTotalCount.textContent = formatNumber(serviceRecords.length, 0);
   serviceRecordsTotalCount.parentElement.lastChild.textContent = ` ${t("serviceRecordsCount")}`;
   addServiceRecordButton.classList.toggle("hidden", !canCreateServiceRecords());
 
@@ -2173,7 +2173,7 @@ function renderServiceRecords() {
         <td>${escapeHTML(formatServiceRecordTime(record.MorningEnd))}</td>
         <td>${escapeHTML(formatServiceRecordTime(record.AfternoonStart))}</td>
         <td>${escapeHTML(formatServiceRecordTime(record.AfternoonEnd))}</td>
-        <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+        <td>${formatNumber(record.TotalHours)}</td>
         <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
         <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
         <td>
@@ -2190,7 +2190,7 @@ function renderServiceRecords() {
 }
 
 function showServiceRecordsTableMessage(message) {
-  serviceRecordsTotalCount.textContent = serviceRecords.length;
+  serviceRecordsTotalCount.textContent = formatNumber(serviceRecords.length, 0);
   serviceRecordsTableBody.innerHTML = `
     <tr>
       <td colspan="12" class="empty-state">${escapeHTML(message)}</td>
@@ -2446,7 +2446,7 @@ async function loadInvoices() {
 function renderInvoices() {
   if (!invoicesTableBody) return;
 
-  invoicesTotalCount.textContent = invoices.length;
+  invoicesTotalCount.textContent = formatNumber(invoices.length, 0);
   invoicesTotalCount.parentElement.lastChild.textContent = ` ${t("invoicesCount")}`;
   generateInvoiceButton.classList.toggle("hidden", !isAdmin());
 
@@ -2485,7 +2485,7 @@ function renderInvoices() {
 }
 
 function showInvoicesTableMessage(message) {
-  invoicesTotalCount.textContent = invoices.length;
+  invoicesTotalCount.textContent = formatNumber(invoices.length, 0);
   invoicesTableBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">${escapeHTML(message)}</td>
@@ -2694,7 +2694,7 @@ function renderInvoiceDetail(invoice) {
       <td>${escapeHTML(formatDateOnly(line.ServiceDate))}</td>
       <td>${escapeHTML(line.ProjectName || "")}</td>
       <td class="ticket-description">${escapeHTML(line.Description || "")}</td>
-      <td>${Number(line.Hours || 0).toFixed(2)}</td>
+      <td>${formatNumber(line.Hours)}</td>
     </tr>
   `).join("");
 }
@@ -2764,7 +2764,7 @@ async function cancelInvoice(id) {
 }
 
 function renderNotifications() {
-  notificationsTotalCount.textContent = notifications.length;
+  notificationsTotalCount.textContent = formatNumber(notifications.length, 0);
 
   if (notifications.length === 0) {
     showNotificationsMessage(t("noNotifications"));
@@ -2787,7 +2787,7 @@ function renderNotifications() {
 }
 
 function showNotificationsMessage(message) {
-  notificationsTotalCount.textContent = notifications.length;
+  notificationsTotalCount.textContent = formatNumber(notifications.length, 0);
   notificationsTableBody.innerHTML = `
     <tr>
       <td colspan="5" class="empty-state">${message}</td>
@@ -2826,7 +2826,7 @@ function isResolvedPasswordResetNotification(notification) {
 
 function updateNotificationCount() {
   const unreadCount = notifications.filter((notification) => !notification.IsRead).length;
-  notificationCount.textContent = unreadCount;
+  notificationCount.textContent = formatNumber(unreadCount, 0);
   notificationCount.classList.toggle("hidden", unreadCount === 0);
 }
 
@@ -2946,7 +2946,7 @@ function renderDashboardProjectPrompt(message = getDashboardProjectPlaceholder()
   }
 
   if (dashboardProjectRecordsCount) {
-    dashboardProjectRecordsCount.textContent = "0";
+    dashboardProjectRecordsCount.textContent = formatNumber(0, 0);
     dashboardProjectRecordsCount.parentElement.lastChild.textContent = ` ${tNested("projectDashboard", "recordsCount")}`;
   }
 
@@ -3110,7 +3110,7 @@ function renderDashboardProjectRecords(records) {
   if (!dashboardProjectRecordsBody) return;
 
   const visibleRecords = records.slice(0, 8);
-  dashboardProjectRecordsCount.textContent = records.length;
+  dashboardProjectRecordsCount.textContent = formatNumber(records.length, 0);
   dashboardProjectRecordsCount.parentElement.lastChild.textContent = ` ${tNested("projectDashboard", "recordsCount")}`;
 
   if (!visibleRecords.length) {
@@ -3127,7 +3127,7 @@ function renderDashboardProjectRecords(records) {
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${escapeHTML(record.ClientName || "")}</td>
-      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
@@ -3239,7 +3239,7 @@ function renderDashboardTechnicianPrompt(message = getDashboardTechnicianPlaceho
   }
 
   if (dashboardTechnicianRecordsCount) {
-    dashboardTechnicianRecordsCount.textContent = "0";
+    dashboardTechnicianRecordsCount.textContent = formatNumber(0, 0);
     dashboardTechnicianRecordsCount.parentElement.lastChild.textContent = ` ${tNested("technicianDashboard", "recordsCount")}`;
   }
 
@@ -3571,7 +3571,7 @@ function renderDashboardTechnicianProjects(records) {
     <tr>
       <td>${escapeHTML(row.ProjectName)}</td>
       <td>${escapeHTML(row.ClientName)}</td>
-      <td>${row.TotalHours.toFixed(2)}</td>
+      <td>${formatNumber(row.TotalHours)}</td>
       <td>${escapeHTML(formatDateOnly(row.LastServiceDate))}</td>
     </tr>
   `).join("");
@@ -3594,8 +3594,8 @@ function renderDashboardTechnicianClients(records) {
   dashboardTechnicianClientsBody.innerHTML = clientRows.map((row) => `
     <tr>
       <td>${escapeHTML(row.ClientName)}</td>
-      <td>${row.TotalHours.toFixed(2)}</td>
-      <td>${row.TotalRecords}</td>
+      <td>${formatNumber(row.TotalHours)}</td>
+      <td>${formatNumber(row.TotalRecords, 0)}</td>
     </tr>
   `).join("");
 }
@@ -3610,7 +3610,7 @@ function renderDashboardTechnicianRecords(records) {
   if (!dashboardTechnicianRecordsBody) return;
 
   const visibleRecords = records.slice(0, 8);
-  dashboardTechnicianRecordsCount.textContent = records.length;
+  dashboardTechnicianRecordsCount.textContent = formatNumber(records.length, 0);
   dashboardTechnicianRecordsCount.parentElement.lastChild.textContent = ` ${tNested("technicianDashboard", "recordsCount")}`;
 
   if (!visibleRecords.length) {
@@ -3627,7 +3627,7 @@ function renderDashboardTechnicianRecords(records) {
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${escapeHTML(record.ProjectName || "")}</td>
-      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
       <td>
@@ -3977,7 +3977,7 @@ function renderDashboardServiceRecordDetail(records, variant = "full") {
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
-      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   ` : `
@@ -3986,7 +3986,7 @@ function renderDashboardServiceRecordDetail(records, variant = "full") {
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${escapeHTML(record.ProjectName || "")}</td>
-      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
@@ -4146,7 +4146,7 @@ function renderServiceRecordActivity(record) {
   return `
     <article class="notification-item">
       <strong>${escapeHTML(record.ClientName || "")} · ${escapeHTML(record.ProjectName || "")}</strong>
-      <span>${escapeHTML(record.TechnicianName || "")} · ${formatDateOnly(record.ServiceDate)} · ${Number(record.TotalHours || 0).toFixed(2)}h · ${escapeHTML(record.Status || "")}</span>
+      <span>${escapeHTML(record.TechnicianName || "")} · ${formatDateOnly(record.ServiceDate)} · ${formatNumber(record.TotalHours)}h · ${escapeHTML(record.Status || "")}</span>
     </article>
   `;
 }
@@ -4833,7 +4833,7 @@ function renderTickets() {
 }
 
 function renderUsers() {
-  usersTotalCount.textContent = users.length;
+  usersTotalCount.textContent = formatNumber(users.length, 0);
 
   if (!isAdmin()) {
     showUsersMessage(t("usersAdminOnly"));
@@ -4876,7 +4876,7 @@ function renderUsers() {
 }
 
 function showUsersMessage(message) {
-  usersTotalCount.textContent = users.length;
+  usersTotalCount.textContent = formatNumber(users.length, 0);
   usersTableBody.innerHTML = `
     <tr>
       <td colspan="8" class="empty-state">${message}</td>
@@ -4885,7 +4885,7 @@ function showUsersMessage(message) {
 }
 
 function renderPasswordResets() {
-  passwordResetsTotalCount.textContent = passwordResets.length;
+  passwordResetsTotalCount.textContent = formatNumber(passwordResets.length, 0);
 
   if (!isAdmin()) {
     showPasswordResetsMessage(t("usersAdminOnly"));
@@ -4921,7 +4921,7 @@ function renderPasswordResets() {
 }
 
 function showPasswordResetsMessage(message) {
-  passwordResetsTotalCount.textContent = passwordResets.length;
+  passwordResetsTotalCount.textContent = formatNumber(passwordResets.length, 0);
   passwordResetsTableBody.innerHTML = `
     <tr>
       <td colspan="6" class="empty-state">${message}</td>
@@ -5051,7 +5051,7 @@ async function generateReport(event) {
 }
 
 function renderServiceHoursReport() {
-  reportsTotalCount.textContent = reportServiceRecords.length;
+  reportsTotalCount.textContent = formatNumber(reportServiceRecords.length, 0);
   renderReportsSummary();
 
   if (reportServiceRecords.length === 0) {
@@ -5067,7 +5067,7 @@ function renderServiceHoursReport() {
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${escapeHTML(record.ProjectName || "")}</td>
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
-      <td>${Number(record.TotalHours || 0).toFixed(2)}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
@@ -5075,7 +5075,7 @@ function renderServiceHoursReport() {
 }
 
 function showReportsMessage(message) {
-  reportsTotalCount.textContent = reportServiceRecords.length;
+  reportsTotalCount.textContent = formatNumber(reportServiceRecords.length, 0);
   reportsTableBody.innerHTML = `
     <tr>
       <td colspan="8" class="empty-state">${message}</td>
@@ -5207,10 +5207,10 @@ function showTableMessage(message) {
 }
 
 function updateCounters() {
-  openCount.textContent = countTicketsByStatus("Abierto");
-  progressCount.textContent = countTicketsByStatus("En Progreso");
-  closedCount.textContent = countTicketsByStatus("Cerrado");
-  totalCount.textContent = tickets.length;
+  openCount.textContent = formatNumber(countTicketsByStatus("Abierto"), 0);
+  progressCount.textContent = formatNumber(countTicketsByStatus("En Progreso"), 0);
+  closedCount.textContent = formatNumber(countTicketsByStatus("Cerrado"), 0);
+  totalCount.textContent = formatNumber(tickets.length, 0);
 }
 
 function countTicketsByStatus(status) {
@@ -5601,7 +5601,7 @@ function updateServiceRecordTotalPreview() {
   if (!serviceRecordTotalPreview) return;
 
   const result = calculateServiceRecordHours();
-  serviceRecordTotalPreview.textContent = result.error ? "0.00" : result.hours.toFixed(2);
+  serviceRecordTotalPreview.textContent = result.error ? formatNumber(0) : formatNumber(result.hours);
 }
 
 function getServiceRecordStatusClass(status) {
@@ -5618,32 +5618,35 @@ function getInvoiceStatusClass(status) {
 }
 
 function formatCurrency(value) {
-  const locale = currentLanguage === "es" ? "es-BO" : "en-US";
   const amount = Number(value || 0);
 
-  return amount.toLocaleString(locale, {
+  return amount.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2
   });
 }
 
-function formatDashboardMetric(value, type) {
-  const locale = currentLanguage === "es" ? "es-BO" : "en-US";
+function formatNumber(value, fractionDigits = 2) {
   const amount = Number(value || 0);
+  const digits = Number.isInteger(fractionDigits) && fractionDigits >= 0 ? fractionDigits : 2;
 
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  }).format(amount);
+}
+
+function formatDashboardMetric(value, type) {
   if (type === "currency") {
     return "";
   }
 
   if (type === "hours") {
-    return `${amount.toLocaleString(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })} h`;
+    return `${formatNumber(value)} h`;
   }
 
-  return amount.toLocaleString(locale);
+  return formatNumber(value, 0);
 }
 
 function formatPerson(fullName, userId) {

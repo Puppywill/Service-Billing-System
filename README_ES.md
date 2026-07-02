@@ -1127,6 +1127,13 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Se agregan barras filtradas de horas por proyecto, horas por cliente y horas por mes.
 - La edicion de descripcion solo para Admin se mantiene disponible desde la tabla del Technician Dashboard.
 
+### Fase 28.3: Formato Global De Numeros
+
+- El frontend ahora usa un helper global `formatNumber` con formato `en-US`.
+- Las horas se muestran con coma para miles y punto para decimales, por ejemplo `90,674.75 h`.
+- Tarjetas del Dashboard, barras del Dashboard General, barras del Technician Dashboard, Reports, Service Records, horas contractuales de Projects y contadores visibles usan el mismo formato numerico.
+- Este cambio es solo visual; los valores en base de datos y calculos backend no cambian.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

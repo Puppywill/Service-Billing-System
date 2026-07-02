@@ -1127,6 +1127,13 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Added technician-filtered bars for hours by project, hours by client, and hours by month.
 - Admin-only service record description editing remains available from the Technician Dashboard table.
 
+### Phase 28.3: Global Number Format
+
+- The frontend now uses one global `formatNumber` helper with `en-US` formatting.
+- Hours display with comma thousands and dot decimals, such as `90,674.75 h`.
+- Dashboard cards, General Dashboard bars, Technician Dashboard bars, Reports, Service Records, Projects contract hours, and visible counters use the same number format.
+- This is a presentation-only change; database values and backend calculations are unchanged.
+
 ### API Examples
 
 ```http
