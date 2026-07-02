@@ -1134,6 +1134,21 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Dashboard cards, General Dashboard bars, Technician Dashboard bars, Reports, Service Records, Projects contract hours, and visible counters use the same number format.
 - This is a presentation-only change; database values and backend calculations are unchanged.
 
+### Phase 28.4: General Dashboard Active Data
+
+- The General Dashboard now filters its visible company-wide data to active clients, active projects, and active technicians.
+- Service-hour cards and bars use only Service Records connected to active Projects, active Clients, and active Technicians.
+- Recent activity is filtered to active Service Records context, active Clients, and active Projects.
+- Technician Dashboard behavior remains unchanged and continues to use its technician/project/date filters.
+- This is a frontend presentation filter only; no records are deleted or changed in `ServiceBillingDB` or `ServiceSBD_20260629`.
+
+### Phase 28.5: Main Active Projects First
+
+- The General Dashboard `Service Hours by Project` bar prioritizes current main active projects at the top.
+- Main projects include WIOA Bayamon hosting/maintenance, ALDL La Montana web development, Conexion Laboral Sureste webpage, Departamento de la Familia CoC, and Solutions By Design.
+- Other active projects remain visible below the prioritized projects.
+- The active-data filter and `en-US` number format remain in place.
+
 ### API Examples
 
 ```http

@@ -1134,6 +1134,21 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Tarjetas del Dashboard, barras del Dashboard General, barras del Technician Dashboard, Reports, Service Records, horas contractuales de Projects y contadores visibles usan el mismo formato numerico.
 - Este cambio es solo visual; los valores en base de datos y calculos backend no cambian.
 
+### Fase 28.4: Dashboard General Con Datos Activos
+
+- El Dashboard General ahora filtra la informacion visible de la empresa usando clientes activos, proyectos activos y tecnicos activos.
+- Las tarjetas y barras de horas usan solo Service Records relacionados a Projects activos, Clients activos y Technicians activos.
+- La actividad reciente se filtra para mostrar contexto activo de Service Records, Clients activos y Projects activos.
+- Technician Dashboard no cambia y mantiene sus filtros de tecnico, proyecto y rango de fechas.
+- Este filtro es solo visual en frontend; no se borran ni modifican registros en `ServiceBillingDB` ni en `ServiceSBD_20260629`.
+
+### Fase 28.5: Proyectos Principales Activos Primero
+
+- La barra `Horas por proyecto de servicio` del Dashboard General prioriza arriba los proyectos activos principales actuales.
+- Los proyectos principales incluyen hosting/mantenimiento WIOA Bayamon, desarrollo web ALDL La Montana, webpage Conexion Laboral Sureste, CoC Departamento de la Familia y Solutions By Design.
+- Los demas proyectos activos permanecen visibles debajo de los proyectos priorizados.
+- Se mantiene el filtro de datos activos y el formato numerico `en-US`.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
