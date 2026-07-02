@@ -316,6 +316,21 @@ const technicianDashboardMainProjectKeys = [
   "solutions by design"
 ];
 
+const dashboardMainClientKeys = [
+  "municipio de bayamon - programa wioa",
+  "aldl la montana",
+  "departamento de la familia",
+  "wioa se",
+  "solutions by design"
+];
+
+const dashboardMainProjectKeys = [
+  "hosting y mantenimiento 2025-2026",
+  "desarrollo de pagina web 2025",
+  "webpage 2025",
+  "programa continuo de cuidado (coc)"
+];
+
 function normalizeSearchKey(value) {
   return String(value || "")
     .normalize("NFD")
@@ -3928,11 +3943,26 @@ function getDashboardActiveServiceRecords(records = dashboardServiceHourRecords)
   return records.filter(isDashboardRecordActive);
 }
 
-function getDashboardMainProjectPriority(projectName) {
-  const projectKey = normalizeSearchKey(projectName);
-  const priority = technicianDashboardMainProjectKeys.findIndex((key) => key.startsWith(`${projectKey} -`) || key === projectKey);
+function getDashboardPriority(value, priorityKeys) {
+  const normalizedValue = normalizeSearchKey(value);
+  const priority = priorityKeys.findIndex((key) => normalizedValue === key || normalizedValue.includes(key) || key.includes(normalizedValue));
 
   return priority >= 0 ? priority : Number.MAX_SAFE_INTEGER;
+}
+
+function getDashboardMainClientPriority(clientName) {
+  return getDashboardPriority(clientName, dashboardMainClientKeys);
+}
+
+function getDashboardMainProjectPriority(projectName) {
+  return getDashboardPriority(projectName, dashboardMainProjectKeys);
+}
+
+function sortDashboardClientRows(a, b) {
+  const priorityDiff = getDashboardMainClientPriority(a.ClientName) - getDashboardMainClientPriority(b.ClientName);
+  if (priorityDiff !== 0) return priorityDiff;
+
+  return b.TotalHours - a.TotalHours || String(a.ClientName || "").localeCompare(String(b.ClientName || ""));
 }
 
 function sortDashboardProjectRows(a, b) {
@@ -3966,7 +3996,7 @@ function getDashboardChartRows() {
   return {
     HoursByMonth: Array.from(rowsByMonth, ([Month, TotalHours]) => ({ Month, TotalHours }))
       .sort((a, b) => String(a.Month).localeCompare(String(b.Month))),
-    HoursByClient: Array.from(rowsByClient, ([ClientName, TotalHours]) => ({ ClientName, TotalHours })).sort(byHoursDesc),
+    HoursByClient: Array.from(rowsByClient, ([ClientName, TotalHours]) => ({ ClientName, TotalHours })).sort(sortDashboardClientRows),
     HoursByProject: Array.from(rowsByProject, ([ProjectName, TotalHours]) => ({ ProjectName, TotalHours })).sort(sortDashboardProjectRows),
     HoursByTechnician: Array.from(rowsByTechnician, ([TechnicianName, TotalHours]) => ({ TechnicianName, TotalHours })).sort(byHoursDesc)
   };
@@ -4004,8 +4034,14 @@ function renderDashboardCharts() {
   const chartRows = getDashboardChartRows();
 
   renderBarChart(hoursByMonthChart, chartRows.HoursByMonth, "Month", "TotalHours", "hours");
-  renderBarChart(hoursByClientChart, chartRows.HoursByClient, "ClientName", "TotalHours", "hours");
-  renderBarChart(hoursByProjectChart, chartRows.HoursByProject, "ProjectName", "TotalHours", "hours");
+  renderBarChart(hoursByClientChart, chartRows.HoursByClient, "ClientName", "TotalHours", "hours", {
+    action: "dashboard-client",
+    valueKey: "ClientName"
+  });
+  renderBarChart(hoursByProjectChart, chartRows.HoursByProject, "ProjectName", "TotalHours", "hours", {
+    action: "dashboard-project",
+    valueKey: "ProjectName"
+  });
   renderBarChart(hoursByTechnicianChart, chartRows.HoursByTechnician, "TechnicianName", "TotalHours", "hours");
 }
 
@@ -4122,6 +4158,86 @@ function renderDashboardProjectsDetail(projectRows) {
   renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay proyectos para mostrar." : "No projects to display.");
 }
 
+function renderDashboardClientBarDetail(clientName) {
+  const records = getDashboardActiveServiceRecords()
+    .filter((record) => normalizeDashboardKey(record.ClientName) === normalizeDashboardKey(clientName));
+  const rowsByProject = new Map();
+
+  records.forEach((record) => {
+    const key = normalizeDashboardKey(record.ProjectName);
+    const existing = rowsByProject.get(key) || {
+      ProjectName: record.ProjectName || "",
+      ClientName: record.ClientName || "",
+      TotalHours: 0,
+      TotalRecords: 0,
+      LastServiceDate: ""
+    };
+
+    existing.TotalHours += Number(record.TotalHours || 0);
+    existing.TotalRecords += 1;
+    if (!existing.LastServiceDate || String(record.ServiceDate || "") > existing.LastServiceDate) {
+      existing.LastServiceDate = String(record.ServiceDate || "");
+    }
+    rowsByProject.set(key, existing);
+  });
+
+  const headers = [
+    currentLanguage === "es" ? "Proyecto" : "Project",
+    currentLanguage === "es" ? "Cliente" : "Client",
+    currentLanguage === "es" ? "Horas" : "Hours",
+    currentLanguage === "es" ? "Registros" : "Records",
+    currentLanguage === "es" ? "Ultima fecha" : "Last date"
+  ];
+  const rows = Array.from(rowsByProject.values())
+    .sort(sortDashboardProjectRows)
+    .map((project) => `
+      <tr>
+        <td>${escapeHTML(project.ProjectName || "")}</td>
+        <td>${escapeHTML(project.ClientName || "")}</td>
+        <td>${formatNumber(project.TotalHours)}</td>
+        <td>${formatNumber(project.TotalRecords, 0)}</td>
+        <td>${escapeHTML(formatDateOnly(project.LastServiceDate) || "-")}</td>
+      </tr>
+    `);
+
+  dashboardDetailPanel.classList.remove("hidden");
+  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Cliente: ${clientName}` : `Client: ${clientName}`;
+  dashboardDetailMessage.textContent = "";
+  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay proyectos activos para este cliente." : "No active projects for this client.");
+}
+
+function renderDashboardProjectBarDetail(projectName) {
+  const records = getDashboardActiveServiceRecords()
+    .filter((record) => normalizeDashboardKey(record.ProjectName) === normalizeDashboardKey(projectName));
+  const totalHours = sumDashboardHours(records);
+  const clientName = records[0]?.ClientName || "";
+  const headers = [
+    currentLanguage === "es" ? "Cliente" : "Client",
+    currentLanguage === "es" ? "Proyecto" : "Project",
+    currentLanguage === "es" ? "Fecha" : "Date",
+    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Horas" : "Hours",
+    currentLanguage === "es" ? "Estado" : "Status",
+    currentLanguage === "es" ? "Descripcion" : "Description"
+  ];
+  const rows = records.slice(0, 20).map((record) => `
+    <tr>
+      <td>${escapeHTML(record.ClientName || "")}</td>
+      <td>${escapeHTML(record.ProjectName || "")}</td>
+      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
+      <td>${escapeHTML(record.TechnicianName || "")}</td>
+      <td>${formatNumber(record.TotalHours)}</td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
+    </tr>
+  `);
+
+  dashboardDetailPanel.classList.remove("hidden");
+  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Proyecto: ${projectName}` : `Project: ${projectName}`;
+  dashboardDetailMessage.textContent = `${clientName}${clientName ? " · " : ""}${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"}`;
+  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay registros activos para este proyecto." : "No active records for this project.");
+}
+
 async function fetchDashboardServiceHours(params = "") {
   const response = await fetch(`/api/reports/service-hours${params ? `?${params}` : ""}`, {
     cache: "no-store"
@@ -4207,7 +4323,7 @@ function handleDashboardCardKeydown(event) {
   showDashboardDetail(card.dataset.dashboardDetail);
 }
 
-function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
+function renderBarChart(container, rows = [], labelKey, valueKey, valueType, options = {}) {
   if (!container) return;
 
   if (!rows || rows.length === 0) {
@@ -4219,17 +4335,44 @@ function renderBarChart(container, rows = [], labelKey, valueKey, valueType) {
   container.innerHTML = rows.slice(0, 8).map((row) => {
     const value = Number(row[valueKey] || 0);
     const width = Math.max((value / maxValue) * 100, value > 0 ? 6 : 0);
+    const label = String(row[labelKey] || "");
+    const content = `
+      <div class="bar-row-header">
+        <span>${escapeHTML(label)}</span>
+        <strong>${formatDashboardMetric(value, valueType)}</strong>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width: ${width}%"></div></div>
+    `;
+
+    if (options.action) {
+      return `
+        <button type="button" class="bar-row interactive-bar-row" data-dashboard-bar-action="${escapeHTML(options.action)}" data-value="${escapeHTML(String(row[options.valueKey || labelKey] || ""))}">
+          ${content}
+        </button>
+      `;
+    }
 
     return `
       <div class="bar-row">
-        <div class="bar-row-header">
-          <span>${escapeHTML(String(row[labelKey] || ""))}</span>
-          <strong>${formatDashboardMetric(value, valueType)}</strong>
-        </div>
-        <div class="bar-track"><div class="bar-fill" style="width: ${width}%"></div></div>
+        ${content}
       </div>
     `;
   }).join("");
+}
+
+function handleDashboardBarClick(event) {
+  const button = event.target.closest("[data-dashboard-bar-action]");
+  if (!button) return;
+
+  const value = button.dataset.value || "";
+
+  if (button.dataset.dashboardBarAction === "dashboard-client") {
+    renderDashboardClientBarDetail(value);
+  }
+
+  if (button.dataset.dashboardBarAction === "dashboard-project") {
+    renderDashboardProjectBarDetail(value);
+  }
 }
 
 function renderDashboardRecentActivity() {
@@ -5928,6 +6071,7 @@ invoiceDetailModal.addEventListener("click", (event) => {
 });
 dashboardSummaryGrid.addEventListener("click", handleDashboardCardAction);
 dashboardSummaryGrid.addEventListener("keydown", handleDashboardCardKeydown);
+dashboardTabPanel.addEventListener("click", handleDashboardBarClick);
 closeDashboardDetailButton.addEventListener("click", closeDashboardDetail);
 dashboardProjectSearchInput.addEventListener("input", handleDashboardProjectSearch);
 dashboardProjectSelect.addEventListener("change", handleDashboardProjectSelect);

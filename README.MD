@@ -1149,6 +1149,14 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Other active projects remain visible below the prioritized projects.
 - The active-data filter and `en-US` number format remain in place.
 
+### Phase 28.6: Main Clients and Projects Focus
+
+- General Dashboard bars prioritize the current main clients and projects while keeping active data only.
+- `Service Hours by Client` shows Municipio de Bayamon - Programa WIOA, ALDL La Montana, Departamento de la Familia, WIOA SE, and Solutions By Design first.
+- `Service Hours by Project` shows Hosting Y Mantenimiento 2025-2026, DESARROLLO DE PAGINA WEB 2025, Webpage 2025, and Programa Continuo de Cuidado (CoC) first.
+- Client and project bars are clickable: client bars show active projects and hours; project bars show the client, total hours, and latest related Service Records.
+- Technician Dashboard behavior remains unchanged.
+
 ### API Examples
 
 ```http

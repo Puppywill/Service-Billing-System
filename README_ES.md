@@ -1149,6 +1149,14 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Los demas proyectos activos permanecen visibles debajo de los proyectos priorizados.
 - Se mantiene el filtro de datos activos y el formato numerico `en-US`.
 
+### Fase 28.6: Enfoque En Clientes Y Proyectos Principales
+
+- Las barras del Dashboard General priorizan los clientes y proyectos principales actuales, manteniendo solo datos activos.
+- `Horas de servicio por cliente` muestra primero Municipio de Bayamon - Programa WIOA, ALDL La Montana, Departamento de la Familia, WIOA SE y Solutions By Design.
+- `Horas por proyecto de servicio` muestra primero Hosting Y Mantenimiento 2025-2026, DESARROLLO DE PAGINA WEB 2025, Webpage 2025 y Programa Continuo de Cuidado (CoC).
+- Las barras de cliente y proyecto son clickeables: cliente muestra proyectos activos y horas; proyecto muestra cliente, horas totales y ultimos Service Records relacionados.
+- Technician Dashboard permanece sin cambios.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
