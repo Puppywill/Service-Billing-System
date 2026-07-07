@@ -1164,6 +1164,13 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Project detail shows selected project, related client, technicians, hours by technician, total hours, total records, last service date, and latest related Service Records.
 - Detail tables use `en-US` number formatting and keep active-data filters.
 
+### Dashboard Polish: Cleaner Business View
+
+- The main Dashboard summary was simplified to five core cards: Clients, Projects, Service Records, Total Hours, and Pending Service Hours.
+- Removed the Current Month Hours and Processed Hours cards from the main Dashboard summary.
+- Dashboard cards and panels now use a more compact dark business style with softer borders, subtler shadows, tighter spacing, and fewer decorative effects.
+- Existing General Dashboard interactions, charts, active-data filters, and Technician Dashboard behavior remain unchanged.
+
 ### API Examples
 
 ```http

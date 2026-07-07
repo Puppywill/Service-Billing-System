@@ -459,10 +459,10 @@ const translations = {
     dashboardMetrics: {
       TotalClients: "Clientes",
       TotalProjects: "Proyectos",
-      TotalServiceRecords: "Registros",
+      TotalServiceRecords: "Registros de servicio",
       TotalHours: "Horas totales",
       CurrentMonthHours: "Horas del mes actual",
-      UnbilledHours: "Horas pendientes",
+      UnbilledHours: "Horas pendientes de procesar",
       BilledHours: "Horas procesadas"
     },
     dashboardCharts: {
@@ -816,7 +816,7 @@ const translations = {
       TotalServiceRecords: "Service Records",
       TotalHours: "Total Hours",
       CurrentMonthHours: "Current Month Hours",
-      UnbilledHours: "Pending Hours",
+      UnbilledHours: "Pending Service Hours",
       BilledHours: "Processed Hours"
     },
     dashboardCharts: {
@@ -4005,13 +4005,11 @@ function getDashboardChartRows() {
 function renderDashboardSummary() {
   const summaryMetrics = getDashboardSummaryMetrics();
   const metrics = [
-    { key: "TotalClients", type: "count" },
+    { key: "TotalClients", type: "count", detail: "clients" },
     { key: "TotalProjects", type: "count", detail: "projects" },
     { key: "TotalServiceRecords", type: "count", detail: "records" },
-    { key: "TotalHours", type: "hours" },
-    { key: "CurrentMonthHours", type: "hours", value: getCurrentMonthHours(), detail: "current-month" },
-    { key: "UnbilledHours", type: "hours", detail: "pending" },
-    { key: "BilledHours", type: "hours", detail: "processed" }
+    { key: "TotalHours", type: "hours", detail: "records" },
+    { key: "UnbilledHours", type: "hours", detail: "pending" }
   ];
 
   dashboardSummaryGrid.innerHTML = metrics.map((metric, index) => `
@@ -4059,6 +4057,7 @@ function getCurrentMonthDateRange() {
 
 function getDashboardDetailTitle(detailType) {
   const titles = {
+    clients: currentLanguage === "es" ? "Clientes activos" : "Active Clients",
     "current-month": currentLanguage === "es" ? "Registros de servicio del mes actual" : "Current Month Service Records",
     pending: currentLanguage === "es" ? "Horas pendientes" : "Pending Hours",
     processed: currentLanguage === "es" ? "Horas procesadas" : "Processed Hours",
@@ -4163,6 +4162,50 @@ function renderDashboardProjectsDetail(projectRows) {
   `);
 
   renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay proyectos para mostrar." : "No projects to display.");
+}
+
+function renderDashboardClientsDetail(records) {
+  const rowsByClient = new Map();
+
+  records.forEach((record) => {
+    const key = normalizeDashboardKey(record.ClientName);
+    const existing = rowsByClient.get(key) || {
+      ClientName: record.ClientName || "",
+      TotalHours: 0,
+      TotalRecords: 0,
+      TotalProjects: new Set(),
+      LastServiceDate: ""
+    };
+
+    existing.TotalHours += Number(record.TotalHours || 0);
+    existing.TotalRecords += 1;
+    if (record.ProjectName) existing.TotalProjects.add(normalizeDashboardKey(record.ProjectName));
+    if (!existing.LastServiceDate || String(record.ServiceDate || "") > existing.LastServiceDate) {
+      existing.LastServiceDate = String(record.ServiceDate || "");
+    }
+    rowsByClient.set(key, existing);
+  });
+
+  const headers = [
+    currentLanguage === "es" ? "Cliente" : "Client",
+    currentLanguage === "es" ? "Proyectos activos" : "Active projects",
+    currentLanguage === "es" ? "Horas" : "Hours",
+    currentLanguage === "es" ? "Registros" : "Records",
+    currentLanguage === "es" ? "Ultima fecha" : "Last date"
+  ];
+  const rows = Array.from(rowsByClient.values())
+    .sort(sortDashboardClientRows)
+    .map((client) => `
+      <tr>
+        <td>${escapeHTML(client.ClientName || "")}</td>
+        <td>${formatNumber(client.TotalProjects.size, 0)}</td>
+        <td>${formatNumber(client.TotalHours)}</td>
+        <td>${formatNumber(client.TotalRecords, 0)}</td>
+        <td>${escapeHTML(formatDateOnly(client.LastServiceDate) || "-")}</td>
+      </tr>
+    `);
+
+  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay clientes activos para mostrar." : "No active clients to display.");
 }
 
 function renderDashboardClientBarDetail(clientName) {
@@ -4374,6 +4417,12 @@ async function showDashboardDetail(detailType) {
   showDashboardDetailLoading(detailType);
 
   try {
+    if (detailType === "clients") {
+      renderDashboardClientsDetail(getDashboardActiveServiceRecords());
+      dashboardDetailMessage.textContent = "";
+      return;
+    }
+
     if (detailType === "projects") {
       const response = await fetch("/api/projects", { cache: "no-store" });
       const data = await parseJsonResponse(response);

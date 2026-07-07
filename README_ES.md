@@ -1164,6 +1164,13 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - El detalle de proyecto muestra proyecto seleccionado, cliente relacionado, tecnicos, horas por tecnico, total de horas, total de registros, ultima fecha y ultimos Service Records relacionados.
 - Las tablas de detalle mantienen formato numerico `en-US` y filtros de datos activos.
 
+### Ajuste Visual: Dashboard Principal Mas Limpio
+
+- El resumen principal del Dashboard se simplifico a cinco tarjetas: Clientes, Proyectos, Registros de servicio, Horas totales y Horas pendientes de procesar.
+- Se quitaron las tarjetas Horas del mes actual y Horas procesadas del resumen principal.
+- Las tarjetas y paneles del Dashboard usan un estilo oscuro mas compacto y empresarial, con bordes suaves, sombras sutiles, mejor espaciado y menos decoracion.
+- Las interacciones del Dashboard General, graficas, filtros de datos activos y Technician Dashboard se mantienen sin cambios.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
