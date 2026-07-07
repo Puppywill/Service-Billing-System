@@ -1,8 +1,8 @@
-# Service Billing System
+# Solutions By Design - Service Billing System
 
 Language: [English](README.MD) | [Espanol](README_ES.md)
 
-Service Billing System is a web application being migrated from a Help Desk ticket project into a system for registering hourly service work, reviewing operational records, and preparing billing reports.
+Solutions By Design - Service Billing System is an internal web application for registering hourly service work, reviewing operational records, and preparing service billing support reports. The repository name remains `Service-Billing-System`.
 
 ## Migration Notice
 
@@ -713,7 +713,7 @@ Phase 10 starts the visual transition from the Help Desk interface into the Serv
 
 ### Completed Frontend Foundation
 
-- Updated visible branding to `Service Billing System`.
+- Established the Service Billing frontend identity; the current visible brand is now `Solutions By Design`.
 - Added the new main navigation structure.
 - Kept the existing login and authentication flow.
 - Kept the existing dashboard in place for now.
@@ -1177,6 +1177,13 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Improved navigation tabs, cards, forms, tables, buttons, badges, modals, scrollbars, dashboard charts, and hover/focus states.
 - Added subtle animations for panels, modals, cards, buttons, and dashboard bars without changing application behavior.
 - This phase is visual only; no backend logic, database schema, migrated data, or ServiceSBD_20260629 data was changed.
+
+### Phase 30: Solutions By Design Branding and EN/ES Text Pass
+
+- Visible application branding now presents `Solutions By Design` with `Solutions By Design - Service Billing System` used where document-level context is useful.
+- The repository name remains `Service-Billing-System`.
+- English and Spanish interface text was improved across navigation, dashboard, forms, tables, modals, reports, users, settings, notifications, buttons, empty states, and labels.
+- This phase is copy/branding only; no database, backend behavior, or migrated real data was changed.
 
 ### API Examples
 

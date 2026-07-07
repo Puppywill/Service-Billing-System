@@ -1,8 +1,8 @@
-# Service Billing System
+# Solutions By Design - Service Billing System
 
 Idioma: [Espanol](README_ES.md) | [English](README.MD)
 
-Service Billing System es una aplicacion web en proceso de migracion desde un proyecto de tickets Help Desk hacia un sistema para registrar servicios por hora, revisar registros operativos y preparar reportes de facturacion.
+Solutions By Design - Service Billing System es una aplicacion interna para registrar servicios por hora, revisar registros operativos y preparar reportes de soporte para facturacion de servicios. El nombre del repositorio se mantiene como `Service-Billing-System`.
 
 ## Nota de Migracion
 
@@ -713,7 +713,7 @@ La Fase 10 inicia la transicion visual desde la interfaz Help Desk hacia el fron
 
 ### Frontend Foundation Completada
 
-- Branding visible actualizado a `Service Billing System`.
+- Se establecio la identidad frontend de Service Billing; el branding visible actual ahora es `Solutions By Design`.
 - Nueva estructura de navegacion principal.
 - Login y autenticacion existentes conservados.
 - Dashboard existente mantenido por ahora.
@@ -1177,6 +1177,13 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Se mejoraron tabs de navegacion, cards, formularios, tablas, botones, badges, modales, scrollbars, graficas del Dashboard y estados hover/focus.
 - Se agregaron animaciones sutiles para paneles, modales, cards, botones y barras del Dashboard sin cambiar el comportamiento de la aplicacion.
 - Esta fase es solo visual; no cambia logica backend, estructura de base de datos, datos migrados ni informacion de `ServiceSBD_20260629`.
+
+### Fase 30: Branding Solutions By Design y Textos EN/ES
+
+- El branding visible de la aplicacion ahora presenta `Solutions By Design`, usando `Solutions By Design - Service Billing System` donde aporta contexto documental.
+- El nombre del repositorio se mantiene como `Service-Billing-System`.
+- Se mejoraron textos en ingles y espanol en navegacion, dashboard, formularios, tablas, modales, reportes, usuarios, settings, notificaciones, botones, estados vacios y labels.
+- Esta fase solo cambia textos y branding; no modifica base de datos, comportamiento backend ni datos reales migrados.
 
 ## Ajuste De Demo: Reports E Invoices
 

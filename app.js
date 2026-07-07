@@ -434,24 +434,24 @@ async function refreshWorkspace() {
 
 const translations = {
   es: {
-    documentTitle: "Service Billing System",
-    headerEyebrow: "Registro de horas y facturacion",
-    headerTitle: "Service Billing System",
-    headerSubtitle: "Registra, consulta y prepara informacion de servicios por hora desde el navegador.",
+    documentTitle: "Solutions By Design - Service Billing System",
+    headerEyebrow: "Registro de horas y facturacion de servicios",
+    headerTitle: "Solutions By Design",
+    headerSubtitle: "Service Billing System para registrar, consultar y revisar servicios por hora.",
     secureAccess: "Acceso seguro",
     login: "Iniciar sesion",
-    password: "Password",
-    passwordPlaceholder: "Tu password",
-    tickets: "Service Records",
-    users: "Users",
+    password: "Contrasena",
+    passwordPlaceholder: "Tu contrasena",
+    tickets: "Registros de servicio",
+    users: "Usuarios",
     notifications: "Notificaciones",
     dashboard: "Dashboard",
-    reports: "Reports",
-    clients: "Clients",
-    projects: "Projects",
-    invoices: "Invoices",
-    settings: "Settings",
-    dashboardTitle: "Dashboard",
+    reports: "Reportes",
+    clients: "Clientes",
+    projects: "Proyectos",
+    invoices: "Facturas",
+    settings: "Configuracion",
+    dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el dashboard.",
     noDashboardData: "No hay datos para mostrar.",
     businessOverview: "Resumen del negocio",
@@ -479,7 +479,7 @@ const translations = {
     },
     projectDashboard: {
       eyebrow: "Enfoque por proyecto",
-      title: "Project Dashboard",
+      title: "Dashboard de proyecto",
       searchLabel: "Buscar proyecto",
       searchPlaceholder: "Proyecto o cliente",
       projectLabel: "Proyecto",
@@ -499,7 +499,7 @@ const translations = {
     },
     technicianDashboard: {
       eyebrow: "Enfoque por tecnico",
-      title: "Technician Dashboard",
+      title: "Dashboard de tecnico",
       searchLabel: "Buscar tecnico",
       searchPlaceholder: "Nombre del tecnico",
       technicianLabel: "Tecnico",
@@ -533,9 +533,9 @@ const translations = {
     invoicesEyebrow: "Area de facturacion",
     settingsEyebrow: "Preferencias del sistema",
     clientsFoundation: "La administracion de clientes esta lista para el flujo de Service Billing. La conexion API se agregara en una fase posterior del frontend.",
-    addClient: "Add Client",
-    editClient: "Edit Client",
-    saveClient: "Save Client",
+    addClient: "Agregar cliente",
+    editClient: "Editar cliente",
+    saveClient: "Guardar cliente",
     clientSearchPlaceholder: "Cliente, email o telefono",
     clientsCount: "clientes",
     noClients: "No hay clientes activos.",
@@ -544,16 +544,16 @@ const translations = {
     createClientSuccess: "Cliente creado correctamente.",
     updateClientSuccess: "Cliente actualizado correctamente.",
     deleteClientSuccess: "Cliente desactivado correctamente.",
-    clientNameRequired: "ClientName es obligatorio.",
+    clientNameRequired: "El nombre del cliente es obligatorio.",
     clientNotFound: "No se encontro el cliente seleccionado.",
     deleteClientConfirm: "Seguro que deseas desactivar este cliente?",
     createClientError: "No se pudo crear el cliente.",
     updateClientError: "No se pudo actualizar el cliente.",
     deleteClientError: "No se pudo desactivar el cliente.",
     projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente y descripcion antes de registrar servicios.",
-    addProject: "Add Project",
-    editProject: "Edit Project",
-    saveProject: "Save Project",
+    addProject: "Agregar proyecto",
+    editProject: "Editar proyecto",
+    saveProject: "Guardar proyecto",
     projectSearchPlaceholder: "Proyecto, cliente o descripcion",
     allClients: "Todos los clientes",
     selectClient: "Selecciona cliente",
@@ -565,8 +565,8 @@ const translations = {
     createProjectSuccess: "Proyecto creado correctamente.",
     updateProjectSuccess: "Proyecto actualizado correctamente.",
     deleteProjectSuccess: "Proyecto desactivado correctamente.",
-    projectClientRequired: "ClientID es obligatorio.",
-    projectNameRequired: "ProjectName es obligatorio.",
+    projectClientRequired: "El cliente es obligatorio.",
+    projectNameRequired: "El nombre del proyecto es obligatorio.",
     projectRateRequired: "La configuracion interna del proyecto debe ser numerica.",
     projectRateNegative: "La configuracion interna del proyecto no puede ser negativa.",
     projectNotFound: "No se encontro el proyecto seleccionado.",
@@ -574,9 +574,9 @@ const translations = {
     createProjectError: "No se pudo crear el proyecto.",
     updateProjectError: "No se pudo actualizar el proyecto.",
     deleteProjectError: "No se pudo desactivar el proyecto.",
-    addServiceRecord: "Add Service Record",
-    editServiceRecord: "Edit Service Record",
-    saveServiceRecord: "Save Service Record",
+    addServiceRecord: "Agregar registro de servicio",
+    editServiceRecord: "Editar registro de servicio",
+    saveServiceRecord: "Guardar registro",
     serviceRecordSearchPlaceholder: "Tecnico, cliente, proyecto o descripcion",
     allTechnicians: "Todos los tecnicos",
     allProjects: "Todos los proyectos",
@@ -589,11 +589,11 @@ const translations = {
     createServiceRecordSuccess: "Registro de servicio creado correctamente.",
     updateServiceRecordSuccess: "Registro de servicio actualizado correctamente.",
     cancelServiceRecordSuccess: "Registro de servicio cancelado correctamente.",
-    serviceRecordTechnicianRequired: "TechnicianUserID es obligatorio.",
-    serviceRecordClientRequired: "ClientID es obligatorio.",
-    serviceRecordProjectRequired: "ProjectID es obligatorio.",
-    serviceRecordDateRequired: "ServiceDate es obligatorio.",
-    serviceRecordDescriptionRequired: "ServiceDescription es obligatorio.",
+    serviceRecordTechnicianRequired: "El tecnico es obligatorio.",
+    serviceRecordClientRequired: "El cliente es obligatorio.",
+    serviceRecordProjectRequired: "El proyecto es obligatorio.",
+    serviceRecordDateRequired: "La fecha del servicio es obligatoria.",
+    serviceRecordDescriptionRequired: "La descripcion del servicio es obligatoria.",
     serviceRecordTimeError: "Las horas deben tener entrada y salida, y no pueden ser negativas.",
     serviceRecordStatusInvalid: "Status debe ser Recorded, Billed o Canceled.",
     serviceRecordNotFound: "No se encontro el registro seleccionado.",
@@ -601,9 +601,9 @@ const translations = {
     createServiceRecordError: "No se pudo crear el registro de servicio.",
     updateServiceRecordError: "No se pudo actualizar el registro de servicio.",
     cancelServiceRecordError: "No se pudo cancelar el registro de servicio.",
-    generateInvoice: "Generate Invoice",
-    editInvoiceStatus: "Edit Invoice Status",
-    saveInvoiceStatus: "Save Status",
+    generateInvoice: "Generar factura",
+    editInvoiceStatus: "Editar estado de factura",
+    saveInvoiceStatus: "Guardar estado",
     invoiceSearchPlaceholder: "Factura, cliente o notas",
     invoicesCount: "facturas",
     noInvoices: "No hay facturas.",
@@ -613,12 +613,12 @@ const translations = {
     invoiceGeneratedSuccess: "Factura generada correctamente.",
     invoiceStatusUpdatedSuccess: "Estado de factura actualizado correctamente.",
     invoiceCanceledSuccess: "Factura cancelada correctamente.",
-    invoiceClientRequired: "ClientID es obligatorio.",
-    invoicePeriodFromRequired: "PeriodFrom es obligatorio.",
-    invoicePeriodToRequired: "PeriodTo es obligatorio.",
-    invoicePeriodInvalid: "PeriodFrom no puede ser posterior a PeriodTo.",
+    invoiceClientRequired: "El cliente es obligatorio.",
+    invoicePeriodFromRequired: "La fecha desde es obligatoria.",
+    invoicePeriodToRequired: "La fecha hasta es obligatoria.",
+    invoicePeriodInvalid: "La fecha desde no puede ser posterior a la fecha hasta.",
     invoiceTaxRateInvalid: "La configuracion interna de la factura debe ser un numero no negativo.",
-    invoiceStatusInvalid: "Status debe ser Draft, Issued, Paid o Canceled.",
+    invoiceStatusInvalid: "El estado debe ser Draft, Issued, Paid o Canceled.",
     invoiceNotFound: "No se encontro la factura seleccionada.",
     cancelInvoiceConfirm: "Seguro que deseas cancelar esta factura?",
     generateInvoiceError: "No se pudo generar la factura.",
@@ -663,14 +663,14 @@ const translations = {
     reportError: "No se pudo generar el reporte.",
     exportError: "No se pudo exportar el reporte.",
     invalidApiResponse: "El servidor devolvio una respuesta HTML en lugar de JSON. Verifica que el servidor este reiniciado y que el endpoint API exista.",
-    passwordResets: "Solicitudes Forgot Password",
+    passwordResets: "Solicitudes de recuperacion",
     passwordResetRequests: "solicitudes",
     noPasswordResets: "No hay solicitudes de recuperacion.",
     resolve: "Marcar resuelta",
     markResolved: "Marcar como resuelta",
-    temporaryPassword: "Asignar password temporal",
-    showPassword: "Mostrar password",
-    hidePassword: "Ocultar password",
+    temporaryPassword: "Asignar contrasena temporal",
+    showPassword: "Mostrar contrasena",
+    hidePassword: "Ocultar contrasena",
     pending: "Pendiente",
     resolved: "Resuelto",
     forgotSaved: "Solicitud recibida. Contacta a un administrador para restablecer tu contrasena.",
@@ -736,8 +736,8 @@ const translations = {
     fullName: "Nombre completo",
     fullNamePlaceholder: "Ej. Maria Lopez",
     role: "Rol",
-    tempPasswordPlaceholder: "Password temporal",
-    newPassword: "Nuevo password",
+    tempPasswordPlaceholder: "Contrasena temporal",
+    newPassword: "Nueva contrasena",
     keepPasswordPlaceholder: "Dejar vacio para mantener",
     admin: "Administrador",
     closeEditor: "Cerrar editor",
@@ -746,8 +746,8 @@ const translations = {
     loginError: "No se pudo iniciar sesion.",
     loadTicketsError: "No se pudieron cargar los tickets.",
     serverConnectionError: "No se pudo conectar con el servidor.",
-    createTicketError: "No se pudo crear el ticket.",
-    createTicketAlertError: "Ocurrio un error al crear el ticket.",
+    createTicketError: "No se pudo crear el registro.",
+    createTicketAlertError: "Ocurrio un error al crear el registro.",
     ticketNotFound: "No se encontro el ticket seleccionado.",
     userNotFound: "No se encontro el usuario seleccionado.",
     createUserError: "No se pudo crear el usuario.",
@@ -756,20 +756,20 @@ const translations = {
     deleteUserConfirm: "Seguro que deseas cambiar el estado de este usuario?",
     activateUser: "Activar",
     deactivateUser: "Desactivar",
-    active: "Active",
-    inactive: "Inactive",
-    updateTicketError: "No se pudo editar el ticket.",
-    updateTicketAlertError: "Ocurrio un error al editar el ticket.",
-    closeTicketError: "No se pudo cerrar el ticket.",
-    closeTicketAlertError: "Ocurrio un error al cerrar el ticket.",
-    deleteTicketError: "No se pudo eliminar el ticket.",
-    deleteTicketAlertError: "Ocurrio un error al eliminar el ticket.",
-    deleteTicketConfirm: "Seguro que deseas eliminar este ticket?",
+    active: "Activo",
+    inactive: "Inactivo",
+    updateTicketError: "No se pudo editar el registro.",
+    updateTicketAlertError: "Ocurrio un error al editar el registro.",
+    closeTicketError: "No se pudo cerrar el registro.",
+    closeTicketAlertError: "Ocurrio un error al cerrar el registro.",
+    deleteTicketError: "No se pudo eliminar el registro.",
+    deleteTicketAlertError: "Ocurrio un error al eliminar el registro.",
+    deleteTicketConfirm: "Seguro que deseas eliminar este registro?",
     userNumber: "Usuario",
     notificationTypes: {
-      TICKET_CREATED: "Ticket creado",
-      TICKET_CLOSED: "Ticket cerrado",
-      TICKET_DELETED: "Ticket eliminado",
+      TICKET_CREATED: "Registro de servicio creado",
+      TICKET_CLOSED: "Registro de servicio cerrado",
+      TICKET_DELETED: "Registro de servicio eliminado",
       USER_CREATED: "Usuario creado",
       USER_UPDATED: "Usuario editado",
       PASSWORD_RESET_REQUESTED: "Recuperacion de contrasena",
@@ -788,10 +788,10 @@ const translations = {
     }
   },
   en: {
-    documentTitle: "Service Billing System",
-    headerEyebrow: "Time tracking and billing",
-    headerTitle: "Service Billing System",
-    headerSubtitle: "Register, review, and prepare hourly service information from the browser.",
+    documentTitle: "Solutions By Design - Service Billing System",
+    headerEyebrow: "Service time tracking and billing",
+    headerTitle: "Solutions By Design",
+    headerSubtitle: "Service Billing System for recording, reviewing, and managing hourly service work.",
     secureAccess: "Secure access",
     login: "Sign in",
     password: "Password",
@@ -898,7 +898,7 @@ const translations = {
     createClientSuccess: "Client created successfully.",
     updateClientSuccess: "Client updated successfully.",
     deleteClientSuccess: "Client deactivated successfully.",
-    clientNameRequired: "ClientName is required.",
+    clientNameRequired: "Client name is required.",
     clientNotFound: "The selected client was not found.",
     deleteClientConfirm: "Are you sure you want to deactivate this client?",
     createClientError: "Could not create the client.",
@@ -919,8 +919,8 @@ const translations = {
     createProjectSuccess: "Project created successfully.",
     updateProjectSuccess: "Project updated successfully.",
     deleteProjectSuccess: "Project deactivated successfully.",
-    projectClientRequired: "ClientID is required.",
-    projectNameRequired: "ProjectName is required.",
+    projectClientRequired: "Client is required.",
+    projectNameRequired: "Project name is required.",
     projectRateRequired: "The internal project setting must be numeric.",
     projectRateNegative: "The internal project setting cannot be negative.",
     projectNotFound: "The selected project was not found.",
@@ -943,11 +943,11 @@ const translations = {
     createServiceRecordSuccess: "Service record created successfully.",
     updateServiceRecordSuccess: "Service record updated successfully.",
     cancelServiceRecordSuccess: "Service record canceled successfully.",
-    serviceRecordTechnicianRequired: "TechnicianUserID is required.",
-    serviceRecordClientRequired: "ClientID is required.",
-    serviceRecordProjectRequired: "ProjectID is required.",
-    serviceRecordDateRequired: "ServiceDate is required.",
-    serviceRecordDescriptionRequired: "ServiceDescription is required.",
+    serviceRecordTechnicianRequired: "Technician is required.",
+    serviceRecordClientRequired: "Client is required.",
+    serviceRecordProjectRequired: "Project is required.",
+    serviceRecordDateRequired: "Service date is required.",
+    serviceRecordDescriptionRequired: "Service description is required.",
     serviceRecordTimeError: "Time ranges require start and end values, and cannot be negative.",
     serviceRecordStatusInvalid: "Status must be Recorded, Billed, or Canceled.",
     serviceRecordNotFound: "The selected service record was not found.",
@@ -967,10 +967,10 @@ const translations = {
     invoiceGeneratedSuccess: "Invoice generated successfully.",
     invoiceStatusUpdatedSuccess: "Invoice status updated successfully.",
     invoiceCanceledSuccess: "Invoice canceled successfully.",
-    invoiceClientRequired: "ClientID is required.",
-    invoicePeriodFromRequired: "PeriodFrom is required.",
-    invoicePeriodToRequired: "PeriodTo is required.",
-    invoicePeriodInvalid: "PeriodFrom cannot be after PeriodTo.",
+    invoiceClientRequired: "Client is required.",
+    invoicePeriodFromRequired: "From date is required.",
+    invoicePeriodToRequired: "To date is required.",
+    invoicePeriodInvalid: "From date cannot be after to date.",
     invoiceTaxRateInvalid: "The internal invoice setting must be a non-negative number.",
     invoiceStatusInvalid: "Status must be Draft, Issued, Paid, or Canceled.",
     invoiceNotFound: "The selected invoice was not found.",
@@ -1100,8 +1100,8 @@ const translations = {
     loginError: "Could not sign in.",
     loadTicketsError: "Tickets could not be loaded.",
     serverConnectionError: "Could not connect to the server.",
-    createTicketError: "Could not create the ticket.",
-    createTicketAlertError: "An error occurred while creating the ticket.",
+    createTicketError: "Could not create the record.",
+    createTicketAlertError: "An error occurred while creating the record.",
     ticketNotFound: "The selected ticket was not found.",
     userNotFound: "The selected user was not found.",
     createUserError: "Could not create the user.",
@@ -1112,18 +1112,18 @@ const translations = {
     deactivateUser: "Deactivate",
     active: "Active",
     inactive: "Inactive",
-    updateTicketError: "Could not edit the ticket.",
-    updateTicketAlertError: "An error occurred while editing the ticket.",
-    closeTicketError: "Could not close the ticket.",
-    closeTicketAlertError: "An error occurred while closing the ticket.",
-    deleteTicketError: "Could not delete the ticket.",
-    deleteTicketAlertError: "An error occurred while deleting the ticket.",
-    deleteTicketConfirm: "Are you sure you want to delete this ticket?",
+    updateTicketError: "Could not edit the record.",
+    updateTicketAlertError: "An error occurred while editing the record.",
+    closeTicketError: "Could not close the record.",
+    closeTicketAlertError: "An error occurred while closing the record.",
+    deleteTicketError: "Could not delete the record.",
+    deleteTicketAlertError: "An error occurred while deleting the record.",
+    deleteTicketConfirm: "Are you sure you want to delete this record?",
     userNumber: "User",
     notificationTypes: {
-      TICKET_CREATED: "Ticket created",
-      TICKET_CLOSED: "Ticket closed",
-      TICKET_DELETED: "Ticket deleted",
+      TICKET_CREATED: "Service record created",
+      TICKET_CLOSED: "Service record closed",
+      TICKET_DELETED: "Service record deleted",
       USER_CREATED: "User created",
       USER_UPDATED: "User updated",
       PASSWORD_RESET_REQUESTED: "Password recovery",
@@ -4618,6 +4618,10 @@ function tNested(group, key) {
   return translations[currentLanguage][group]?.[key] || translations.es[group]?.[key] || key;
 }
 
+function labelText(esText, enText) {
+  return currentLanguage === "es" ? esText : enText;
+}
+
 function setButtonText(button, text) {
   const icon = button.querySelector("svg");
   button.textContent = "";
@@ -4683,9 +4687,9 @@ function translateNotificationType(type) {
 
 function translateNotificationMessage(message) {
   const prefixes = {
-    "Ticket creado": currentLanguage === "es" ? "Ticket creado" : "Ticket created",
-    "Ticket cerrado": currentLanguage === "es" ? "Ticket cerrado" : "Ticket closed",
-    "Ticket eliminado": currentLanguage === "es" ? "Ticket eliminado" : "Ticket deleted",
+    "Ticket creado": currentLanguage === "es" ? "Registro de servicio creado" : "Service record created",
+    "Ticket cerrado": currentLanguage === "es" ? "Registro de servicio cerrado" : "Service record closed",
+    "Ticket eliminado": currentLanguage === "es" ? "Registro de servicio eliminado" : "Service record deleted",
     "Usuario creado": currentLanguage === "es" ? "Usuario creado" : "User created",
     "Usuario editado": currentLanguage === "es" ? "Usuario editado" : "User updated",
     "Solicitud de recuperacion": currentLanguage === "es" ? "Solicitud de recuperacion" : "Password recovery request",
@@ -4705,8 +4709,20 @@ function translateNotificationMessage(message) {
 }
 
 function translateServerMessage(message) {
-  if (currentLanguage === "es" || !message) {
+  if (!message) {
     return message;
+  }
+
+  if (currentLanguage === "es") {
+    const spanishMessages = {
+      "Email y password son obligatorios.": "Email y contrasena son obligatorios.",
+      "Error al crear ticket.": "Error al crear registro.",
+      "Error al editar ticket.": "Error al editar registro.",
+      "Error al cerrar ticket.": "Error al cerrar registro.",
+      "Error al eliminar ticket.": "Error al eliminar registro."
+    };
+
+    return spanishMessages[message] || message;
   }
 
   const messages = {
@@ -4732,12 +4748,12 @@ function translateServerMessage(message) {
     "No puedes eliminar tu propio usuario.": "You cannot delete your own user.",
     "Error al eliminar usuario.": "Error deleting user.",
     "Error al obtener tickets.": "Error loading tickets.",
-    "Error al crear ticket.": "Error creating ticket.",
+    "Error al crear ticket.": "Error creating record.",
     "ID de ticket invalido.": "Invalid ticket ID.",
     "Ticket no encontrado.": "Ticket not found.",
-    "Error al editar ticket.": "Error editing ticket.",
-    "Error al cerrar ticket.": "Error closing ticket.",
-    "Error al eliminar ticket.": "Error deleting ticket.",
+    "Error al editar ticket.": "Error editing record.",
+    "Error al cerrar ticket.": "Error closing record.",
+    "Error al eliminar ticket.": "Error deleting record.",
     "Email es obligatorio.": "Email is required.",
     "ID de solicitud invalido.": "Invalid request ID.",
     "Solicitud no encontrada.": "Request not found.",
@@ -4840,6 +4856,7 @@ function applyStaticLanguage() {
   setText("#loginForm .section-title .eyebrow", t("secureAccess"));
   setText("#loginForm h2", t("login"));
   setText('label[for="loginEmail"]', "Email");
+  setPlaceholder("#loginEmail", t("emailPlaceholder"));
   setText('label[for="loginPassword"]', t("password"));
   setPlaceholder("#loginPassword", t("passwordPlaceholder"));
 
@@ -4869,24 +4886,24 @@ function applyStaticLanguage() {
   setText('label[for="statusFilter"]', t("status"));
   setText('label[for="priorityFilter"]', t("priority"));
   setText('label[for="serviceRecordSearchInput"]', t("search"));
-  setText('label[for="serviceRecordTechnicianFilter"]', "TechnicianUserID");
-  setText('label[for="serviceRecordClientFilter"]', "ClientID");
-  setText('label[for="serviceRecordProjectFilter"]', "ProjectID");
-  setText('label[for="serviceRecordDateFilter"]', "ServiceDate");
-  setText('label[for="serviceRecordStatusFilter"]', "Status");
+  setText('label[for="serviceRecordTechnicianFilter"]', labelText("Tecnico", "Technician"));
+  setText('label[for="serviceRecordClientFilter"]', labelText("Cliente", "Client"));
+  setText('label[for="serviceRecordProjectFilter"]', labelText("Proyecto", "Project"));
+  setText('label[for="serviceRecordDateFilter"]', t("date"));
+  setText('label[for="serviceRecordStatusFilter"]', t("status"));
   setPlaceholder("#searchInput", t("searchPlaceholder"));
   setPlaceholder("#serviceRecordSearchInput", t("serviceRecordSearchPlaceholder"));
   setText("#serviceRecordModal .section-title .eyebrow", t("tickets"));
-  setText('label[for="serviceRecordTechnicianId"]', "TechnicianUserID");
-  setText('label[for="serviceRecordDate"]', "ServiceDate");
-  setText('label[for="serviceRecordClientId"]', "ClientID");
-  setText('label[for="serviceRecordProjectId"]', "ProjectID");
-  setText('label[for="morningStart"]', "MorningStart");
-  setText('label[for="morningEnd"]', "MorningEnd");
-  setText('label[for="afternoonStart"]', "AfternoonStart");
-  setText('label[for="afternoonEnd"]', "AfternoonEnd");
-  setText('label[for="serviceRecordStatus"]', "Status");
-  setText('label[for="serviceDescription"]', "ServiceDescription");
+  setText('label[for="serviceRecordTechnicianId"]', labelText("Tecnico", "Technician"));
+  setText('label[for="serviceRecordDate"]', t("date"));
+  setText('label[for="serviceRecordClientId"]', labelText("Cliente", "Client"));
+  setText('label[for="serviceRecordProjectId"]', labelText("Proyecto", "Project"));
+  setText('label[for="morningStart"]', labelText("Entrada manana", "Morning start"));
+  setText('label[for="morningEnd"]', labelText("Salida manana", "Morning end"));
+  setText('label[for="afternoonStart"]', labelText("Entrada tarde", "Afternoon start"));
+  setText('label[for="afternoonEnd"]', labelText("Salida tarde", "Afternoon end"));
+  setText('label[for="serviceRecordStatus"]', t("status"));
+  setText('label[for="serviceDescription"]', labelText("Descripcion del servicio", "Service description"));
   setAriaLabel("#closeServiceRecordModal", t("closeEditor"));
 
   const ticketStatLabels = document.querySelectorAll("#ticketsTabPanel .stats-grid .stat-card span");
@@ -4965,13 +4982,13 @@ function applyStaticLanguage() {
   setText('label[for="clientSearchInput"]', t("search"));
   setPlaceholder("#clientSearchInput", t("clientSearchPlaceholder"));
   setText("#clientModal .section-title .eyebrow", t("clients"));
-  setText('label[for="clientName"]', "ClientName");
-  setText('label[for="clientContactName"]', "ContactName");
+  setText('label[for="clientName"]', labelText("Cliente", "Client name"));
+  setText('label[for="clientContactName"]', labelText("Contacto", "Contact name"));
   setText('label[for="clientEmail"]', "Email");
   setText('label[for="clientPhone"]', "Phone");
-  setText('label[for="clientBillingName"]', "BillingName");
+  setText('label[for="clientBillingName"]', labelText("Nombre para facturacion", "Billing name"));
   setText('label[for="clientTaxId"]', "TaxID");
-  setText(".checkbox-field span", "IsActive");
+  setText(".checkbox-field span", labelText("Activo", "Active"));
   setAriaLabel("#closeClientModal", t("closeEditor"));
   setText("#projectsTabPanel .section-title .eyebrow", t("projectsEyebrow"));
   setText("#projects-title", t("projects"));
@@ -4980,45 +4997,51 @@ function applyStaticLanguage() {
   setText('label[for="projectClientFilter"]', t("clients"));
   setPlaceholder("#projectSearchInput", t("projectSearchPlaceholder"));
   setText("#projectModal .section-title .eyebrow", t("projects"));
-  setText('label[for="projectClientId"]', "ClientID");
-  setText('label[for="projectName"]', "ProjectName");
-  setText('label[for="projectDescription"]', "Description");
-  setText("#project-contract-title", currentLanguage === "es" ? "Informacion del contrato" : "Contract Information");
-  setText('label[for="projectContractNumber"]', "ContractNumber");
-  setText('label[for="projectContractType"]', "ContractType");
-  setText('label[for="projectSignedBy"]', "SignedBy");
-  setText('label[for="projectContractStartDate"]', "ContractStartDate");
-  setText('label[for="projectContractEndDate"]', "ContractEndDate");
-  setText('label[for="projectContractedHours"]', "ContractedHours");
-  setText('label[for="projectLowHoursThreshold"]', "LowHoursThreshold");
-  setText('label[for="projectExpirationAlertDays"]', "ExpirationAlertDays");
+  setText('label[for="projectClientId"]', labelText("Cliente", "Client"));
+  setText('label[for="projectName"]', labelText("Proyecto", "Project name"));
+  setText('label[for="projectDescription"]', labelText("Descripcion", "Description"));
+  setText("#project-contract-title", labelText("Informacion del contrato", "Contract Information"));
+  setText('label[for="projectContractNumber"]', labelText("Numero de contrato", "Contract number"));
+  setText('label[for="projectContractType"]', labelText("Tipo de contrato", "Contract type"));
+  setText('label[for="projectSignedBy"]', labelText("Firmado por", "Signed by"));
+  setText('label[for="projectContractStartDate"]', labelText("Fecha de comienzo", "Start date"));
+  setText('label[for="projectContractEndDate"]', labelText("Fecha de vencimiento", "End date"));
+  setText('label[for="projectContractedHours"]', labelText("Horas contratadas", "Contracted hours"));
+  setText('label[for="projectLowHoursThreshold"]', labelText("Alerta de horas bajas", "Low hours threshold"));
+  setText('label[for="projectExpirationAlertDays"]', labelText("Dias de alerta de vencimiento", "Expiration alert days"));
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
   setText('label[for="invoiceSearchInput"]', t("search"));
-  setText('label[for="invoiceClientFilter"]', "ClientID");
-  setText('label[for="invoiceFromFilter"]', "PeriodFrom");
-  setText('label[for="invoiceToFilter"]', "PeriodTo");
-  setText('label[for="invoiceStatusFilter"]', "Status");
+  setText('label[for="invoiceClientFilter"]', labelText("Cliente", "Client"));
+  setText('label[for="invoiceFromFilter"]', labelText("Periodo desde", "Period from"));
+  setText('label[for="invoiceToFilter"]', labelText("Periodo hasta", "Period to"));
+  setText('label[for="invoiceStatusFilter"]', t("status"));
   setPlaceholder("#invoiceSearchInput", t("invoiceSearchPlaceholder"));
   if (invoiceStatusFilter.options[0]) invoiceStatusFilter.options[0].textContent = t("allStatuses");
   setText("#invoiceGenerateModal .section-title .eyebrow", t("invoices"));
   setText("#invoice-generate-title", t("generateInvoice"));
-  setText('label[for="invoiceGenerateClientId"]', "ClientID");
-  setText('label[for="invoiceGeneratePeriodFrom"]', "PeriodFrom");
-  setText('label[for="invoiceGeneratePeriodTo"]', "PeriodTo");
-  setText('label[for="invoiceGenerateNotes"]', "Notes");
+  setText('label[for="invoiceGenerateClientId"]', labelText("Cliente", "Client"));
+  setText('label[for="invoiceGeneratePeriodFrom"]', labelText("Periodo desde", "Period from"));
+  setText('label[for="invoiceGeneratePeriodTo"]', labelText("Periodo hasta", "Period to"));
+  setText('label[for="invoiceGenerateNotes"]', labelText("Notas", "Notes"));
   setAriaLabel("#closeInvoiceGenerateModal", t("closeEditor"));
   setText("#invoiceStatusModal .section-title .eyebrow", t("invoices"));
   setText("#invoice-status-title", t("editInvoiceStatus"));
   setText('label[for="invoiceStatusValue"]', "Status");
   setText('label[for="invoiceStatusNotes"]', "Notes");
   setAriaLabel("#closeInvoiceStatusModal", t("closeEditor"));
-  setText("#invoiceDetailModal .section-title .eyebrow", "Invoice Lines");
-  setText("#invoice-detail-title", currentLanguage === "es" ? "Detalle de factura" : "Invoice Detail");
+  setText("#invoiceDetailModal .section-title .eyebrow", labelText("Lineas", "Lines"));
+  setText("#invoice-detail-title", labelText("Detalle de factura", "Invoice Detail"));
   setAriaLabel("#closeInvoiceDetailModal", t("closeEditor"));
   setText("#settingsTabPanel .section-title .eyebrow", t("settingsEyebrow"));
   setText("#settings-title", t("settings"));
   setText("#settingsTabPanel .foundation-copy", t("settingsFoundation"));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(1) h3", labelText("Cuenta", "Account"));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(1) p", labelText("Revisa la sesion actual y opciones de flujo de contrasenas.", "Review session details and password workflow options."));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(2) h3", t("notifications"));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(2) p", labelText("Mantiene alertas administrativas disponibles mientras evolucionan los modulos.", "Keep administrative alerts available while the modules evolve."));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(3) h3", labelText("Valores por defecto", "Workflow Defaults"));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(3) p", labelText("Prepara preferencias de registros de servicio y controles internos futuros.", "Prepare service record preferences and future internal controls."));
 
   setText("#notificationsTabPanel .section-title .eyebrow", t("activity"));
   setText("#notificationsTitle", t("notifications"));
@@ -5051,8 +5074,8 @@ function applyStaticLanguage() {
   setText('label[for="reportStatus"]', t("status"));
   reportsTotalCount.parentElement.lastChild.textContent = currentLanguage === "es" ? " registros" : " records";
   generateReportButton.textContent = t("generateReport");
-  exportPdfButton.textContent = currentLanguage === "es" ? "PDF (Próximamente)" : "PDF (Coming soon)";
-  exportExcelButton.textContent = currentLanguage === "es" ? "Excel (Próximamente)" : "Excel (Coming soon)";
+  exportPdfButton.textContent = currentLanguage === "es" ? "PDF (Proximamente)" : "PDF (Coming soon)";
+  exportExcelButton.textContent = currentLanguage === "es" ? "Excel (Proximamente)" : "Excel (Coming soon)";
 
   setText("#editModal .section-title .eyebrow", t("admin"));
   setText("#edit-title", t("editTicket"));
@@ -5072,14 +5095,27 @@ function applyStaticLanguage() {
   temporaryPasswordButton.textContent = t("temporaryPassword");
   setAriaLabel("#closeEditUserModal", t("closeUserEditor"));
 
-  setTableHeaders(".service-records-panel table", ["TechnicianName", "ClientName", "ProjectName", "ServiceDate", "MorningStart", "MorningEnd", "AfternoonStart", "AfternoonEnd", "TotalHours", "ServiceDescription", "Status", t("actions")]);
+  setTableHeaders(".service-records-panel table", [
+    labelText("Tecnico", "Technician"),
+    labelText("Cliente", "Client"),
+    labelText("Proyecto", "Project"),
+    t("date"),
+    labelText("Entrada AM", "AM start"),
+    labelText("Salida AM", "AM end"),
+    labelText("Entrada PM", "PM start"),
+    labelText("Salida PM", "PM end"),
+    labelText("Horas", "Hours"),
+    labelText("Descripcion", "Description"),
+    t("status"),
+    t("actions")
+  ]);
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
-  setTableHeaders("#clientsTabPanel table", ["ClientName", "ContactName", "Email", "Phone", "BillingName", "TaxID", "IsActive", t("actions")]);
-  setTableHeaders("#projectsTabPanel table", ["ProjectName", "ClientName", "Description", "ContractNumber", "ContractedHours", "UsedHours", "RemainingHours", "ContractEndDate", "ContractStatus", "IsActive", t("actions")]);
-  setTableHeaders("#invoicesTabPanel table", ["InvoiceNumber", "ClientName", "InvoiceDate", "PeriodFrom", "PeriodTo", "Status", t("actions")]);
-  setTableHeaders("#invoiceDetailModal table", ["ServiceDate", "ProjectName", "Description", "Hours"]);
+  setTableHeaders("#clientsTabPanel table", [labelText("Cliente", "Client"), labelText("Contacto", "Contact"), "Email", labelText("Telefono", "Phone"), labelText("Facturacion", "Billing"), "TaxID", t("status"), t("actions")]);
+  setTableHeaders("#projectsTabPanel table", [labelText("Proyecto", "Project"), labelText("Cliente", "Client"), labelText("Descripcion", "Description"), labelText("Contrato", "Contract"), labelText("Horas contratadas", "Contracted hours"), labelText("Horas usadas", "Used hours"), labelText("Horas restantes", "Remaining hours"), labelText("Vence", "End date"), labelText("Estado contrato", "Contract status"), t("status"), t("actions")]);
+  setTableHeaders("#invoicesTabPanel table", [labelText("Factura", "Invoice"), labelText("Cliente", "Client"), labelText("Fecha", "Date"), labelText("Desde", "From"), labelText("Hasta", "To"), t("status"), t("actions")]);
+  setTableHeaders("#invoiceDetailModal table", [t("date"), labelText("Proyecto", "Project"), labelText("Descripcion", "Description"), labelText("Horas", "Hours")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
-  setTableHeaders('[aria-labelledby="users-table-title"] table', ["UserID", t("fullName"), "Email", t("role"), "Status", t("date"), t("createdBy"), t("actions")]);
+  setTableHeaders('[aria-labelledby="users-table-title"] table', ["ID", t("fullName"), "Email", t("role"), t("status"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
   setTableHeaders("#reportsTabPanel table", ["ServiceRecordID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
 }
