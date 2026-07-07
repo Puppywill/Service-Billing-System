@@ -1171,6 +1171,13 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Las tarjetas y paneles del Dashboard usan un estilo oscuro mas compacto y empresarial, con bordes suaves, sombras sutiles, mejor espaciado y menos decoracion.
 - Las interacciones del Dashboard General, graficas, filtros de datos activos y Technician Dashboard se mantienen sin cambios.
 
+### Fase 29: Pulido Profesional UI/UX
+
+- Se agrego una capa global de pulido visual comercial manteniendo el tema oscuro y la identidad actual del sistema.
+- Se mejoraron tabs de navegacion, cards, formularios, tablas, botones, badges, modales, scrollbars, graficas del Dashboard y estados hover/focus.
+- Se agregaron animaciones sutiles para paneles, modales, cards, botones y barras del Dashboard sin cambiar el comportamiento de la aplicacion.
+- Esta fase es solo visual; no cambia logica backend, estructura de base de datos, datos migrados ni informacion de `ServiceSBD_20260629`.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

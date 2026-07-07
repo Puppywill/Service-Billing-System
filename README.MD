@@ -1171,6 +1171,13 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Dashboard cards and panels now use a more compact dark business style with softer borders, subtler shadows, tighter spacing, and fewer decorative effects.
 - Existing General Dashboard interactions, charts, active-data filters, and Technician Dashboard behavior remain unchanged.
 
+### Phase 29: Professional UI/UX Polish
+
+- Added a global commercial UI polish layer while keeping the existing dark theme and application identity.
+- Improved navigation tabs, cards, forms, tables, buttons, badges, modals, scrollbars, dashboard charts, and hover/focus states.
+- Added subtle animations for panels, modals, cards, buttons, and dashboard bars without changing application behavior.
+- This phase is visual only; no backend logic, database schema, migrated data, or ServiceSBD_20260629 data was changed.
+
 ### API Examples
 
 ```http

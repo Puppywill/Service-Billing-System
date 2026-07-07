@@ -1469,6 +1469,338 @@ tbody tr:last-child td {
   color: #fb7185;
 }
 
+/* Phase 29: commercial UI polish layer */
+html {
+  scrollbar-color: rgba(100, 116, 139, 0.7) rgba(15, 23, 42, 0.45);
+  scrollbar-width: thin;
+}
+
+body {
+  background:
+    radial-gradient(circle at 50% -16%, rgba(56, 189, 248, 0.12), transparent 34rem),
+    linear-gradient(180deg, #08111f 0%, #0b1220 46%, #080f1b 100%);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.48);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(15, 23, 42, 0.48);
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.72);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.88);
+}
+
+.app-header {
+  padding-bottom: 64px;
+}
+
+.app-header::before {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0)),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(20, 184, 166, 0.04), transparent);
+}
+
+.app-header h1 {
+  font-size: clamp(2rem, 3.3vw, 2.75rem);
+}
+
+.tabs-nav {
+  gap: 4px;
+  padding: 5px;
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(8, 13, 23, 0.78);
+  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.24);
+}
+
+.tab-button {
+  position: relative;
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 760;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.16s ease;
+}
+
+.tab-button:hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  border-color: rgba(96, 165, 250, 0.34);
+  background: rgba(37, 99, 235, 0.18);
+  color: #ffffff;
+  box-shadow: inset 0 -2px 0 rgba(56, 189, 248, 0.85), 0 8px 20px rgba(2, 6, 23, 0.22);
+}
+
+.button-icon {
+  align-self: center;
+}
+
+.panel,
+.stat-card {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.24);
+}
+
+.panel:hover,
+.stat-card:hover {
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.form-panel,
+.table-panel,
+.foundation-hero,
+.foundation-card {
+  padding: 20px;
+}
+
+.section-title {
+  margin-bottom: 14px;
+}
+
+.section-title h2 {
+  font-size: 1.12rem;
+}
+
+.eyebrow {
+  color: #7dd3fc;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.login-panel {
+  padding: 26px;
+  border-color: rgba(125, 211, 252, 0.18);
+  box-shadow: 0 24px 55px rgba(2, 6, 23, 0.34);
+}
+
+label {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+input,
+select,
+textarea {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.52);
+  min-height: 40px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(148, 163, 184, 0.32);
+  background: rgba(15, 23, 42, 0.62);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(96, 165, 250, 0.82);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.17);
+  transform: none;
+}
+
+.btn,
+.action-btn,
+.tool-button,
+.session-button,
+.icon-button {
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, transform 0.16s ease, opacity 0.18s ease;
+}
+
+.btn-primary {
+  background: #2563eb;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.3);
+}
+
+.btn:disabled,
+.action-btn:disabled,
+.session-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+  transform: none;
+}
+
+.table-wrapper {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(2, 6, 23, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+table {
+  border-spacing: 0;
+}
+
+th {
+  background: rgba(15, 23, 42, 0.98);
+  color: #b6c3d6;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+td {
+  color: #dbe4ef;
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(148, 163, 184, 0.025);
+}
+
+tbody tr:hover {
+  background: rgba(96, 165, 250, 0.075);
+}
+
+.ticket-description {
+  color: #c7d2e1;
+}
+
+.badge {
+  min-height: 24px;
+  border-color: rgba(255, 255, 255, 0.1);
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0.01em;
+}
+
+.status-abierto,
+.role-admin {
+  background: rgba(37, 99, 235, 0.18);
+  color: #bfdbfe;
+}
+
+.status-en-progreso,
+.contract-low,
+.contract-warning {
+  background: rgba(217, 119, 6, 0.17);
+  color: #fde68a;
+}
+
+.status-cerrado,
+.user-status-active,
+.contract-ok {
+  background: rgba(22, 163, 74, 0.16);
+  color: #bbf7d0;
+}
+
+.user-status-inactive,
+.contract-danger {
+  background: rgba(220, 38, 38, 0.17);
+  color: #fecaca;
+}
+
+.contract-neutral,
+.role-user {
+  background: rgba(100, 116, 139, 0.18);
+  color: #dbe4ef;
+}
+
+.role-technician {
+  background: rgba(20, 184, 166, 0.15);
+  color: #ccfbf1;
+}
+
+.action-btn {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  min-height: 32px;
+}
+
+.edit-btn {
+  background: rgba(37, 99, 235, 0.88);
+}
+
+.close-btn {
+  background: rgba(22, 163, 74, 0.86);
+}
+
+.delete-btn {
+  background: rgba(190, 18, 60, 0.88);
+}
+
+.bar-fill {
+  background: #38bdf8;
+  transform-origin: left center;
+  animation: barGrow 0.5s ease both;
+}
+
+.bar-row:hover .bar-fill,
+.interactive-bar-row:hover .bar-fill {
+  background: #60a5fa;
+}
+
+.notification-item,
+.current-user-card,
+.contract-status-grid div,
+.project-dashboard-info-item,
+.detail-summary-grid div {
+  border-color: rgba(148, 163, 184, 0.15);
+  background: rgba(2, 6, 23, 0.35);
+}
+
+.modal-backdrop {
+  background: rgba(2, 6, 23, 0.68);
+  backdrop-filter: blur(14px);
+  animation: fadeIn 0.18s ease both;
+}
+
+.modal-panel {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.48);
+  animation: modalIn 0.22s ease both;
+}
+
+.modal-panel .btn-primary,
+.modal-panel .session-button {
+  justify-self: end;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes barGrow {
+  from { transform: scaleX(0.35); }
+  to { transform: scaleX(1); }
+}
+
 @keyframes riseIn {
   from {
     opacity: 0;
