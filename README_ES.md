@@ -1185,6 +1185,14 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Se mejoraron textos en ingles y espanol en navegacion, dashboard, formularios, tablas, modales, reportes, usuarios, settings, notificaciones, botones, estados vacios y labels.
 - Esta fase solo cambia textos y branding; no modifica base de datos, comportamiento backend ni datos reales migrados.
 
+### Fase 30.1: Localizacion Completa de UI y Limpieza de Branding
+
+- Se removio el branding visible `Service Billing System` de la interfaz, manteniendo el nombre del repositorio sin cambios.
+- La descripcion principal ahora usa solamente el branding `Solutions By Design`.
+- Se amplio la localizacion en ingles y espanol para paneles del Dashboard, estados contractuales, estados de registros de servicio, estados de facturas, formularios, tablas, selects, mensajes vacios y acciones.
+- Valores internos como `Recorded`, `Billed`, `NO_CONTRACT`, `ClientID` y `ServiceDescription` ahora se traducen o se reemplazan por labels orientados al usuario cuando aparecen en la interfaz.
+- Esta fase no modifica logica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

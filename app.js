@@ -434,10 +434,10 @@ async function refreshWorkspace() {
 
 const translations = {
   es: {
-    documentTitle: "Solutions By Design - Service Billing System",
+    documentTitle: "Solutions By Design",
     headerEyebrow: "Registro de horas y facturacion de servicios",
     headerTitle: "Solutions By Design",
-    headerSubtitle: "Service Billing System para registrar, consultar y revisar servicios por hora.",
+    headerSubtitle: "Solutions By Design ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.",
     secureAccess: "Acceso seguro",
     login: "Iniciar sesion",
     password: "Contrasena",
@@ -445,14 +445,14 @@ const translations = {
     tickets: "Registros de servicio",
     users: "Usuarios",
     notifications: "Notificaciones",
-    dashboard: "Dashboard",
+    dashboard: "Resumen",
     reports: "Reportes",
     clients: "Clientes",
     projects: "Proyectos",
     invoices: "Facturas",
     settings: "Configuracion",
     dashboardTitle: "Resumen",
-    dashboardLoadError: "No se pudo cargar el dashboard.",
+    dashboardLoadError: "No se pudo cargar el resumen.",
     noDashboardData: "No hay datos para mostrar.",
     businessOverview: "Resumen del negocio",
     recentActivity: "Actividad reciente",
@@ -479,7 +479,7 @@ const translations = {
     },
     projectDashboard: {
       eyebrow: "Enfoque por proyecto",
-      title: "Dashboard de proyecto",
+      title: "Panel de proyecto",
       searchLabel: "Buscar proyecto",
       searchPlaceholder: "Proyecto o cliente",
       projectLabel: "Proyecto",
@@ -499,7 +499,7 @@ const translations = {
     },
     technicianDashboard: {
       eyebrow: "Enfoque por tecnico",
-      title: "Dashboard de tecnico",
+      title: "Panel de tecnico",
       searchLabel: "Buscar tecnico",
       searchPlaceholder: "Nombre del tecnico",
       technicianLabel: "Tecnico",
@@ -532,7 +532,7 @@ const translations = {
     projectsEyebrow: "Catalogo de trabajo",
     invoicesEyebrow: "Area de facturacion",
     settingsEyebrow: "Preferencias del sistema",
-    clientsFoundation: "La administracion de clientes esta lista para el flujo de Service Billing. La conexion API se agregara en una fase posterior del frontend.",
+    clientsFoundation: "La administracion de clientes esta lista para el flujo operativo de Solutions By Design.",
     addClient: "Agregar cliente",
     editClient: "Editar cliente",
     saveClient: "Guardar cliente",
@@ -595,7 +595,7 @@ const translations = {
     serviceRecordDateRequired: "La fecha del servicio es obligatoria.",
     serviceRecordDescriptionRequired: "La descripcion del servicio es obligatoria.",
     serviceRecordTimeError: "Las horas deben tener entrada y salida, y no pueden ser negativas.",
-    serviceRecordStatusInvalid: "Status debe ser Recorded, Billed o Canceled.",
+    serviceRecordStatusInvalid: "El estado seleccionado no es valido.",
     serviceRecordNotFound: "No se encontro el registro seleccionado.",
     cancelServiceRecordConfirm: "Seguro que deseas cancelar este registro de servicio?",
     createServiceRecordError: "No se pudo crear el registro de servicio.",
@@ -618,7 +618,7 @@ const translations = {
     invoicePeriodToRequired: "La fecha hasta es obligatoria.",
     invoicePeriodInvalid: "La fecha desde no puede ser posterior a la fecha hasta.",
     invoiceTaxRateInvalid: "La configuracion interna de la factura debe ser un numero no negativo.",
-    invoiceStatusInvalid: "El estado debe ser Draft, Issued, Paid o Canceled.",
+    invoiceStatusInvalid: "El estado seleccionado no es valido.",
     invoiceNotFound: "No se encontro la factura seleccionada.",
     cancelInvoiceConfirm: "Seguro que deseas cancelar esta factura?",
     generateInvoiceError: "No se pudo generar la factura.",
@@ -742,13 +742,13 @@ const translations = {
     admin: "Administrador",
     closeEditor: "Cerrar editor",
     closeUserEditor: "Cerrar editor de usuario",
-    completeTicketFields: "Completa la descripcion del problema.",
+    completeTicketFields: "Completa la descripcion del servicio.",
     loginError: "No se pudo iniciar sesion.",
-    loadTicketsError: "No se pudieron cargar los tickets.",
+    loadTicketsError: "No se pudieron cargar los registros.",
     serverConnectionError: "No se pudo conectar con el servidor.",
     createTicketError: "No se pudo crear el registro.",
     createTicketAlertError: "Ocurrio un error al crear el registro.",
-    ticketNotFound: "No se encontro el ticket seleccionado.",
+    ticketNotFound: "No se encontro el registro seleccionado.",
     userNotFound: "No se encontro el usuario seleccionado.",
     createUserError: "No se pudo crear el usuario.",
     editUserError: "No se pudo editar el usuario.",
@@ -758,6 +758,10 @@ const translations = {
     deactivateUser: "Desactivar",
     active: "Activo",
     inactive: "Inactivo",
+    detail: "Detalle",
+    dashboardDetail: "Detalle del resumen",
+    selectDashboardCard: "Selecciona una tarjeta del resumen.",
+    closeDashboardDetail: "Cerrar detalle del resumen",
     updateTicketError: "No se pudo editar el registro.",
     updateTicketAlertError: "Ocurrio un error al editar el registro.",
     closeTicketError: "No se pudo cerrar el registro.",
@@ -781,6 +785,33 @@ const translations = {
       "En Progreso": "En Progreso",
       Cerrado: "Cerrado"
     },
+    serviceRecordStatuses: {
+      Recorded: "Pendiente",
+      Billed: "Procesado",
+      Canceled: "Cancelado"
+    },
+    invoiceStatuses: {
+      Draft: "Borrador",
+      Issued: "Emitida",
+      Paid: "Pagada",
+      Canceled: "Cancelada"
+    },
+    contractStatuses: {
+      OK: "OK",
+      LOW_HOURS: "Pocas horas",
+      NO_HOURS_REMAINING: "Sin horas restantes",
+      EXPIRING_SOON: "Por vencer",
+      EXPIRED: "Vencido",
+      NO_CONTRACT: "Sin contrato",
+      WARNING: "Advertencia",
+      CRITICAL: "Critico"
+    },
+    contractTypes: {
+      Direct: "Directo",
+      Signed: "Firmado",
+      Other: "Otro",
+      "": "Sin contrato"
+    },
     priorities: {
       Alta: "Alta",
       Media: "Media",
@@ -788,10 +819,10 @@ const translations = {
     }
   },
   en: {
-    documentTitle: "Solutions By Design - Service Billing System",
+    documentTitle: "Solutions By Design",
     headerEyebrow: "Service time tracking and billing",
     headerTitle: "Solutions By Design",
-    headerSubtitle: "Service Billing System for recording, reviewing, and managing hourly service work.",
+    headerSubtitle: "Solutions By Design provides a platform to record, manage, and monitor hourly service work efficiently.",
     secureAccess: "Secure access",
     login: "Sign in",
     password: "Password",
@@ -886,7 +917,7 @@ const translations = {
     projectsEyebrow: "Work catalog",
     invoicesEyebrow: "Billing workspace",
     settingsEyebrow: "System preferences",
-    clientsFoundation: "Client management is ready for the Service Billing workflow. API connection will be added in a later frontend phase.",
+    clientsFoundation: "Client management is ready for the Solutions By Design operational workflow.",
     addClient: "Add Client",
     editClient: "Edit Client",
     saveClient: "Save Client",
@@ -949,7 +980,7 @@ const translations = {
     serviceRecordDateRequired: "Service date is required.",
     serviceRecordDescriptionRequired: "Service description is required.",
     serviceRecordTimeError: "Time ranges require start and end values, and cannot be negative.",
-    serviceRecordStatusInvalid: "Status must be Recorded, Billed, or Canceled.",
+    serviceRecordStatusInvalid: "The selected status is not valid.",
     serviceRecordNotFound: "The selected service record was not found.",
     cancelServiceRecordConfirm: "Are you sure you want to cancel this service record?",
     createServiceRecordError: "Could not create the service record.",
@@ -972,7 +1003,7 @@ const translations = {
     invoicePeriodToRequired: "To date is required.",
     invoicePeriodInvalid: "From date cannot be after to date.",
     invoiceTaxRateInvalid: "The internal invoice setting must be a non-negative number.",
-    invoiceStatusInvalid: "Status must be Draft, Issued, Paid, or Canceled.",
+    invoiceStatusInvalid: "The selected status is not valid.",
     invoiceNotFound: "The selected invoice was not found.",
     cancelInvoiceConfirm: "Are you sure you want to cancel this invoice?",
     generateInvoiceError: "Could not generate the invoice.",
@@ -1096,13 +1127,13 @@ const translations = {
     admin: "Administrator",
     closeEditor: "Close editor",
     closeUserEditor: "Close user editor",
-    completeTicketFields: "Complete the issue description.",
+    completeTicketFields: "Complete the service description.",
     loginError: "Could not sign in.",
-    loadTicketsError: "Tickets could not be loaded.",
+    loadTicketsError: "Service records could not be loaded.",
     serverConnectionError: "Could not connect to the server.",
     createTicketError: "Could not create the record.",
     createTicketAlertError: "An error occurred while creating the record.",
-    ticketNotFound: "The selected ticket was not found.",
+    ticketNotFound: "The selected record was not found.",
     userNotFound: "The selected user was not found.",
     createUserError: "Could not create the user.",
     editUserError: "Could not edit the user.",
@@ -1112,6 +1143,10 @@ const translations = {
     deactivateUser: "Deactivate",
     active: "Active",
     inactive: "Inactive",
+    detail: "Detail",
+    dashboardDetail: "Dashboard Detail",
+    selectDashboardCard: "Select a dashboard card.",
+    closeDashboardDetail: "Close dashboard detail",
     updateTicketError: "Could not edit the record.",
     updateTicketAlertError: "An error occurred while editing the record.",
     closeTicketError: "Could not close the record.",
@@ -1134,6 +1169,33 @@ const translations = {
       Abierto: "Open",
       "En Progreso": "In Progress",
       Cerrado: "Closed"
+    },
+    serviceRecordStatuses: {
+      Recorded: "Pending",
+      Billed: "Processed",
+      Canceled: "Canceled"
+    },
+    invoiceStatuses: {
+      Draft: "Draft",
+      Issued: "Issued",
+      Paid: "Paid",
+      Canceled: "Canceled"
+    },
+    contractStatuses: {
+      OK: "OK",
+      LOW_HOURS: "Low hours",
+      NO_HOURS_REMAINING: "No hours remaining",
+      EXPIRING_SOON: "Expiring soon",
+      EXPIRED: "Expired",
+      NO_CONTRACT: "No contract",
+      WARNING: "Warning",
+      CRITICAL: "Critical"
+    },
+    contractTypes: {
+      Direct: "Direct",
+      Signed: "Signed",
+      Other: "Other",
+      "": "No contract"
     },
     priorities: {
       Alta: "High",
@@ -1489,7 +1551,7 @@ function renderClients() {
       <td>${escapeHTML(client.Phone || "")}</td>
       <td>${escapeHTML(client.BillingName || "")}</td>
       <td>${escapeHTML(client.TaxID || "")}</td>
-      <td><span class="badge ${client.IsActive ? "status-abierto" : "status-cerrado"}">${client.IsActive ? "Active" : "Inactive"}</span></td>
+        <td><span class="badge ${client.IsActive ? "status-abierto" : "status-cerrado"}">${client.IsActive ? t("active") : t("inactive")}</span></td>
       <td>
         ${canManageClients ? `
           <div class="actions">
@@ -1731,7 +1793,7 @@ function getContractAlertClass(status) {
 function renderContractBadge(status) {
   const value = status || "NO_CONTRACT";
 
-  return `<span class="badge ${getContractAlertClass(value)}">${escapeHTML(value)}</span>`;
+  return `<span class="badge ${getContractAlertClass(value)}">${escapeHTML(translateContractStatus(value))}</span>`;
 }
 
 function renderProjects() {
@@ -1759,7 +1821,7 @@ function renderProjects() {
       <td>${formatProjectHours(project.RemainingHours)}</td>
       <td>${escapeHTML(formatDateOnly(project.ContractEndDate) || "-")}</td>
       <td>${renderContractBadge(project.ContractStatus)}</td>
-      <td><span class="badge ${project.IsActive ? "status-abierto" : "status-cerrado"}">${project.IsActive ? "Active" : "Inactive"}</span></td>
+      <td><span class="badge ${project.IsActive ? "status-abierto" : "status-cerrado"}">${project.IsActive ? t("active") : t("inactive")}</span></td>
       <td>
         ${canManageProjects ? `
           <div class="actions">
@@ -2119,6 +2181,8 @@ function renderServiceRecordOptions() {
   serviceRecordProjectId.value = visibleModalProjects.some((project) => String(project.ProjectID) === modalProjectValue)
     ? modalProjectValue
     : "";
+
+  applySelectTranslations();
 }
 
 async function loadServiceRecords() {
@@ -2192,7 +2256,7 @@ function renderServiceRecords() {
         <td>${escapeHTML(formatServiceRecordTime(record.AfternoonEnd))}</td>
         <td>${formatNumber(record.TotalHours)}</td>
         <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
-        <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+        <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
         <td>
           ${canEdit ? `
             <div class="actions">
@@ -2488,7 +2552,7 @@ function renderInvoices() {
         <td>${escapeHTML(formatDateOnly(invoice.InvoiceDate))}</td>
         <td>${escapeHTML(formatDateOnly(invoice.PeriodFrom))}</td>
         <td>${escapeHTML(formatDateOnly(invoice.PeriodTo))}</td>
-        <td><span class="badge ${getInvoiceStatusClass(invoice.Status)}">${escapeHTML(invoice.Status || "")}</span></td>
+        <td><span class="badge ${getInvoiceStatusClass(invoice.Status)}">${escapeHTML(translateInvoiceStatus(invoice.Status))}</span></td>
         <td>
           <div class="actions">
             <button type="button" class="action-btn edit-btn" data-invoice-action="detail" data-id="${invoice.InvoiceID}">${currentLanguage === "es" ? "Detalle" : "Detail"}</button>
@@ -2693,7 +2757,7 @@ function renderInvoiceDetail(invoice) {
       <div><span>InvoiceNumber</span><strong>${escapeHTML(invoice.InvoiceNumber || "")}</strong></div>
       <div><span>ClientName</span><strong>${escapeHTML(invoice.ClientName || "")}</strong></div>
       <div><span>InvoiceDate</span><strong>${escapeHTML(formatDateOnly(invoice.InvoiceDate))}</strong></div>
-      <div><span>Status</span><strong>${escapeHTML(invoice.Status || "")}</strong></div>
+      <div><span>${escapeHTML(t("status"))}</span><strong>${escapeHTML(translateInvoiceStatus(invoice.Status))}</strong></div>
     </div>
   `;
 
@@ -3123,20 +3187,20 @@ function renderDashboardProjectInfo(project) {
   if (!dashboardProjectInfoGrid) return;
 
   const fields = [
-    ["ProjectName", project.ProjectName],
-    ["ClientName", project.ClientName],
-    ["Description", project.Description],
-    ["ContractNumber", project.ContractNumber],
-    ["ContractType", project.ContractType],
-    ["ContractStartDate", formatDateOnly(project.ContractStartDate)],
-    ["ContractEndDate", formatDateOnly(project.ContractEndDate)],
-    ["ContractedHours", formatProjectHours(project.ContractedHours)],
-    ["UsedHours", formatProjectHours(project.UsedHours)],
-    ["RemainingHours", formatProjectHours(project.RemainingHours)],
-    ["HoursAlertStatus", project.HoursAlertStatus, "badge"],
-    ["ExpirationAlertStatus", project.ExpirationAlertStatus, "badge"],
-    ["ContractStatus", project.ContractStatus, "badge"],
-    ["IsActive", project.IsActive ? "Active" : "Inactive"]
+    [labelText("Proyecto", "Project"), project.ProjectName],
+    [labelText("Cliente", "Client"), project.ClientName],
+    [labelText("Descripcion", "Description"), project.Description],
+    [labelText("Numero de contrato", "Contract number"), project.ContractNumber],
+    [labelText("Tipo de contrato", "Contract type"), translateContractType(project.ContractType)],
+    [labelText("Fecha de comienzo", "Start date"), formatDateOnly(project.ContractStartDate)],
+    [labelText("Fecha de vencimiento", "End date"), formatDateOnly(project.ContractEndDate)],
+    [labelText("Horas contratadas", "Contracted hours"), formatProjectHours(project.ContractedHours)],
+    [labelText("Horas usadas", "Used hours"), formatProjectHours(project.UsedHours)],
+    [labelText("Horas restantes", "Remaining hours"), formatProjectHours(project.RemainingHours)],
+    [labelText("Alerta de horas", "Hours alert"), project.HoursAlertStatus, "badge"],
+    [labelText("Alerta de vencimiento", "Expiration alert"), project.ExpirationAlertStatus, "badge"],
+    [labelText("Estado del contrato", "Contract status"), project.ContractStatus, "badge"],
+    [t("status"), project.IsActive ? t("active") : t("inactive")]
   ];
 
   dashboardProjectInfoGrid.innerHTML = fields.map(([label, value, type]) => `
@@ -3169,7 +3233,7 @@ function renderDashboardProjectRecords(records) {
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `).join("");
@@ -3669,7 +3733,7 @@ function renderDashboardTechnicianRecords(records) {
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${escapeHTML(record.ProjectName || "")}</td>
       <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
       <td>
         ${isAdmin() ? `
@@ -4133,7 +4197,7 @@ function renderDashboardServiceRecordDetail(records, variant = "full") {
       <td>${escapeHTML(record.ClientName || "")}</td>
       <td>${escapeHTML(record.ProjectName || "")}</td>
       <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `);
@@ -4145,10 +4209,10 @@ function renderDashboardProjectsDetail(projectRows) {
   const headers = [
     currentLanguage === "es" ? "Proyecto" : "Project",
     currentLanguage === "es" ? "Cliente" : "Client",
-    currentLanguage === "es" ? "Horas usadas" : "UsedHours",
-    currentLanguage === "es" ? "Horas restantes" : "RemainingHours",
-    currentLanguage === "es" ? "Estado contrato" : "ContractStatus",
-    currentLanguage === "es" ? "Fin contrato" : "ContractEndDate"
+    currentLanguage === "es" ? "Horas usadas" : "Used hours",
+    currentLanguage === "es" ? "Horas restantes" : "Remaining hours",
+    currentLanguage === "es" ? "Estado contrato" : "Contract status",
+    currentLanguage === "es" ? "Fin contrato" : "Contract end date"
   ];
   const rows = projectRows.map((project) => `
     <tr>
@@ -4277,7 +4341,7 @@ function renderDashboardProjectBarDetail(projectName) {
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `);
@@ -4381,14 +4445,14 @@ function renderDashboardProjectBarDetail(projectName) {
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${escapeHTML(record.TechnicianName || "")}</td>
       <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
       <td></td>
     </tr>
   `);
   const rows = [
     ...technicianRows,
-    `<tr class="detail-section-row"><td colspan="6">${escapeHTML(currentLanguage === "es" ? "Ultimos Service Records relacionados" : "Latest related Service Records")}</td></tr>`,
+    `<tr class="detail-section-row"><td colspan="6">${escapeHTML(currentLanguage === "es" ? "Ultimos registros de servicio relacionados" : "Latest related service records")}</td></tr>`,
     `<tr class="detail-subheader-row">${serviceRecordHeaders.map((header) => `<th>${escapeHTML(header)}</th>`).join("")}<th></th></tr>`,
     ...serviceRecordRows
   ];
@@ -4578,7 +4642,7 @@ function renderServiceRecordActivity(record) {
   return `
     <article class="notification-item">
       <strong>${escapeHTML(record.ClientName || "")} · ${escapeHTML(record.ProjectName || "")}</strong>
-      <span>${escapeHTML(record.TechnicianName || "")} · ${formatDateOnly(record.ServiceDate)} · ${formatNumber(record.TotalHours)}h · ${escapeHTML(record.Status || "")}</span>
+      <span>${escapeHTML(record.TechnicianName || "")} · ${formatDateOnly(record.ServiceDate)} · ${formatNumber(record.TotalHours)}h · ${escapeHTML(translateServiceRecordStatus(record.Status))}</span>
     </article>
   `;
 }
@@ -4587,7 +4651,7 @@ function renderInvoiceActivity(invoice) {
   return `
     <article class="notification-item">
       <strong>${escapeHTML(invoice.InvoiceNumber || "")} · ${escapeHTML(invoice.ClientName || "")}</strong>
-      <span>${formatDateOnly(invoice.InvoiceDate)} · ${escapeHTML(invoice.Status || "")}</span>
+      <span>${formatDateOnly(invoice.InvoiceDate)} · ${escapeHTML(translateInvoiceStatus(invoice.Status))}</span>
     </article>
   `;
 }
@@ -4677,6 +4741,22 @@ function translateStatus(status) {
   return tNested("statuses", status);
 }
 
+function translateServiceRecordStatus(status) {
+  return tNested("serviceRecordStatuses", status);
+}
+
+function translateInvoiceStatus(status) {
+  return tNested("invoiceStatuses", status);
+}
+
+function translateContractStatus(status) {
+  return tNested("contractStatuses", status || "NO_CONTRACT");
+}
+
+function translateContractType(type) {
+  return tNested("contractTypes", type || "");
+}
+
 function translatePriority(priority) {
   return tNested("priorities", priority);
 }
@@ -4716,6 +4796,7 @@ function translateServerMessage(message) {
   if (currentLanguage === "es") {
     const spanishMessages = {
       "Email y password son obligatorios.": "Email y contrasena son obligatorios.",
+      "Error al obtener tickets.": "Error al cargar registros.",
       "Error al crear ticket.": "Error al crear registro.",
       "Error al editar ticket.": "Error al editar registro.",
       "Error al cerrar ticket.": "Error al cerrar registro.",
@@ -4747,7 +4828,7 @@ function translateServerMessage(message) {
     "Error al editar usuario.": "Error editing user.",
     "No puedes eliminar tu propio usuario.": "You cannot delete your own user.",
     "Error al eliminar usuario.": "Error deleting user.",
-    "Error al obtener tickets.": "Error loading tickets.",
+    "Error al obtener tickets.": "Error loading records.",
     "Error al crear ticket.": "Error creating record.",
     "ID de ticket invalido.": "Invalid ticket ID.",
     "Ticket no encontrado.": "Ticket not found.",
@@ -4794,9 +4875,39 @@ function applySelectTranslations() {
   });
   setSelectLabels(reportStatus, {
     "": t("all"),
-    Recorded: "Recorded",
-    Billed: "Billed",
-    Canceled: "Canceled"
+    Recorded: translateServiceRecordStatus("Recorded"),
+    Billed: translateServiceRecordStatus("Billed"),
+    Canceled: translateServiceRecordStatus("Canceled")
+  });
+  setSelectLabels(serviceRecordStatusFilter, {
+    "": t("allStatuses"),
+    Recorded: translateServiceRecordStatus("Recorded"),
+    Billed: translateServiceRecordStatus("Billed"),
+    Canceled: translateServiceRecordStatus("Canceled")
+  });
+  setSelectLabels(serviceRecordStatus, {
+    Recorded: translateServiceRecordStatus("Recorded"),
+    Billed: translateServiceRecordStatus("Billed"),
+    Canceled: translateServiceRecordStatus("Canceled")
+  });
+  setSelectLabels(invoiceStatusFilter, {
+    "": t("allStatuses"),
+    Draft: translateInvoiceStatus("Draft"),
+    Issued: translateInvoiceStatus("Issued"),
+    Paid: translateInvoiceStatus("Paid"),
+    Canceled: translateInvoiceStatus("Canceled")
+  });
+  setSelectLabels(invoiceStatusValue, {
+    Draft: translateInvoiceStatus("Draft"),
+    Issued: translateInvoiceStatus("Issued"),
+    Paid: translateInvoiceStatus("Paid"),
+    Canceled: translateInvoiceStatus("Canceled")
+  });
+  setSelectLabels(projectContractType, {
+    "": translateContractType(""),
+    Direct: translateContractType("Direct"),
+    Signed: translateContractType("Signed"),
+    Other: translateContractType("Other")
   });
 }
 
@@ -4914,10 +5025,19 @@ function applyStaticLanguage() {
 
   setText("#dashboardTabPanel .dashboard-overview-panel .section-title .eyebrow", t("businessOverview"));
   setText("#dashboardTitle", t("dashboardTitle"));
+  setText("#dashboardDetailPanel .section-title .eyebrow", t("detail"));
+  setText("#dashboardDetailTitle", t("dashboardDetail"));
+  setAriaLabel("#closeDashboardDetailButton", t("closeDashboardDetail"));
+  setText("#dashboardDetailTableBody .empty-state", t("selectDashboardCard"));
   setText("#hoursByMonthTitle", tNested("dashboardCharts", "HoursByMonth"));
   setText("#hoursByClientTitle", tNested("dashboardCharts", "HoursByClient"));
   setText("#hoursByProjectTitle", tNested("dashboardCharts", "HoursByProject"));
   setText("#hoursByTechnicianTitle", tNested("dashboardCharts", "HoursByTechnician"));
+  const chartEyebrows = document.querySelectorAll("#dashboardTabPanel .dashboard-chart-grid > .chart-card .eyebrow");
+  if (chartEyebrows[0]) chartEyebrows[0].textContent = labelText("Horas", "Hours");
+  if (chartEyebrows[1]) chartEyebrows[1].textContent = t("clients");
+  if (chartEyebrows[2]) chartEyebrows[2].textContent = t("projects");
+  if (chartEyebrows[3]) chartEyebrows[3].textContent = t("allTechnicians");
   setText("#recentServiceRecordsTitle", tNested("dashboardActivity", "ServiceRecords"));
   setText("#dashboardTechnicianDescriptionModal .section-title .eyebrow", tNested("technicianDashboard", "title"));
   setText("#dashboard-technician-description-title", currentLanguage === "es" ? "Editar descripcion" : "Edit description");
@@ -4956,17 +5076,10 @@ function applyStaticLanguage() {
   setText("#dashboardTechnicianClientsTitle", tNested("technicianDashboard", "hoursByClient"));
   setText("#dashboardTechnicianMonthsTitle", tNested("technicianDashboard", "hoursByMonth"));
   setText("#dashboardTechnicianRecordsTitle", tNested("technicianDashboard", "latestRecords"));
-  setTableHeaders(".technician-dashboard-table-panel:first-of-type table", [
-    "ProjectName",
-    "ClientName",
-    "TotalHours",
-    "LastServiceDate"
-  ]);
-  setTableHeaders(".technician-dashboard-table-panel:last-of-type table", [
-    "ClientName",
-    "TotalHours",
-    "TotalRecords"
-  ]);
+  const technicianChartEyebrows = document.querySelectorAll(".technician-dashboard-grid .chart-card .eyebrow");
+  if (technicianChartEyebrows[0]) technicianChartEyebrows[0].textContent = t("projects");
+  if (technicianChartEyebrows[1]) technicianChartEyebrows[1].textContent = t("clients");
+  if (technicianChartEyebrows[2]) technicianChartEyebrows[2].textContent = labelText("Meses", "Months");
   setTableHeaders(".technician-dashboard-panel > .table-wrapper table", [
     currentLanguage === "es" ? "Fecha" : "Date",
     currentLanguage === "es" ? "Cliente" : "Client",
@@ -4985,10 +5098,12 @@ function applyStaticLanguage() {
   setText('label[for="clientName"]', labelText("Cliente", "Client name"));
   setText('label[for="clientContactName"]', labelText("Contacto", "Contact name"));
   setText('label[for="clientEmail"]', "Email");
-  setText('label[for="clientPhone"]', "Phone");
+  setText('label[for="clientPhone"]', labelText("Telefono", "Phone"));
   setText('label[for="clientBillingName"]', labelText("Nombre para facturacion", "Billing name"));
-  setText('label[for="clientTaxId"]', "TaxID");
-  setText(".checkbox-field span", labelText("Activo", "Active"));
+  setText('label[for="clientTaxId"]', labelText("ID contributivo", "Tax ID"));
+  document.querySelectorAll(".checkbox-field span").forEach((element) => {
+    element.textContent = labelText("Activo", "Active");
+  });
   setAriaLabel("#closeClientModal", t("closeEditor"));
   setText("#projectsTabPanel .section-title .eyebrow", t("projectsEyebrow"));
   setText("#projects-title", t("projects"));
@@ -5009,6 +5124,12 @@ function applyStaticLanguage() {
   setText('label[for="projectContractedHours"]', labelText("Horas contratadas", "Contracted hours"));
   setText('label[for="projectLowHoursThreshold"]', labelText("Alerta de horas bajas", "Low hours threshold"));
   setText('label[for="projectExpirationAlertDays"]', labelText("Dias de alerta de vencimiento", "Expiration alert days"));
+  const contractStatusLabels = document.querySelectorAll(".contract-status-grid span");
+  if (contractStatusLabels[0]) contractStatusLabels[0].textContent = labelText("Horas usadas", "Used hours");
+  if (contractStatusLabels[1]) contractStatusLabels[1].textContent = labelText("Horas restantes", "Remaining hours");
+  if (contractStatusLabels[2]) contractStatusLabels[2].textContent = labelText("Alerta de horas", "Hours alert");
+  if (contractStatusLabels[3]) contractStatusLabels[3].textContent = labelText("Alerta de vencimiento", "Expiration alert");
+  if (contractStatusLabels[4]) contractStatusLabels[4].textContent = labelText("Estado del contrato", "Contract status");
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
   setText('label[for="invoiceSearchInput"]', t("search"));
@@ -5027,8 +5148,8 @@ function applyStaticLanguage() {
   setAriaLabel("#closeInvoiceGenerateModal", t("closeEditor"));
   setText("#invoiceStatusModal .section-title .eyebrow", t("invoices"));
   setText("#invoice-status-title", t("editInvoiceStatus"));
-  setText('label[for="invoiceStatusValue"]', "Status");
-  setText('label[for="invoiceStatusNotes"]', "Notes");
+  setText('label[for="invoiceStatusValue"]', t("status"));
+  setText('label[for="invoiceStatusNotes"]', labelText("Notas", "Notes"));
   setAriaLabel("#closeInvoiceStatusModal", t("closeEditor"));
   setText("#invoiceDetailModal .section-title .eyebrow", labelText("Lineas", "Lines"));
   setText("#invoice-detail-title", labelText("Detalle de factura", "Invoice Detail"));
@@ -5040,7 +5161,7 @@ function applyStaticLanguage() {
   setText("#settingsTabPanel .foundation-card:nth-of-type(1) p", labelText("Revisa la sesion actual y opciones de flujo de contrasenas.", "Review session details and password workflow options."));
   setText("#settingsTabPanel .foundation-card:nth-of-type(2) h3", t("notifications"));
   setText("#settingsTabPanel .foundation-card:nth-of-type(2) p", labelText("Mantiene alertas administrativas disponibles mientras evolucionan los modulos.", "Keep administrative alerts available while the modules evolve."));
-  setText("#settingsTabPanel .foundation-card:nth-of-type(3) h3", labelText("Valores por defecto", "Workflow Defaults"));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(3) h3", labelText("Valores por defecto", "Workflow defaults"));
   setText("#settingsTabPanel .foundation-card:nth-of-type(3) p", labelText("Prepara preferencias de registros de servicio y controles internos futuros.", "Prepare service record preferences and future internal controls."));
 
   setText("#notificationsTabPanel .section-title .eyebrow", t("activity"));
@@ -5110,14 +5231,14 @@ function applyStaticLanguage() {
     t("actions")
   ]);
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
-  setTableHeaders("#clientsTabPanel table", [labelText("Cliente", "Client"), labelText("Contacto", "Contact"), "Email", labelText("Telefono", "Phone"), labelText("Facturacion", "Billing"), "TaxID", t("status"), t("actions")]);
+  setTableHeaders("#clientsTabPanel table", [labelText("Cliente", "Client"), labelText("Contacto", "Contact"), "Email", labelText("Telefono", "Phone"), labelText("Facturacion", "Billing"), labelText("ID contributivo", "Tax ID"), t("status"), t("actions")]);
   setTableHeaders("#projectsTabPanel table", [labelText("Proyecto", "Project"), labelText("Cliente", "Client"), labelText("Descripcion", "Description"), labelText("Contrato", "Contract"), labelText("Horas contratadas", "Contracted hours"), labelText("Horas usadas", "Used hours"), labelText("Horas restantes", "Remaining hours"), labelText("Vence", "End date"), labelText("Estado contrato", "Contract status"), t("status"), t("actions")]);
   setTableHeaders("#invoicesTabPanel table", [labelText("Factura", "Invoice"), labelText("Cliente", "Client"), labelText("Fecha", "Date"), labelText("Desde", "From"), labelText("Hasta", "To"), t("status"), t("actions")]);
   setTableHeaders("#invoiceDetailModal table", [t("date"), labelText("Proyecto", "Project"), labelText("Descripcion", "Description"), labelText("Horas", "Hours")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["ID", t("fullName"), "Email", t("role"), t("status"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
-  setTableHeaders("#reportsTabPanel table", ["ServiceRecordID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
+  setTableHeaders("#reportsTabPanel table", ["ID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
 }
 
 function applyLanguage() {
@@ -5536,7 +5657,7 @@ function renderServiceHoursReport() {
       <td>${escapeHTML(record.ProjectName || "")}</td>
       <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
       <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(record.Status || "")}</span></td>
+      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `).join("");
@@ -5562,8 +5683,8 @@ function renderReportsSummary() {
   const metrics = [
     { key: "TotalRecords", label: currentLanguage === "es" ? "Total registros" : "Total records", type: "count" },
     { key: "TotalHours", label: currentLanguage === "es" ? "Total horas" : "Total hours", type: "hours" },
-    { key: "BilledHours", label: currentLanguage === "es" ? "Horas facturadas" : "Billed hours", type: "hours" },
-    { key: "UnbilledHours", label: currentLanguage === "es" ? "Horas sin facturar" : "Unbilled hours", type: "hours" },
+    { key: "BilledHours", label: currentLanguage === "es" ? "Horas procesadas" : "Processed hours", type: "hours" },
+    { key: "UnbilledHours", label: currentLanguage === "es" ? "Horas pendientes" : "Pending hours", type: "hours" },
     { key: "CanceledHours", label: currentLanguage === "es" ? "Horas canceladas" : "Canceled hours", type: "hours" }
   ];
 

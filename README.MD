@@ -1185,6 +1185,14 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - English and Spanish interface text was improved across navigation, dashboard, forms, tables, modals, reports, users, settings, notifications, buttons, empty states, and labels.
 - This phase is copy/branding only; no database, backend behavior, or migrated real data was changed.
 
+### Phase 30.1: Complete UI Localization and Branding Cleanup
+
+- Removed visible `Service Billing System` branding from the application UI while keeping the repository name unchanged.
+- Updated the header copy to use only `Solutions By Design` branding.
+- Expanded English and Spanish localization for dashboard panels, project contract states, service record statuses, invoice states, forms, tables, selects, empty states, and action labels.
+- Internal values such as `Recorded`, `Billed`, `NO_CONTRACT`, `ClientID`, and `ServiceDescription` are now translated or replaced with user-facing labels where shown in the UI.
+- This phase does not modify backend logic, databases, ServiceBillingDB, or ServiceSBD_20260629.
+
 ### API Examples
 
 ```http
