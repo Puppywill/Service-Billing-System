@@ -1193,6 +1193,22 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Internal values such as `Recorded`, `Billed`, `NO_CONTRACT`, `ClientID`, and `ServiceDescription` are now translated or replaced with user-facing labels where shown in the UI.
 - This phase does not modify backend logic, databases, ServiceBillingDB, or ServiceSBD_20260629.
 
+### Phase 31: General Dashboard UX Improvements
+
+- General Dashboard bars are now interactive for service hours by month, client, project, and technician.
+- Clicking any bar opens the existing dashboard detail panel, scrolls smoothly to it, and applies a subtle highlight.
+- Client, project, technician, and month details now show executive summaries with hours, records, related clients/projects/technicians, last activity, and recent service records where applicable.
+- Bar hover states were improved with clearer pointer behavior, subtle motion, and smoother visual transitions.
+- This phase is frontend-only and does not modify Technician Dashboard, backend logic, databases, ServiceBillingDB, or ServiceSBD_20260629.
+
+### Phase 31.1: Dashboard Section Label Localization
+
+- Dashboard section eyebrow labels now use the shared EN/ES translation system.
+- Spanish mode shows `HORAS`, `CLIENTES`, `PROYECTOS`, `TECNICOS`, `MESES`, and `REGISTROS DE SERVICIO`.
+- English mode shows `HOURS`, `CLIENTS`, `PROJECTS`, `TECHNICIANS`, `MONTHS`, and `SERVICE RECORDS`.
+- The Dashboard and Technician Dashboard chart labels now update correctly when the language toggle changes.
+- This phase is UI text only and does not modify backend logic, databases, ServiceBillingDB, or ServiceSBD_20260629.
+
 ### API Examples
 
 ```http

@@ -358,17 +358,26 @@ button,
   display: grid;
   gap: 7px;
   min-width: 0;
+  border-radius: 8px;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .interactive-bar-row {
   width: 100%;
-  padding: 0;
-  border: 0;
+  padding: 8px;
+  border: 1px solid transparent;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.interactive-bar-row:hover {
+  border-color: rgba(56, 189, 248, 0.22);
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.18);
+  transform: translateY(-1px);
 }
 
 .interactive-bar-row:hover .bar-fill,
@@ -377,7 +386,7 @@ button,
 }
 
 .interactive-bar-row:focus-visible {
-  outline: 2px solid rgba(37, 99, 235, 0.55);
+  outline: 2px solid rgba(56, 189, 248, 0.55);
   outline-offset: 4px;
   border-radius: 8px;
 }
@@ -423,6 +432,15 @@ button,
   overflow: hidden;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.16);
+  transition: background 0.18s ease;
+}
+
+.interactive-bar-row:hover .bar-track {
+  background: rgba(148, 163, 184, 0.24);
+}
+
+.detail-panel-highlight {
+  animation: detailPulse 0.95s ease both;
 }
 
 .bar-fill {
@@ -1799,6 +1817,23 @@ tbody tr:hover {
 @keyframes barGrow {
   from { transform: scaleX(0.35); }
   to { transform: scaleX(1); }
+}
+
+@keyframes detailPulse {
+  0% {
+    border-color: rgba(56, 189, 248, 0.52);
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.24), 0 18px 48px rgba(0, 0, 0, 0.26);
+  }
+
+  55% {
+    border-color: rgba(56, 189, 248, 0.34);
+    box-shadow: 0 0 0 8px rgba(56, 189, 248, 0.08), 0 18px 48px rgba(0, 0, 0, 0.26);
+  }
+
+  100% {
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
 }
 
 @keyframes riseIn {

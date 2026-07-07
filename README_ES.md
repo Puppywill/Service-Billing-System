@@ -1193,6 +1193,22 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Valores internos como `Recorded`, `Billed`, `NO_CONTRACT`, `ClientID` y `ServiceDescription` ahora se traducen o se reemplazan por labels orientados al usuario cuando aparecen en la interfaz.
 - Esta fase no modifica logica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
 
+### Fase 31: Mejoras UX del Dashboard General
+
+- Las barras del Dashboard General ahora son interactivas para horas por mes, cliente, proyecto y tecnico.
+- Al hacer click en cualquier barra, se abre el panel de detalle existente, se hace scroll suave automatico y se aplica un resaltado sutil.
+- Los detalles de cliente, proyecto, tecnico y mes ahora muestran resumen ejecutivo con horas, registros, clientes/proyectos/tecnicos relacionados, ultima actividad y ultimos registros de servicio cuando aplica.
+- Se mejoraron los estados hover de las barras con cursor claro, movimiento sutil y transiciones mas fluidas.
+- Esta fase es solo frontend y no modifica Technician Dashboard, logica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
+
+### Fase 31.1: Localizacion De Labels Del Dashboard
+
+- Los labels pequenos del Dashboard ahora usan el sistema compartido de traducciones EN/ES.
+- En espanol se muestran `HORAS`, `CLIENTES`, `PROYECTOS`, `TECNICOS`, `MESES` y `REGISTROS DE SERVICIO`.
+- En ingles se muestran `HOURS`, `CLIENTS`, `PROJECTS`, `TECHNICIANS`, `MONTHS` y `SERVICE RECORDS`.
+- Los labels de graficas del Dashboard General y Technician Dashboard se actualizan correctamente al cambiar el idioma.
+- Esta fase solo cambia textos de interfaz y no modifica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
