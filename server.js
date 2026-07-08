@@ -366,6 +366,20 @@ function getProjectPayload(body) {
 const SERVICE_RECORD_STATUSES = new Set(["Recorded", "Billed", "Canceled"]);
 const INVOICE_STATUSES = new Set(["Draft", "Issued", "Paid", "Canceled"]);
 const CONTRACT_TYPES = new Set(["Direct", "Signed", "Other"]);
+const REPORT_EXCLUDED_DEMO_TECHNICIAN_EMAILS = [
+  "william@servicebilling.local",
+  "carlos@servicebilling.local"
+];
+
+function applyReportDemoExclusion(request, whereClauses, technicianAlias = "technician") {
+  const placeholders = REPORT_EXCLUDED_DEMO_TECHNICIAN_EMAILS.map((email, index) => {
+    const inputName = `ExcludedDemoTechnicianEmail${index}`;
+    request.input(inputName, sql.NVarChar(180), email);
+    return `@${inputName}`;
+  });
+
+  whereClauses.push(`LOWER(${technicianAlias}.Email) NOT IN (${placeholders.join(", ")})`);
+}
 
 function getProjectContractValidationMessage(project) {
   if (project.contractType && !CONTRACT_TYPES.has(project.contractType)) {
@@ -1410,18 +1424,28 @@ function cleanReportText(value) {
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(div|p|li)>/gi, "\n")
     .replace(/<[^>]*>/g, "")
+    .replace(/&ntilde;/gi, "n")
+    .replace(/&Ntilde;/g, "N")
+    .replace(/&aacute;/gi, "a")
+    .replace(/&eacute;/gi, "e")
+    .replace(/&iacute;/gi, "i")
+    .replace(/&oacute;/gi, "o")
+    .replace(/&uacute;/gi, "u")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/&n(?:bsp)?;?/gi, " ")
+    .replace(/&#?\w+;?/g, " ")
     .replace(/\r/g, "")
+    .replace(/^\s*[.&]\s*$/gm, "")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 }
 
 function formatReportTime(value) {
-  return value ? String(value).slice(0, 5) : "-";
+  return value ? String(value).slice(0, 5) : "—";
 }
 
 async function tableColumnExists(pool, tableName, columnName) {
@@ -1508,6 +1532,8 @@ async function getServiceHoursReportRecords(pool, filters) {
     whereClauses.push(`sr.${name} = @${name}`);
   }
 
+  applyReportDemoExclusion(request, whereClauses);
+
   const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
   const result = await request.query(`
     SELECT
@@ -1548,7 +1574,13 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
   const border = "#9ca3af";
   const soft = "#f3f6fb";
   const rowAlt = "#fbfdff";
-  const generatedLabel = formatReportDateOnly(generatedAt);
+  const footerDateLabel = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  }).format(generatedAt);
+  const footerMargin = 42;
 
   document.pipe(outputStream);
 
@@ -1600,20 +1632,37 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       width: 140,
       align: "right"
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Proyecto: ${projectLabel}`, margin, y + 52, {
-      width: pageWidth - margin * 2 - 170
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Departamento/Proyecto: ${projectLabel}`, margin, y + 50, {
+      width: pageWidth - margin * 2 - 190
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Periodo: ${period}`, pageWidth - margin - 160, y + 52, {
-      width: 160,
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Periodo: ${period}`, pageWidth - margin - 180, y + 50, {
+      width: 180,
       align: "right"
     });
-    document.moveTo(margin, y + 68).lineTo(pageWidth - margin, y + 68).strokeColor(border).lineWidth(0.8).stroke();
+    document.moveTo(margin, y + 66).lineTo(pageWidth - margin, y + 66).strokeColor(border).lineWidth(0.8).stroke();
     document.restore();
-    document.y = y + 78;
+    document.y = y + 74;
   };
 
+  const getPageBottom = () => document.page.height - footerMargin;
+
+  const getServiceColumns = () => {
+    const tableWidth = document.page.width - margin * 2;
+    return [
+      { label: "Fecha", width: 58, align: "left" },
+      { label: "Orden", width: 50, align: "left" },
+      { label: "Tecnico", width: 88, align: "left" },
+      { label: "Descripcion", width: tableWidth - 244, align: "left" },
+      { label: "Horas", width: 48, align: "right" }
+    ];
+  };
+
+  const getColumnX = (columns, columnIndex) => margin + columns
+    .slice(0, columnIndex)
+    .reduce((sum, column) => sum + column.width, 0);
+
   const ensureSpace = (height) => {
-    if (document.y + height > document.page.height - 56) {
+    if (document.y + height > getPageBottom()) {
       document.addPage();
       drawBreakdownHeader();
       return true;
@@ -1624,16 +1673,11 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
 
   const drawServiceTableHeader = () => {
     const y = document.y;
-    const columns = [
-      { label: "Fecha", width: 58, align: "left" },
-      { label: "Orden", width: 50, align: "left" },
-      { label: "Tecnico", width: 88, align: "left" },
-      { label: "Descripcion", width: 300, align: "left" },
-      { label: "Horas", width: 48, align: "right" }
-    ];
+    const tableWidth = document.page.width - margin * 2;
+    const columns = getServiceColumns();
     let x = margin;
 
-    document.rect(margin, y, document.page.width - margin * 2, 18).fill(soft).stroke(border);
+    document.rect(margin, y, tableWidth, 18).fill(soft).stroke(border);
     columns.forEach((column) => {
       document.fillColor(slate).font("Helvetica-Bold").fontSize(7.5).text(column.label, x + 4, y + 5, {
         width: column.width - 8,
@@ -1650,17 +1694,40 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
     drawBreakdownHeader();
     let columns = drawServiceTableHeader();
 
-    records.forEach((record) => {
+    records.forEach((record, recordIndex) => {
+      const isLastRecord = recordIndex === records.length - 1;
       const description = cleanReportText(record.ServiceDescription) || "Sin descripcion.";
+      const maxRowHeight = getPageBottom() - document.y - 2;
+      let descriptionFontSize = 7.6;
+      document.font("Helvetica").fontSize(descriptionFontSize);
       const descriptionHeight = document.heightOfString(description, {
         width: columns[3].width - 8,
-        lineGap: 1
+        lineGap: 1.4
       });
-      const rowHeight = Math.max(24, descriptionHeight + 9);
+      let rowHeight = Math.max(24, descriptionHeight + 10);
 
-      if (ensureSpace(rowHeight + 22)) {
+      if (rowHeight > maxRowHeight && document.y > margin + 96) {
+        document.addPage();
+        drawBreakdownHeader();
         columns = drawServiceTableHeader();
       }
+
+      while (rowHeight > getPageBottom() - document.y - 2 && descriptionFontSize > 6.2) {
+        descriptionFontSize -= 0.2;
+        document.font("Helvetica").fontSize(descriptionFontSize);
+        rowHeight = Math.max(24, document.heightOfString(description, {
+          width: columns[3].width - 8,
+          lineGap: 1.2
+        }) + 10);
+      }
+
+      if (ensureSpace(rowHeight + (isLastRecord ? 28 : 0))) {
+        columns = drawServiceTableHeader();
+      }
+
+      const maxDrawableRowHeight = Math.max(24, getPageBottom() - document.y - (isLastRecord ? 28 : 0));
+      rowHeight = Math.min(rowHeight, maxDrawableRowHeight);
+
       const y = document.y;
       let x = margin;
       const values = [
@@ -1673,26 +1740,35 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
 
       document.rect(margin, y, document.page.width - margin * 2, rowHeight).strokeColor(border).lineWidth(0.4).stroke();
       values.forEach((value, index) => {
-        document.fillColor(slate).font("Helvetica").fontSize(index === 3 ? 7.6 : 7.4).text(value, x + 4, y + 5, {
+        document.fillColor(slate).font("Helvetica").fontSize(index === 3 ? descriptionFontSize : 7.4).text(value, x + 4, y + 5, {
           width: columns[index].width - 8,
+          height: rowHeight - 9,
           align: columns[index].align,
-          lineGap: index === 3 ? 1 : 0
+          lineGap: index === 3 ? 1.2 : 0,
+          ellipsis: index === 3
         });
         x += columns[index].width;
       });
       document.y = y + rowHeight;
     });
 
-    ensureSpace(36);
-    document.moveDown(0.5);
-    document.moveTo(document.page.width - margin - 150, document.y).lineTo(document.page.width - margin, document.y).strokeColor(border).stroke();
-    document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text("Total de horas", document.page.width - margin - 150, document.y + 7, {
-      width: 90,
-      align: "right"
+    const serviceColumns = getServiceColumns();
+    const hoursColumnIndex = serviceColumns.length - 1;
+    const hoursX = getColumnX(serviceColumns, hoursColumnIndex);
+    const hoursWidth = serviceColumns[hoursColumnIndex].width;
+    const labelWidth = 120;
+    const labelX = hoursX - labelWidth - 16;
+    const totalLineY = Math.min(document.y, document.page.height - footerMargin - 22);
+    document.moveTo(labelX, totalLineY).lineTo(hoursX + hoursWidth, totalLineY).strokeColor(border).stroke();
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text("Total de horas", labelX, totalLineY + 7, {
+      width: labelWidth,
+      align: "right",
+      lineBreak: false
     });
-    document.text(`${formatReportNumber(totalHours)} h`, document.page.width - margin - 55, document.y + 7, {
-      width: 55,
-      align: "right"
+    document.text(`${formatReportNumber(totalHours)} h`, hoursX + 4, totalLineY + 7, {
+      width: hoursWidth - 8,
+      align: "right",
+      lineBreak: false
     });
   };
 
@@ -1716,30 +1792,46 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       width: pageWidth - margin * 2 - 380,
       align: "center"
     });
-    document.moveTo(margin, y + 38).lineTo(pageWidth - margin, y + 38).strokeColor(border).lineWidth(0.8).stroke();
+    document.fillColor(muted).font("Helvetica").fontSize(7.5).text(`Cliente: ${clientLabel} | Departamento/Proyecto: ${projectLabel}`, margin, y + 34, {
+      width: pageWidth - margin * 2
+    });
+    document.moveTo(margin, y + 48).lineTo(pageWidth - margin, y + 48).strokeColor(border).lineWidth(0.8).stroke();
     document.restore();
-    document.y = y + 50;
+    document.y = y + 58;
   };
+
+  const getTimeSheetColumns = () => [
+    { label: "Tecnico", width: 80, align: "left" },
+    { label: "Dia", width: 56, align: "left" },
+    { label: "Cliente", width: 120, align: "left" },
+    { label: "Departamento/Proyecto", width: 174, align: "left" },
+    { label: "Manana Entrada", width: 58, align: "center" },
+    { label: "Manana Salida", width: 58, align: "center" },
+    { label: "Tarde Entrada", width: 58, align: "center" },
+    { label: "Tarde Salida", width: 58, align: "center" },
+    { label: "Total", width: 52, align: "right" }
+  ];
 
   const drawTimeSheetHeader = () => {
     const pageWidth = document.page.width;
     const sheetWidth = pageWidth - margin * 2;
-    const widths = [92, 58, 128, 206, 76, 76, 58];
-    const labels = ["Tecnico", "Dia", "Cliente", "Departamento/Proyecto", "Manana", "Tarde", "Total"];
+    const columns = getTimeSheetColumns();
     let x = margin;
     const y = document.y;
 
     document.rect(margin, y, sheetWidth, 19).fill(soft).stroke(border);
-    labels.forEach((label, index) => {
-      document.fillColor(slate).font("Helvetica-Bold").fontSize(7.5).text(label, x + 4, y + 5, {
-        width: widths[index] - 8,
-        align: index >= 4 ? "center" : "left"
+    columns.forEach((column) => {
+      document.fillColor(slate).font("Helvetica-Bold").fontSize(7.5).text(column.label, x + 4, y + 5, {
+        width: column.width - 8,
+        height: 10,
+        align: column.align,
+        ellipsis: true
       });
-      x += widths[index];
+      x += column.width;
     });
     document.y = y + 19;
 
-    return widths;
+    return columns;
   };
 
   const drawTimeSheet = () => {
@@ -1753,15 +1845,19 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       recordsByTechnician.get(technician).push(record);
     });
 
-    let widths = drawTimeSheetHeader();
+    let timeSheetColumns = drawTimeSheetHeader();
 
-    Array.from(recordsByTechnician.entries()).forEach(([technician, technicianRecords]) => {
+    const technicianEntries = Array.from(recordsByTechnician.entries());
+
+    technicianEntries.forEach(([technician, technicianRecords], technicianIndex) => {
       const technicianHours = technicianRecords.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0);
+      const isLastTechnicianGroup = technicianIndex === technicianEntries.length - 1;
+      const minimumGroupHeight = 22 + 24 + (isLastTechnicianGroup && technicianRecords.length === 1 ? 30 : 0);
 
-      if (document.y + 40 > document.page.height - 56) {
+      if (document.y + minimumGroupHeight > document.page.height - 56) {
         document.addPage({ size: "LETTER", layout: "landscape", margin });
         drawTimeSheetPageHeader();
-        widths = drawTimeSheetHeader();
+        timeSheetColumns = drawTimeSheetHeader();
       }
       document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(`${technician} - ${formatReportNumber(technicianHours)} h`, margin, document.y + 7, {
         width: document.page.width - margin * 2
@@ -1769,10 +1865,12 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       document.y += 22;
 
       technicianRecords.forEach((record, index) => {
-        if (document.y + 24 > document.page.height - 56) {
+        const isLastTimeSheetRecord = technicianIndex === technicianEntries.length - 1 && index === technicianRecords.length - 1;
+
+        if (document.y + 24 + (isLastTimeSheetRecord ? 30 : 0) > document.page.height - 56) {
           document.addPage({ size: "LETTER", layout: "landscape", margin });
           drawTimeSheetPageHeader();
-          widths = drawTimeSheetHeader();
+          timeSheetColumns = drawTimeSheetHeader();
         }
 
         const rowY = document.y;
@@ -1781,8 +1879,10 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
           formatReportDateOnly(record.ServiceDate),
           record.ClientName || "",
           record.ProjectName || "",
-          `${formatReportTime(record.MorningStart)} - ${formatReportTime(record.MorningEnd)}`,
-          `${formatReportTime(record.AfternoonStart)} - ${formatReportTime(record.AfternoonEnd)}`,
+          formatReportTime(record.MorningStart),
+          formatReportTime(record.MorningEnd),
+          formatReportTime(record.AfternoonStart),
+          formatReportTime(record.AfternoonEnd),
           `${formatReportNumber(record.TotalHours)} h`
         ];
         let x = margin;
@@ -1792,30 +1892,36 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
         }
 
         values.forEach((value, valueIndex) => {
+          const column = timeSheetColumns[valueIndex];
           document.fillColor(slate).font("Helvetica").fontSize(7).text(value, x + 4, rowY + 6, {
-            width: widths[valueIndex] - 8,
-            align: valueIndex >= 4 ? "center" : "left",
+            width: column.width - 8,
+            height: 10,
+            align: column.align,
             ellipsis: true
           });
-          x += widths[valueIndex];
+          x += column.width;
         });
         document.moveTo(margin, rowY + 22).lineTo(document.page.width - margin, rowY + 22).strokeColor(border).lineWidth(0.4).stroke();
         document.y = rowY + 22;
       });
     });
 
-    if (document.y + 30 > document.page.height - 56) {
-      document.addPage({ size: "LETTER", layout: "landscape", margin });
-      drawTimeSheetPageHeader();
-    }
-    document.moveTo(document.page.width - margin - 150, document.y + 8).lineTo(document.page.width - margin, document.y + 8).strokeColor(border).stroke();
-    document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text("Total de horas", document.page.width - margin - 150, document.y + 16, {
-      width: 92,
-      align: "right"
+    const totalColumnIndex = timeSheetColumns.length - 1;
+    const totalX = getColumnX(timeSheetColumns, totalColumnIndex);
+    const totalWidth = timeSheetColumns[totalColumnIndex].width;
+    const labelWidth = 124;
+    const labelX = totalX - labelWidth - 16;
+    const totalLineY = Math.min(document.y + 8, document.page.height - footerMargin - 22);
+    document.moveTo(labelX, totalLineY).lineTo(totalX + totalWidth, totalLineY).strokeColor(border).stroke();
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text("Total de horas", labelX, totalLineY + 8, {
+      width: labelWidth,
+      align: "right",
+      lineBreak: false
     });
-    document.text(`${formatReportNumber(totalHours)} h`, document.page.width - margin - 52, document.y + 16, {
-      width: 52,
-      align: "right"
+    document.text(`${formatReportNumber(totalHours)} h`, totalX + 4, totalLineY + 8, {
+      width: totalWidth - 8,
+      align: "right",
+      lineBreak: false
     });
   };
 
@@ -1827,17 +1933,16 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       document.save();
       const footerWidth = document.page.width;
       const footerHeight = document.page.height;
-      document.moveTo(margin, footerHeight - 38).lineTo(footerWidth - margin, footerHeight - 38).strokeColor(border).lineWidth(0.5).stroke();
-      document.fillColor(muted).font("Helvetica").fontSize(7.5).text("Solutions By Design", margin, footerHeight - 28, {
-        width: 190
-      });
-      document.text(`Generado: ${generatedLabel}`, margin + 200, footerHeight - 28, {
-        width: 160,
-        align: "center"
+      document.fillColor(muted).font("Helvetica").fontSize(7.5).text(footerDateLabel, margin, footerHeight - 28, {
+        width: 220,
+        height: 10,
+        lineBreak: false
       });
       document.text(`Pagina ${index + 1} de ${range.count}`, footerWidth - margin - 120, footerHeight - 28, {
         width: 120,
-        align: "right"
+        height: 10,
+        align: "right",
+        lineBreak: false
       });
       document.restore();
     }
@@ -3977,6 +4082,8 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
       whereClauses.push(`sr.${name} = @${name}`);
     }
 
+    applyReportDemoExclusion(request, whereClauses);
+
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
     const summaryResult = await request.query(`
       SELECT
@@ -3986,6 +4093,7 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
         COALESCE(SUM(CASE WHEN sr.Status = N'Recorded' THEN sr.TotalHours ELSE 0 END), 0) AS UnbilledHours,
         COALESCE(SUM(CASE WHEN sr.Status = N'Canceled' THEN sr.TotalHours ELSE 0 END), 0) AS CanceledHours
       FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
       ${whereSql};
 
       SELECT
@@ -4001,6 +4109,7 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
         client.ClientName,
         COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
       FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
       INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
       ${whereSql}
       GROUP BY client.ClientName
@@ -4010,6 +4119,7 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
         project.ProjectName,
         COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
       FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
       INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
       ${whereSql}
       GROUP BY project.ProjectName

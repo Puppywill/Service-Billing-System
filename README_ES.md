@@ -1249,6 +1249,33 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Se agrego `DELETE /api/notifications/:id`, protegido por autenticacion y rol Admin.
 - No se cambiaron estructura de base de datos, datos de ServiceSBD_20260629, filtros de Reports, exportacion PDF, Dashboard, Users, Clients, Projects ni flujos de Service Records.
 
+### Fase 33.2: Exclusion De Registros Demo En Reports Y PDF
+
+- Reports y la exportacion PDF de horas de servicio ahora excluyen registros demo/prueba conocidos sin borrar datos de la base.
+- El criterio de exclusion es explicito: se omiten registros asignados a los emails demo `william@servicebilling.local` y `carlos@servicebilling.local`.
+- Los registros demo excluidos ya no aparecen en la tabla de Reports, desglose PDF, Time Sheet PDF ni totales del reporte.
+- Total de registros, total de horas, horas pendientes, horas procesadas y horas canceladas se calculan despues de excluir esos registros demo.
+- Esto no modifica ServiceSBD_20260629, estructura de ServiceBillingDB, Users, Clients, Projects, Service Records, Dashboard UI ni Technician Dashboard UI.
+
+### Fase 33.3: Mejoras Profesionales De Layout PDF
+
+- Se mejoro la paginacion del PDF para mantener cada registro de servicio unido y evitar que se divida entre paginas.
+- El desglose de servicios ahora verifica la altura de cada fila antes de dibujarla y repite automaticamente el encabezado de tabla despues de cada salto de pagina.
+- Las descripciones largas reciben mejor espaciado y texto ligeramente mas pequeno solo cuando es necesario para mantener el registro unido.
+- La limpieza de descripcion remueve residuos comunes de HTML/entities legacy y caracteres basura aislados antes de renderizar.
+- El total del desglose aparece inmediatamente despues del ultimo registro, sin espacios en blanco innecesarios.
+- El encabezado del PDF repite marca Solutions By Design, cliente, departamento/proyecto, titulo del reporte, periodo e invoice en las paginas del reporte.
+- Las paginas de Time Sheet mantienen layout landscape consistente e incluyen cliente y departamento/proyecto en el encabezado.
+- Los pies de pagina mantienen numeracion `Pagina X de Y`.
+
+### Fase 33.4: Correccion De Pagina En Blanco Y Footer Manual
+
+- Se elimino la creacion de paginas usadas solamente para imprimir totales o footer.
+- Los totales del desglose y del Time Sheet ahora se renderizan en la pagina actual inmediatamente despues del ultimo registro.
+- El ultimo registro reserva espacio para el total antes de dibujarse, evitando paginas en blanco o solapamiento.
+- Los footers del PDF se dibujan manualmente sobre paginas existentes e incluyen solo fecha larga y `Pagina X de Y`.
+- El footer ya no dibuja lineas o contenido adicional que pueda provocar una pagina extra.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

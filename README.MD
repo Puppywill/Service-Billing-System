@@ -1249,6 +1249,33 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Added `DELETE /api/notifications/:id`, protected by authentication and Admin role.
 - No database schema, ServiceSBD_20260629 data, Reports filters, PDF export behavior, Dashboard, Users, Clients, Projects, or Service Records workflows were changed.
 
+### Phase 33.2: Demo Record Exclusion in Reports and PDF
+
+- Reports and service-hour PDF export now exclude known demo/test records without deleting database data.
+- The exclusion criterion is explicit: records assigned to seeded demo technician emails `william@servicebilling.local` and `carlos@servicebilling.local` are omitted from report queries.
+- Excluded demo records no longer appear in the Reports table, service breakdown PDF, Time Sheet PDF, or report totals.
+- Report totals, total hours, pending hours, processed hours, and canceled hours are calculated after the demo exclusion.
+- This does not modify ServiceSBD_20260629, ServiceBillingDB schema, Users, Clients, Projects, Service Records, Dashboard UI, or Technician Dashboard UI.
+
+### Phase 33.3: Professional PDF Layout Improvements
+
+- Improved PDF pagination so service records are kept together and are not split between pages.
+- The service breakdown now checks row height before drawing each record and repeats the table header after page breaks.
+- Long descriptions receive cleaner spacing and smaller fallback text only when needed to keep the record together.
+- Description cleanup removes common legacy HTML/entity residue and isolated junk characters before rendering.
+- The service breakdown total appears immediately after the last record without unnecessary blank space.
+- The PDF header repeats the Solutions By Design brand, client, department/project, report title, period, and invoice context on report pages.
+- Time Sheet pages keep a consistent landscape layout and include client and department/project context in the header.
+- Footers continue to show page numbering as `Page X of Y`.
+
+### Phase 33.4: Blank Last Page and Manual PDF Footer Fix
+
+- Removed page creation that existed only to print totals or footer content.
+- Service breakdown and Time Sheet totals now render on the current content page immediately after the last record.
+- The final record reserves space for the total before rendering, so the total does not create a blank page or overlap content.
+- PDF footers are rendered manually on existing buffered pages and include only the long date and `Page X of Y`.
+- Footer rendering no longer draws extra footer lines or content that could trigger an additional page.
+
 ### API Examples
 
 ```http
