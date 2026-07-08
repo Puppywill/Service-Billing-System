@@ -264,6 +264,7 @@ const reportStatus = document.querySelector("#reportStatus");
 const reportTechnician = document.querySelector("#reportTechnician");
 const reportClient = document.querySelector("#reportClient");
 const reportProject = document.querySelector("#reportProject");
+const reportInvoiceNumber = document.querySelector("#reportInvoiceNumber");
 const reportsTableBody = document.querySelector("#reportsTableBody");
 const reportsTotalCount = document.querySelector("#reportsTotalCount");
 const reportsMessage = document.querySelector("#reportsMessage");
@@ -677,6 +678,10 @@ const translations = {
     noPasswordResets: "No hay solicitudes de recuperacion.",
     resolve: "Marcar resuelta",
     markResolved: "Marcar como resuelta",
+    deleteNotification: "Borrar",
+    deleteNotificationConfirm: "Seguro que deseas borrar esta notificacion?",
+    deleteNotificationSuccess: "Notificacion borrada correctamente.",
+    deleteNotificationError: "No se pudo borrar la notificacion.",
     temporaryPassword: "Asignar contrasena temporal",
     showPassword: "Mostrar contrasena",
     hidePassword: "Ocultar contrasena",
@@ -1072,6 +1077,10 @@ const translations = {
     noPasswordResets: "No password recovery requests.",
     resolve: "Mark resolved",
     markResolved: "Mark as resolved",
+    deleteNotification: "Delete",
+    deleteNotificationConfirm: "Are you sure you want to delete this notification?",
+    deleteNotificationSuccess: "Notification deleted successfully.",
+    deleteNotificationError: "The notification could not be deleted.",
     temporaryPassword: "Assign temporary password",
     showPassword: "Show password",
     hidePassword: "Hide password",
@@ -2896,16 +2905,30 @@ function showNotificationsMessage(message) {
 }
 
 function renderNotificationActions(notification) {
-  if (!isAdmin() || notification.Type !== "PASSWORD_RESET_REQUESTED" || notification.IsRead || isResolvedPasswordResetNotification(notification)) {
+  if (!isAdmin()) {
     return `<span class="read-only-note">${notification.IsRead ? t("resolved") : t("readOnly")}</span>`;
   }
 
-  return `
-    <button class="action-btn close-btn" data-notification-action="resolve-password-reset" data-id="${notification.NotificationID}">
-      ${getActionIcon("close")}
-      ${t("markResolved")}
+  const actions = [];
+  const canResolve = notification.Type === "PASSWORD_RESET_REQUESTED" && !notification.IsRead && !isResolvedPasswordResetNotification(notification);
+
+  if (canResolve) {
+    actions.push(`
+      <button class="action-btn close-btn" data-notification-action="resolve-password-reset" data-id="${notification.NotificationID}">
+        ${getActionIcon("close")}
+        ${t("markResolved")}
+      </button>
+    `);
+  }
+
+  actions.push(`
+    <button class="action-btn delete-btn" data-notification-action="delete" data-id="${notification.NotificationID}">
+      ${getActionIcon("delete")}
+      ${t("deleteNotification")}
     </button>
-  `;
+  `);
+
+  return actions.join("");
 }
 
 function getNotificationStatusClass(notification) {
@@ -2939,6 +2962,11 @@ function handleNotificationsClick(event) {
 
   if (button.dataset.notificationAction === "resolve-password-reset") {
     resolvePasswordResetNotification(Number(button.dataset.id));
+    return;
+  }
+
+  if (button.dataset.notificationAction === "delete") {
+    deleteNotification(Number(button.dataset.id));
   }
 }
 
@@ -2958,6 +2986,30 @@ async function resolvePasswordResetNotification(notificationId) {
   } catch (error) {
     console.error(error);
     alert(error.message || t("forgotError"));
+  }
+}
+
+async function deleteNotification(notificationId) {
+  if (!window.confirm(t("deleteNotificationConfirm"))) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/notifications/${notificationId}`, {
+      method: "DELETE",
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      const data = await parseJsonResponse(response);
+      throw new Error(translateServerMessage(data.message) || t("deleteNotificationError"));
+    }
+
+    await loadNotifications();
+    alert(t("deleteNotificationSuccess"));
+  } catch (error) {
+    console.error(error);
+    alert(error.message || t("deleteNotificationError"));
   }
 }
 
@@ -5095,6 +5147,7 @@ function translateServerMessage(message) {
     "ID de notificacion invalido.": "Invalid notification ID.",
     "Notificacion no encontrada.": "Notification not found.",
     "Error al marcar notificacion.": "Error marking notification.",
+    "Error al borrar notificacion.": "Error deleting notification.",
     "Error al obtener usuarios.": "Error loading users.",
     "Todos los campos son obligatorios.": "All fields are required.",
     "Rol invalido.": "Invalid role.",
@@ -5472,6 +5525,8 @@ function applyStaticLanguage() {
   setText('label[for="reportClient"]', currentLanguage === "es" ? "Cliente" : "Client");
   setText('label[for="reportProject"]', currentLanguage === "es" ? "Proyecto" : "Project");
   setText('label[for="reportStatus"]', t("status"));
+  setText('label[for="reportInvoiceNumber"]', "Invoice #");
+  setPlaceholder("#reportInvoiceNumber", "Example: 8878");
   reportsTotalCount.parentElement.lastChild.textContent = currentLanguage === "es" ? " registros" : " records";
   generateReportButton.textContent = t("generateReport");
   exportPdfButton.textContent = t("exportPdf");
@@ -5929,10 +5984,17 @@ async function exportServiceHoursPdf() {
   }
 
   const query = getReportQueryString();
+  const pdfParams = new URLSearchParams(query);
+  const invoiceNumber = reportInvoiceNumber?.value.trim();
+
+  if (invoiceNumber) {
+    pdfParams.set("invoiceNumber", invoiceNumber);
+  }
 
   try {
     exportPdfButton.disabled = true;
-    const response = await fetch(`/api/reports/service-hours/pdf${query ? `?${query}` : ""}`, {
+    const pdfQuery = pdfParams.toString();
+    const response = await fetch(`/api/reports/service-hours/pdf${pdfQuery ? `?${pdfQuery}` : ""}`, {
       cache: "no-store"
     });
 

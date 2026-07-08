@@ -1221,6 +1221,34 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Los valores de horas mantienen el formato global `en-US`, por ejemplo `10,000.50 h`.
 - Esta fase no modifica ServiceSBD_20260629, estructura de ServiceBillingDB, Dashboard, Users, Clients, Projects ni CRUD de Service Records.
 
+### Fase 32.1: Ajuste A Formato Clasico De PDF
+
+- El PDF de horas de servicio se ajusto para parecerse mas al formato clasico de referencia.
+- Se removio el encabezado grande tipo portada y la seccion de tarjetas de resumen ejecutivo.
+- El reporte ahora comienza directamente con un encabezado compacto de `Desglose de servicios prestados` y una tabla con `Fecha`, `Orden`, `Tecnico`, `Descripcion` y `Horas`.
+- Las descripciones completas se mantienen visibles y la columna de descripcion tiene mas ancho.
+- El total de horas aparece al final del desglose de servicios.
+- La pagina final `Time Sheet` usa una tabla compacta en landscape agrupada por tecnico con `Tecnico`, `Dia`, `Cliente`, `Departamento/Proyecto`, `Manana`, `Tarde` y `Total`.
+- El generador PDF queda preparado para usar un logo futuro desde `assets/logo.png`, `assets/solutions-by-design-logo.png`, `public/logo.png` o `public/solutions-by-design-logo.png`; mientras tanto imprime `Solutions By Design` como texto.
+
+### Fase 33: Invoice Manual Para Reportes PDF
+
+- Reports ahora incluye un campo temporal `Invoice #` encima de la accion de exportar PDF.
+- El valor no se guarda en la base de datos y solo se usa para la exportacion PDF actual.
+- Si el campo contiene `8878`, el PDF muestra `Invoice: #8878`; si esta vacio, muestra `Invoice: N/A`.
+- El invoice aparece en cada pagina del desglose de servicios y en cada pagina del Time Sheet.
+- El campo conserva su valor durante la sesion actual del navegador hasta recargar la pagina.
+- Los filtros existentes, SQL, generacion de reportes de horas y endpoint de exportacion PDF se mantienen sin otros cambios.
+
+### Fase 33.1: Layout De Invoice Y Limpieza De Notificaciones
+
+- El campo manual `Invoice #` ahora aparece como un campo normal del grid de Reports junto a los demas filtros, no dentro de la fila de botones.
+- La fila de botones de Reports ahora contiene solo `Generar reporte`, `Exportar PDF` y `Excel (Proximamente)`.
+- Los usuarios Admin pueden borrar notificaciones individuales desde la tabla de Notificaciones.
+- El borrado pide confirmacion, elimina solo la notificacion seleccionada y refresca la lista y el contador de notificaciones.
+- Se agrego `DELETE /api/notifications/:id`, protegido por autenticacion y rol Admin.
+- No se cambiaron estructura de base de datos, datos de ServiceSBD_20260629, filtros de Reports, exportacion PDF, Dashboard, Users, Clients, Projects ni flujos de Service Records.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.

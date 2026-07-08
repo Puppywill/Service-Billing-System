@@ -1221,6 +1221,34 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Numeric hour values keep the global `en-US` format, for example `10,000.50 h`.
 - This phase does not modify ServiceSBD_20260629, ServiceBillingDB schema, dashboard behavior, users, clients, projects, or service record CRUD.
 
+### Phase 32.1: Classic PDF Layout Adjustment
+
+- The service-hours PDF was adjusted to follow the classic reference format more closely.
+- Removed the large cover-style header and executive summary card section.
+- The report now starts directly with a compact `Desglose de servicios prestados` header and a table with `Fecha`, `Orden`, `Tecnico`, `Descripcion`, and `Horas`.
+- Full service descriptions remain visible with more width allocated to the description column.
+- The service breakdown total appears at the end of the breakdown section.
+- The final `Time Sheet` page uses a compact landscape table grouped by technician with `Tecnico`, `Dia`, `Cliente`, `Departamento/Proyecto`, `Manana`, `Tarde`, and `Total`.
+- The PDF generator is ready to use a future logo file from `assets/logo.png`, `assets/solutions-by-design-logo.png`, `public/logo.png`, or `public/solutions-by-design-logo.png`; until then it prints `Solutions By Design` as text.
+
+### Phase 33: Manual Invoice Number for PDF Reports
+
+- Reports now includes a temporary `Invoice #` input above the PDF export action.
+- The value is not stored in the database and is only used for the current PDF export request.
+- If the input contains `8878`, the PDF displays `Invoice: #8878`; if it is empty, the PDF displays `Invoice: N/A`.
+- The invoice value appears on every service breakdown page and every Time Sheet page.
+- The field keeps its value during the current browser session until the page reloads.
+- Existing report filters, SQL, service-hour report generation, and PDF export endpoint behavior remain otherwise unchanged.
+
+### Phase 33.1: Invoice Field Layout and Notification Cleanup
+
+- The manual `Invoice #` field now appears as a normal Reports grid field with the other filters instead of inside the button row.
+- The Reports button row now contains only `Generate report`, `Export PDF`, and `Excel (Coming soon)`.
+- Admin users can delete individual notifications from the Notifications table.
+- Notification deletion requires confirmation, removes only the selected notification, and refreshes the notification list and unread counter.
+- Added `DELETE /api/notifications/:id`, protected by authentication and Admin role.
+- No database schema, ServiceSBD_20260629 data, Reports filters, PDF export behavior, Dashboard, Users, Clients, Projects, or Service Records workflows were changed.
+
 ### API Examples
 
 ```http

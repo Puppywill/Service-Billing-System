@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
 const sql = require("mssql/msnodesqlv8");
@@ -1538,22 +1539,15 @@ async function getServiceHoursReportRecords(pool, filters) {
   return result.recordset.map(mapServiceHoursReport);
 }
 
-function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
-  const document = new PDFDocument({ margin: 42, size: "LETTER", bufferPages: true });
-  const pageWidth = document.page.width;
-  const pageHeight = document.page.height;
-  const margin = 42;
-  const contentWidth = pageWidth - margin * 2;
-  const navy = "#0f2742";
-  const navyDark = "#071626";
-  const blue = "#2563eb";
-  const lightBlue = "#e8f1ff";
-  const teal = "#14b8a6";
-  const slate = "#1f2937";
-  const muted = "#64748b";
-  const border = "#d7dee8";
-  const soft = "#f8fafc";
-  const white = "#ffffff";
+function drawServiceHoursPdf(records, filters, generatedAt, outputStream, options = {}) {
+  const document = new PDFDocument({ margin: 30, size: "LETTER", bufferPages: true });
+  const margin = 30;
+  const navy = "#17365d";
+  const slate = "#111827";
+  const muted = "#4b5563";
+  const border = "#9ca3af";
+  const soft = "#f3f6fb";
+  const rowAlt = "#fbfdff";
   const generatedLabel = formatReportDateOnly(generatedAt);
 
   document.pipe(outputStream);
@@ -1562,167 +1556,195 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
   const totalHours = records.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0);
   const clients = uniqueValues("ClientName");
   const projects = uniqueValues("ProjectName");
-  const technicians = uniqueValues("TechnicianName");
-  const invoices = uniqueValues("LegacyInvoiceNumber");
   const period = `${filters.from || "Inicio"} - ${filters.to || "Actual"}`;
+  const clientLabel = clients.length === 1 ? clients[0] : `${clients.length} clientes`;
+  const projectLabel = projects.length === 1 ? projects[0] : `${projects.length} proyectos`;
+  const manualInvoiceNumber = String(options.invoiceNumber || "").trim();
+  const invoiceLabel = manualInvoiceNumber ? `#${manualInvoiceNumber.replace(/^#/, "")}` : "N/A";
+  const logoCandidates = [
+    path.join(__dirname, "assets", "logo.png"),
+    path.join(__dirname, "assets", "solutions-by-design-logo.png"),
+    path.join(__dirname, "public", "logo.png"),
+    path.join(__dirname, "public", "solutions-by-design-logo.png")
+  ];
+  const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
 
-  const statusLabel = (status) => {
-    if (status === "Billed") return "Procesado";
-    if (status === "Canceled") return "Cancelado";
-    return "Pendiente";
+  const drawBrand = (x, y, width = 132) => {
+    document.save();
+    if (logoPath) {
+      document.image(logoPath, x, y, { fit: [width, 42] });
+    } else {
+      document.fillColor(navy).font("Helvetica-Bold").fontSize(12).text("Solutions By Design", x, y + 8, {
+        width,
+        align: "left"
+      });
+    }
+    document.restore();
   };
 
-  const drawLogo = (x, y) => {
+  const drawBreakdownHeader = () => {
+    const pageWidth = document.page.width;
+    const y = margin;
+
     document.save();
-    document.roundedRect(x, y, 52, 52, 10).fill(white);
-    document.circle(x + 26, y + 26, 17).fill(lightBlue);
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(15).text("SBD", x, y + 18, {
-      width: 52,
+    drawBrand(margin, y, 138);
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(11).text(clientLabel, margin + 150, y + 2, {
+      width: pageWidth - margin * 2 - 300,
       align: "center"
     });
-    document.fillColor(white).font("Helvetica-Bold").fontSize(20).text("Solutions By Design", x + 66, y + 4);
-    document.fillColor("#cbd5e1").font("Helvetica").fontSize(9).text("Service work reporting", x + 68, y + 30);
-    document.restore();
-  };
-
-  const drawHeader = () => {
-    document.save();
-    document.rect(0, 0, pageWidth, 116).fill(navyDark);
-    document.rect(0, 0, pageWidth, 116).fillOpacity(0.96).fill(navyDark).fillOpacity(1);
-    document.rect(0, 112, pageWidth, 4).fill(teal);
-    drawLogo(margin, 24);
-    document.fillColor(white).font("Helvetica-Bold").fontSize(18).text("Desglose de servicios prestados", margin, 132, {
-      width: contentWidth * 0.62
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(14).text("Desglose de servicios prestados", margin + 150, y + 20, {
+      width: pageWidth - margin * 2 - 300,
+      align: "center"
     });
-    document.fillColor(muted).font("Helvetica").fontSize(9).text(`Generado: ${generatedLabel}`, pageWidth - margin - 170, 132, {
-      width: 170,
+    document.fillColor(slate).font("Helvetica").fontSize(9).text(`Invoice: ${invoiceLabel}`, pageWidth - margin - 140, y + 8, {
+      width: 140,
       align: "right"
     });
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Proyecto: ${projectLabel}`, margin, y + 52, {
+      width: pageWidth - margin * 2 - 170
+    });
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Periodo: ${period}`, pageWidth - margin - 160, y + 52, {
+      width: 160,
+      align: "right"
+    });
+    document.moveTo(margin, y + 68).lineTo(pageWidth - margin, y + 68).strokeColor(border).lineWidth(0.8).stroke();
     document.restore();
-    document.y = 165;
+    document.y = y + 78;
   };
 
   const ensureSpace = (height) => {
-    if (document.y + height > pageHeight - 74) {
+    if (document.y + height > document.page.height - 56) {
       document.addPage();
-      document.y = margin;
+      drawBreakdownHeader();
       return true;
     }
 
     return false;
   };
 
-  const drawKeyValue = (label, value, x, y, width) => {
-    document.fillColor(muted).font("Helvetica-Bold").fontSize(7).text(label.toUpperCase(), x, y, { width });
-    document.fillColor(slate).font("Helvetica").fontSize(9).text(value || "N/A", x, y + 11, { width, lineGap: 1 });
-  };
-
-  const drawMetaPanel = () => {
+  const drawServiceTableHeader = () => {
     const y = document.y;
-    const cardHeight = 76;
+    const columns = [
+      { label: "Fecha", width: 58, align: "left" },
+      { label: "Orden", width: 50, align: "left" },
+      { label: "Tecnico", width: 88, align: "left" },
+      { label: "Descripcion", width: 300, align: "left" },
+      { label: "Horas", width: 48, align: "right" }
+    ];
+    let x = margin;
 
-    ensureSpace(cardHeight);
-    document.roundedRect(margin, y, contentWidth, cardHeight, 8).fill(soft).stroke(border);
-    drawKeyValue("Cliente", clients.length === 1 ? clients[0] : `${clients.length} clientes`, margin + 18, y + 16, 136);
-    drawKeyValue("Proyecto", projects.length === 1 ? projects[0] : `${projects.length} proyectos`, margin + 168, y + 16, 168);
-    drawKeyValue("Invoice", invoices.length ? invoices.join(", ") : "N/A", margin + 350, y + 16, 70);
-    drawKeyValue("Periodo", period, margin + 434, y + 16, 112);
-    document.y = y + cardHeight + 18;
-  };
+    document.rect(margin, y, document.page.width - margin * 2, 18).fill(soft).stroke(border);
+    columns.forEach((column) => {
+      document.fillColor(slate).font("Helvetica-Bold").fontSize(7.5).text(column.label, x + 4, y + 5, {
+        width: column.width - 8,
+        align: column.align
+      });
+      x += column.width;
+    });
+    document.y = y + 18;
 
-  const drawSummaryCard = (label, value, x, y, width, accent = blue) => {
-    document.save();
-    document.roundedRect(x, y, width, 62, 8).fill(white).stroke(border);
-    document.rect(x, y, 4, 62).fill(accent);
-    document.fillColor(muted).font("Helvetica-Bold").fontSize(7).text(label.toUpperCase(), x + 14, y + 13, { width: width - 24 });
-    document.fillColor(slate).font("Helvetica-Bold").fontSize(15).text(value, x + 14, y + 29, { width: width - 24 });
-    document.restore();
-  };
-
-  const drawExecutiveSummary = () => {
-    ensureSpace(168);
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(13).text("Resumen ejecutivo", margin, document.y);
-    document.moveDown(0.7);
-
-    const y = document.y;
-    const gap = 10;
-    const cardWidth = (contentWidth - gap * 2) / 3;
-
-    drawSummaryCard("Total de horas", `${formatReportNumber(totalHours)} h`, margin, y, cardWidth, blue);
-    drawSummaryCard("Total de registros", formatReportNumber(records.length, 0), margin + cardWidth + gap, y, cardWidth, teal);
-    drawSummaryCard("Tecnicos", formatReportNumber(technicians.length, 0), margin + (cardWidth + gap) * 2, y, cardWidth, "#7c3aed");
-    drawSummaryCard("Cliente", clients.length === 1 ? clients[0] : `${clients.length} clientes`, margin, y + 74, cardWidth, "#0ea5e9");
-    drawSummaryCard("Proyecto", projects.length === 1 ? projects[0] : `${projects.length} proyectos`, margin + cardWidth + gap, y + 74, cardWidth, "#f59e0b");
-    drawSummaryCard("Periodo", period, margin + (cardWidth + gap) * 2, y + 74, cardWidth, "#22c55e");
-    document.y = y + 154;
+    return columns;
   };
 
   const drawServiceBreakdown = () => {
-    document.addPage();
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(13).text("Desglose de servicios", margin, document.y);
-    document.moveDown(0.7);
+    drawBreakdownHeader();
+    let columns = drawServiceTableHeader();
 
     records.forEach((record) => {
       const description = cleanReportText(record.ServiceDescription) || "Sin descripcion.";
       const descriptionHeight = document.heightOfString(description, {
-        width: contentWidth - 32,
-        lineGap: 2
+        width: columns[3].width - 8,
+        lineGap: 1
       });
-      const cardHeight = Math.max(94, descriptionHeight + 64);
+      const rowHeight = Math.max(24, descriptionHeight + 9);
 
-      ensureSpace(cardHeight + 12);
+      if (ensureSpace(rowHeight + 22)) {
+        columns = drawServiceTableHeader();
+      }
       const y = document.y;
-      document.roundedRect(margin, document.y, contentWidth, cardHeight, 8).fill(white).stroke(border);
-      document.fillColor(navy).font("Helvetica-Bold").fontSize(10).text(formatReportDateOnly(record.ServiceDate), margin + 16, y + 14, {
-        width: 78
+      let x = margin;
+      const values = [
+        formatReportDateOnly(record.ServiceDate),
+        record.LegacyOrderNumber || "-",
+        record.TechnicianName || "",
+        description,
+        formatReportNumber(record.TotalHours)
+      ];
+
+      document.rect(margin, y, document.page.width - margin * 2, rowHeight).strokeColor(border).lineWidth(0.4).stroke();
+      values.forEach((value, index) => {
+        document.fillColor(slate).font("Helvetica").fontSize(index === 3 ? 7.6 : 7.4).text(value, x + 4, y + 5, {
+          width: columns[index].width - 8,
+          align: columns[index].align,
+          lineGap: index === 3 ? 1 : 0
+        });
+        x += columns[index].width;
       });
-      document.fillColor(muted).font("Helvetica").fontSize(8).text(`Orden: ${record.LegacyOrderNumber || "-"}`, margin + 98, y + 15, {
-        width: 78
-      });
-      document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text(record.TechnicianName || "Sin tecnico", margin + 184, y + 14, {
-        width: 176
-      });
-      document.roundedRect(pageWidth - margin - 82, y + 12, 66, 20, 5).fill(lightBlue);
-      document.fillColor(blue).font("Helvetica-Bold").fontSize(9).text(`${formatReportNumber(record.TotalHours)} h`, pageWidth - margin - 78, y + 18, {
-        width: 58,
-        align: "center"
-      });
-      document.fillColor(muted).font("Helvetica").fontSize(8).text(statusLabel(record.Status), pageWidth - margin - 160, y + 18, {
-        width: 70,
-        align: "right"
-      });
-      document.moveTo(margin + 16, y + 43).lineTo(pageWidth - margin - 16, y + 43).strokeColor(border).lineWidth(0.7).stroke();
-      document.fillColor(slate).font("Helvetica").fontSize(9).text(description, margin + 16, y + 54, {
-        width: contentWidth - 32,
-        lineGap: 2
-      });
-      document.y = y + cardHeight + 10;
+      document.y = y + rowHeight;
+    });
+
+    ensureSpace(36);
+    document.moveDown(0.5);
+    document.moveTo(document.page.width - margin - 150, document.y).lineTo(document.page.width - margin, document.y).strokeColor(border).stroke();
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text("Total de horas", document.page.width - margin - 150, document.y + 7, {
+      width: 90,
+      align: "right"
+    });
+    document.text(`${formatReportNumber(totalHours)} h`, document.page.width - margin - 55, document.y + 7, {
+      width: 55,
+      align: "right"
     });
   };
 
-  const drawTimeSheetHeader = () => {
-    const widths = [82, 58, 92, 106, 45, 45, 45, 45, 50];
-    const labels = ["Tecnico", "Fecha", "Cliente", "Proyecto", "Entrada AM", "Salida AM", "Entrada PM", "Salida PM", "Horas"];
-    let x = margin;
+  const drawTimeSheetPageHeader = () => {
+    const pageWidth = document.page.width;
+    const y = margin;
 
-    document.roundedRect(margin, document.y, contentWidth, 24, 5).fill(navy);
+    document.save();
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(10).text("Solutions By Design, Inc.", margin, y, {
+      width: 170
+    });
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(14).text("Time Sheet", margin + 190, y - 2, {
+      width: pageWidth - margin * 2 - 380,
+      align: "center"
+    });
+    document.fillColor(slate).font("Helvetica").fontSize(9).text(`Invoice: ${invoiceLabel}`, pageWidth - margin - 170, y, {
+      width: 170,
+      align: "right"
+    });
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Del ${filters.from || "inicio"} al ${filters.to || "actual"}`, margin + 190, y + 18, {
+      width: pageWidth - margin * 2 - 380,
+      align: "center"
+    });
+    document.moveTo(margin, y + 38).lineTo(pageWidth - margin, y + 38).strokeColor(border).lineWidth(0.8).stroke();
+    document.restore();
+    document.y = y + 50;
+  };
+
+  const drawTimeSheetHeader = () => {
+    const pageWidth = document.page.width;
+    const sheetWidth = pageWidth - margin * 2;
+    const widths = [92, 58, 128, 206, 76, 76, 58];
+    const labels = ["Tecnico", "Dia", "Cliente", "Departamento/Proyecto", "Manana", "Tarde", "Total"];
+    let x = margin;
+    const y = document.y;
+
+    document.rect(margin, y, sheetWidth, 19).fill(soft).stroke(border);
     labels.forEach((label, index) => {
-      document.fillColor(white).font("Helvetica-Bold").fontSize(6.5).text(label, x + 4, document.y + 8, {
+      document.fillColor(slate).font("Helvetica-Bold").fontSize(7.5).text(label, x + 4, y + 5, {
         width: widths[index] - 8,
         align: index >= 4 ? "center" : "left"
       });
       x += widths[index];
     });
-    document.y += 25;
+    document.y = y + 19;
 
     return widths;
   };
 
   const drawTimeSheet = () => {
-    document.addPage();
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(13).text("Time Sheet", margin, document.y);
-    document.fillColor(muted).font("Helvetica").fontSize(9).text("Resumen operativo de horas por tecnico y registro.", margin, document.y + 18);
-    document.moveDown(2.4);
+    document.addPage({ size: "LETTER", layout: "landscape", margin });
+    drawTimeSheetPageHeader();
 
     const recordsByTechnician = new Map();
     records.forEach((record) => {
@@ -1736,17 +1758,20 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
     Array.from(recordsByTechnician.entries()).forEach(([technician, technicianRecords]) => {
       const technicianHours = technicianRecords.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0);
 
-      if (ensureSpace(44)) {
+      if (document.y + 40 > document.page.height - 56) {
+        document.addPage({ size: "LETTER", layout: "landscape", margin });
+        drawTimeSheetPageHeader();
         widths = drawTimeSheetHeader();
       }
-      document.roundedRect(margin, document.y + 6, contentWidth, 20, 4).fill(soft).stroke(border);
-      document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(`${technician} - ${formatReportNumber(technicianHours)} h`, margin + 8, document.y + 12, {
-        width: contentWidth - 16
+      document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(`${technician} - ${formatReportNumber(technicianHours)} h`, margin, document.y + 7, {
+        width: document.page.width - margin * 2
       });
-      document.y += 31;
+      document.y += 22;
 
       technicianRecords.forEach((record, index) => {
-        if (ensureSpace(31)) {
+        if (document.y + 24 > document.page.height - 56) {
+          document.addPage({ size: "LETTER", layout: "landscape", margin });
+          drawTimeSheetPageHeader();
           widths = drawTimeSheetHeader();
         }
 
@@ -1756,29 +1781,41 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
           formatReportDateOnly(record.ServiceDate),
           record.ClientName || "",
           record.ProjectName || "",
-          formatReportTime(record.MorningStart),
-          formatReportTime(record.MorningEnd),
-          formatReportTime(record.AfternoonStart),
-          formatReportTime(record.AfternoonEnd),
+          `${formatReportTime(record.MorningStart)} - ${formatReportTime(record.MorningEnd)}`,
+          `${formatReportTime(record.AfternoonStart)} - ${formatReportTime(record.AfternoonEnd)}`,
           `${formatReportNumber(record.TotalHours)} h`
         ];
         let x = margin;
 
         if (index % 2 === 0) {
-          document.rect(margin, rowY, contentWidth, 26).fill("#fbfdff");
+          document.rect(margin, rowY, document.page.width - margin * 2, 22).fill(rowAlt);
         }
 
         values.forEach((value, valueIndex) => {
-          document.fillColor(slate).font("Helvetica").fontSize(6.8).text(value, x + 4, rowY + 8, {
+          document.fillColor(slate).font("Helvetica").fontSize(7).text(value, x + 4, rowY + 6, {
             width: widths[valueIndex] - 8,
             align: valueIndex >= 4 ? "center" : "left",
             ellipsis: true
           });
           x += widths[valueIndex];
         });
-        document.moveTo(margin, rowY + 26).lineTo(pageWidth - margin, rowY + 26).strokeColor(border).lineWidth(0.5).stroke();
-        document.y = rowY + 26;
+        document.moveTo(margin, rowY + 22).lineTo(document.page.width - margin, rowY + 22).strokeColor(border).lineWidth(0.4).stroke();
+        document.y = rowY + 22;
       });
+    });
+
+    if (document.y + 30 > document.page.height - 56) {
+      document.addPage({ size: "LETTER", layout: "landscape", margin });
+      drawTimeSheetPageHeader();
+    }
+    document.moveTo(document.page.width - margin - 150, document.y + 8).lineTo(document.page.width - margin, document.y + 8).strokeColor(border).stroke();
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text("Total de horas", document.page.width - margin - 150, document.y + 16, {
+      width: 92,
+      align: "right"
+    });
+    document.text(`${formatReportNumber(totalHours)} h`, document.page.width - margin - 52, document.y + 16, {
+      width: 52,
+      align: "right"
     });
   };
 
@@ -1788,15 +1825,17 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
     for (let index = 0; index < range.count; index += 1) {
       document.switchToPage(range.start + index);
       document.save();
-      document.moveTo(margin, pageHeight - 42).lineTo(pageWidth - margin, pageHeight - 42).strokeColor(border).lineWidth(0.6).stroke();
-      document.fillColor(muted).font("Helvetica").fontSize(8).text("Solutions By Design", margin, pageHeight - 31, {
+      const footerWidth = document.page.width;
+      const footerHeight = document.page.height;
+      document.moveTo(margin, footerHeight - 38).lineTo(footerWidth - margin, footerHeight - 38).strokeColor(border).lineWidth(0.5).stroke();
+      document.fillColor(muted).font("Helvetica").fontSize(7.5).text("Solutions By Design", margin, footerHeight - 28, {
         width: 190
       });
-      document.text(`Generado: ${generatedLabel}`, margin + 200, pageHeight - 31, {
+      document.text(`Generado: ${generatedLabel}`, margin + 200, footerHeight - 28, {
         width: 160,
         align: "center"
       });
-      document.text(`Pagina ${index + 1} de ${range.count}`, pageWidth - margin - 120, pageHeight - 31, {
+      document.text(`Pagina ${index + 1} de ${range.count}`, footerWidth - margin - 120, footerHeight - 28, {
         width: 120,
         align: "right"
       });
@@ -1804,9 +1843,6 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
     }
   };
 
-  drawHeader();
-  drawMetaPanel();
-  drawExecutiveSummary();
   drawServiceBreakdown();
   drawTimeSheet();
   drawFooter();
@@ -2043,6 +2079,34 @@ app.put("/api/notifications/:id/read", requireAuth, async (req, res) => {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al marcar notificacion." });
+  }
+});
+
+app.delete("/api/notifications/:id", requireAdmin, async (req, res) => {
+  const notificationId = Number(req.params.id);
+
+  if (!Number.isInteger(notificationId)) {
+    return res.status(400).json({ message: "ID de notificacion invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("NotificationID", sql.Int, notificationId)
+      .query(`
+        DELETE FROM dbo.Notifications
+        WHERE NotificationID = @NotificationID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Notificacion no encontrada." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al borrar notificacion." });
   }
 });
 
@@ -3830,7 +3894,9 @@ app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, 
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename=solutions-by-design-service-hours-${filenameDate}.pdf`);
-    drawServiceHoursPdf(records, filters, generatedAt, res);
+    drawServiceHoursPdf(records, filters, generatedAt, res, {
+      invoiceNumber: req.query.invoiceNumber
+    });
   } catch (error) {
     poolPromise = null;
     console.error(error);
