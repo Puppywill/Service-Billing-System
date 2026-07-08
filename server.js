@@ -624,6 +624,8 @@ function mapInvoiceLine(record) {
 function mapServiceHoursReport(record) {
   return {
     ServiceRecordID: record.ServiceRecordID,
+    LegacyOrderNumber: record.LegacyOrderNumber || null,
+    LegacyInvoiceNumber: record.LegacyInvoiceNumber || null,
     TechnicianUserID: record.TechnicianUserID,
     TechnicianName: record.TechnicianName,
     ClientID: record.ClientID,
@@ -1375,11 +1377,440 @@ function formatReportDate(value) {
   return value ? new Date(value).toLocaleString("es-BO") : "";
 }
 
+function formatReportDateOnly(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function formatReportNumber(value, fractionDigits = 2) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits
+  }).format(Number(value || 0));
+}
+
 function formatReportDateRange(filters) {
   const from = filters.from || "Sin fecha inicial";
   const to = filters.to || "Sin fecha final";
 
   return `${from} - ${to}`;
+}
+
+function cleanReportText(value) {
+  return String(value || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(div|p|li)>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\r/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function formatReportTime(value) {
+  return value ? String(value).slice(0, 5) : "-";
+}
+
+async function tableColumnExists(pool, tableName, columnName) {
+  const result = await pool.request()
+    .input("TableName", sql.NVarChar(128), tableName)
+    .input("ColumnName", sql.NVarChar(128), columnName)
+    .query(`
+      SELECT CASE WHEN COL_LENGTH(@TableName, @ColumnName) IS NULL THEN 0 ELSE 1 END AS ExistsFlag
+    `);
+
+  return Boolean(result.recordset[0]?.ExistsFlag);
+}
+
+function getServiceHoursReportFilters(req) {
+  const from = String(req.query.from || "").trim();
+  const to = String(req.query.to || "").trim();
+  const status = String(req.query.status || "").trim();
+  const rawFilters = {
+    TechnicianUserID: req.query.technicianUserId,
+    ClientID: req.query.clientId,
+    ProjectID: req.query.projectId
+  };
+  const numericFilters = {};
+
+  if ((from && !isValidServiceDate(from)) || (to && !isValidServiceDate(to))) {
+    return { error: "from y to deben usar formato YYYY-MM-DD.", statusCode: 400 };
+  }
+
+  if (from && to && from > to) {
+    return { error: "from no puede ser posterior a to.", statusCode: 400 };
+  }
+
+  if (status && !SERVICE_RECORD_STATUSES.has(status)) {
+    return { error: "status debe ser Recorded, Billed o Canceled.", statusCode: 400 };
+  }
+
+  for (const [name, rawValue] of Object.entries(rawFilters)) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
+    const value = Number(rawValue);
+
+    if (!Number.isInteger(value) || value <= 0) {
+      return { error: `${name} invalido.`, statusCode: 400 };
+    }
+
+    numericFilters[name] = value;
+  }
+
+  if (req.session.user.Role === "Technician") {
+    const sessionUserId = Number(req.session.user.UserID);
+
+    if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
+      return { error: "Los tecnicos solo pueden ver sus propios registros.", statusCode: 403 };
+    }
+
+    numericFilters.TechnicianUserID = sessionUserId;
+  }
+
+  return { from, to, status, numericFilters };
+}
+
+async function getServiceHoursReportRecords(pool, filters) {
+  const request = pool.request();
+  const whereClauses = [];
+  const hasLegacyOrderNumber = await tableColumnExists(pool, "dbo.ServiceRecords", "LegacyOrderNumber");
+  const hasLegacyInvoiceNumber = await tableColumnExists(pool, "dbo.ServiceRecords", "LegacyInvoiceNumber");
+
+  if (filters.from) {
+    request.input("FromDate", sql.Date, filters.from);
+    whereClauses.push("sr.ServiceDate >= @FromDate");
+  }
+
+  if (filters.to) {
+    request.input("ToDate", sql.Date, filters.to);
+    whereClauses.push("sr.ServiceDate <= @ToDate");
+  }
+
+  if (filters.status) {
+    request.input("Status", sql.NVarChar(20), filters.status);
+    whereClauses.push("sr.Status = @Status");
+  }
+
+  for (const [name, value] of Object.entries(filters.numericFilters || {})) {
+    request.input(name, sql.Int, value);
+    whereClauses.push(`sr.${name} = @${name}`);
+  }
+
+  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+  const result = await request.query(`
+    SELECT
+      sr.ServiceRecordID,
+      ${hasLegacyOrderNumber ? "sr.LegacyOrderNumber" : "CAST(NULL AS NVARCHAR(20)) AS LegacyOrderNumber"},
+      ${hasLegacyInvoiceNumber ? "sr.LegacyInvoiceNumber" : "CAST(NULL AS NVARCHAR(25)) AS LegacyInvoiceNumber"},
+      sr.TechnicianUserID,
+      technician.FullName AS TechnicianName,
+      sr.ClientID,
+      client.ClientName,
+      sr.ProjectID,
+      project.ProjectName,
+      sr.ServiceDate,
+      sr.MorningStart,
+      sr.MorningEnd,
+      sr.AfternoonStart,
+      sr.AfternoonEnd,
+      sr.TotalHours,
+      sr.ServiceDescription,
+      sr.Status
+    FROM dbo.ServiceRecords sr
+    INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+    INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+    INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+    ${whereSql}
+    ORDER BY sr.ServiceDate DESC, sr.ServiceRecordID DESC
+  `);
+
+  return result.recordset.map(mapServiceHoursReport);
+}
+
+function drawServiceHoursPdf(records, filters, generatedAt, outputStream) {
+  const document = new PDFDocument({ margin: 42, size: "LETTER", bufferPages: true });
+  const pageWidth = document.page.width;
+  const pageHeight = document.page.height;
+  const margin = 42;
+  const contentWidth = pageWidth - margin * 2;
+  const navy = "#0f2742";
+  const navyDark = "#071626";
+  const blue = "#2563eb";
+  const lightBlue = "#e8f1ff";
+  const teal = "#14b8a6";
+  const slate = "#1f2937";
+  const muted = "#64748b";
+  const border = "#d7dee8";
+  const soft = "#f8fafc";
+  const white = "#ffffff";
+  const generatedLabel = formatReportDateOnly(generatedAt);
+
+  document.pipe(outputStream);
+
+  const uniqueValues = (key) => Array.from(new Set(records.map((record) => record[key]).filter(Boolean)));
+  const totalHours = records.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0);
+  const clients = uniqueValues("ClientName");
+  const projects = uniqueValues("ProjectName");
+  const technicians = uniqueValues("TechnicianName");
+  const invoices = uniqueValues("LegacyInvoiceNumber");
+  const period = `${filters.from || "Inicio"} - ${filters.to || "Actual"}`;
+
+  const statusLabel = (status) => {
+    if (status === "Billed") return "Procesado";
+    if (status === "Canceled") return "Cancelado";
+    return "Pendiente";
+  };
+
+  const drawLogo = (x, y) => {
+    document.save();
+    document.roundedRect(x, y, 52, 52, 10).fill(white);
+    document.circle(x + 26, y + 26, 17).fill(lightBlue);
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(15).text("SBD", x, y + 18, {
+      width: 52,
+      align: "center"
+    });
+    document.fillColor(white).font("Helvetica-Bold").fontSize(20).text("Solutions By Design", x + 66, y + 4);
+    document.fillColor("#cbd5e1").font("Helvetica").fontSize(9).text("Service work reporting", x + 68, y + 30);
+    document.restore();
+  };
+
+  const drawHeader = () => {
+    document.save();
+    document.rect(0, 0, pageWidth, 116).fill(navyDark);
+    document.rect(0, 0, pageWidth, 116).fillOpacity(0.96).fill(navyDark).fillOpacity(1);
+    document.rect(0, 112, pageWidth, 4).fill(teal);
+    drawLogo(margin, 24);
+    document.fillColor(white).font("Helvetica-Bold").fontSize(18).text("Desglose de servicios prestados", margin, 132, {
+      width: contentWidth * 0.62
+    });
+    document.fillColor(muted).font("Helvetica").fontSize(9).text(`Generado: ${generatedLabel}`, pageWidth - margin - 170, 132, {
+      width: 170,
+      align: "right"
+    });
+    document.restore();
+    document.y = 165;
+  };
+
+  const ensureSpace = (height) => {
+    if (document.y + height > pageHeight - 74) {
+      document.addPage();
+      document.y = margin;
+      return true;
+    }
+
+    return false;
+  };
+
+  const drawKeyValue = (label, value, x, y, width) => {
+    document.fillColor(muted).font("Helvetica-Bold").fontSize(7).text(label.toUpperCase(), x, y, { width });
+    document.fillColor(slate).font("Helvetica").fontSize(9).text(value || "N/A", x, y + 11, { width, lineGap: 1 });
+  };
+
+  const drawMetaPanel = () => {
+    const y = document.y;
+    const cardHeight = 76;
+
+    ensureSpace(cardHeight);
+    document.roundedRect(margin, y, contentWidth, cardHeight, 8).fill(soft).stroke(border);
+    drawKeyValue("Cliente", clients.length === 1 ? clients[0] : `${clients.length} clientes`, margin + 18, y + 16, 136);
+    drawKeyValue("Proyecto", projects.length === 1 ? projects[0] : `${projects.length} proyectos`, margin + 168, y + 16, 168);
+    drawKeyValue("Invoice", invoices.length ? invoices.join(", ") : "N/A", margin + 350, y + 16, 70);
+    drawKeyValue("Periodo", period, margin + 434, y + 16, 112);
+    document.y = y + cardHeight + 18;
+  };
+
+  const drawSummaryCard = (label, value, x, y, width, accent = blue) => {
+    document.save();
+    document.roundedRect(x, y, width, 62, 8).fill(white).stroke(border);
+    document.rect(x, y, 4, 62).fill(accent);
+    document.fillColor(muted).font("Helvetica-Bold").fontSize(7).text(label.toUpperCase(), x + 14, y + 13, { width: width - 24 });
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(15).text(value, x + 14, y + 29, { width: width - 24 });
+    document.restore();
+  };
+
+  const drawExecutiveSummary = () => {
+    ensureSpace(168);
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(13).text("Resumen ejecutivo", margin, document.y);
+    document.moveDown(0.7);
+
+    const y = document.y;
+    const gap = 10;
+    const cardWidth = (contentWidth - gap * 2) / 3;
+
+    drawSummaryCard("Total de horas", `${formatReportNumber(totalHours)} h`, margin, y, cardWidth, blue);
+    drawSummaryCard("Total de registros", formatReportNumber(records.length, 0), margin + cardWidth + gap, y, cardWidth, teal);
+    drawSummaryCard("Tecnicos", formatReportNumber(technicians.length, 0), margin + (cardWidth + gap) * 2, y, cardWidth, "#7c3aed");
+    drawSummaryCard("Cliente", clients.length === 1 ? clients[0] : `${clients.length} clientes`, margin, y + 74, cardWidth, "#0ea5e9");
+    drawSummaryCard("Proyecto", projects.length === 1 ? projects[0] : `${projects.length} proyectos`, margin + cardWidth + gap, y + 74, cardWidth, "#f59e0b");
+    drawSummaryCard("Periodo", period, margin + (cardWidth + gap) * 2, y + 74, cardWidth, "#22c55e");
+    document.y = y + 154;
+  };
+
+  const drawServiceBreakdown = () => {
+    document.addPage();
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(13).text("Desglose de servicios", margin, document.y);
+    document.moveDown(0.7);
+
+    records.forEach((record) => {
+      const description = cleanReportText(record.ServiceDescription) || "Sin descripcion.";
+      const descriptionHeight = document.heightOfString(description, {
+        width: contentWidth - 32,
+        lineGap: 2
+      });
+      const cardHeight = Math.max(94, descriptionHeight + 64);
+
+      ensureSpace(cardHeight + 12);
+      const y = document.y;
+      document.roundedRect(margin, document.y, contentWidth, cardHeight, 8).fill(white).stroke(border);
+      document.fillColor(navy).font("Helvetica-Bold").fontSize(10).text(formatReportDateOnly(record.ServiceDate), margin + 16, y + 14, {
+        width: 78
+      });
+      document.fillColor(muted).font("Helvetica").fontSize(8).text(`Orden: ${record.LegacyOrderNumber || "-"}`, margin + 98, y + 15, {
+        width: 78
+      });
+      document.fillColor(slate).font("Helvetica-Bold").fontSize(9).text(record.TechnicianName || "Sin tecnico", margin + 184, y + 14, {
+        width: 176
+      });
+      document.roundedRect(pageWidth - margin - 82, y + 12, 66, 20, 5).fill(lightBlue);
+      document.fillColor(blue).font("Helvetica-Bold").fontSize(9).text(`${formatReportNumber(record.TotalHours)} h`, pageWidth - margin - 78, y + 18, {
+        width: 58,
+        align: "center"
+      });
+      document.fillColor(muted).font("Helvetica").fontSize(8).text(statusLabel(record.Status), pageWidth - margin - 160, y + 18, {
+        width: 70,
+        align: "right"
+      });
+      document.moveTo(margin + 16, y + 43).lineTo(pageWidth - margin - 16, y + 43).strokeColor(border).lineWidth(0.7).stroke();
+      document.fillColor(slate).font("Helvetica").fontSize(9).text(description, margin + 16, y + 54, {
+        width: contentWidth - 32,
+        lineGap: 2
+      });
+      document.y = y + cardHeight + 10;
+    });
+  };
+
+  const drawTimeSheetHeader = () => {
+    const widths = [82, 58, 92, 106, 45, 45, 45, 45, 50];
+    const labels = ["Tecnico", "Fecha", "Cliente", "Proyecto", "Entrada AM", "Salida AM", "Entrada PM", "Salida PM", "Horas"];
+    let x = margin;
+
+    document.roundedRect(margin, document.y, contentWidth, 24, 5).fill(navy);
+    labels.forEach((label, index) => {
+      document.fillColor(white).font("Helvetica-Bold").fontSize(6.5).text(label, x + 4, document.y + 8, {
+        width: widths[index] - 8,
+        align: index >= 4 ? "center" : "left"
+      });
+      x += widths[index];
+    });
+    document.y += 25;
+
+    return widths;
+  };
+
+  const drawTimeSheet = () => {
+    document.addPage();
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(13).text("Time Sheet", margin, document.y);
+    document.fillColor(muted).font("Helvetica").fontSize(9).text("Resumen operativo de horas por tecnico y registro.", margin, document.y + 18);
+    document.moveDown(2.4);
+
+    const recordsByTechnician = new Map();
+    records.forEach((record) => {
+      const technician = record.TechnicianName || "Sin tecnico";
+      if (!recordsByTechnician.has(technician)) recordsByTechnician.set(technician, []);
+      recordsByTechnician.get(technician).push(record);
+    });
+
+    let widths = drawTimeSheetHeader();
+
+    Array.from(recordsByTechnician.entries()).forEach(([technician, technicianRecords]) => {
+      const technicianHours = technicianRecords.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0);
+
+      if (ensureSpace(44)) {
+        widths = drawTimeSheetHeader();
+      }
+      document.roundedRect(margin, document.y + 6, contentWidth, 20, 4).fill(soft).stroke(border);
+      document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(`${technician} - ${formatReportNumber(technicianHours)} h`, margin + 8, document.y + 12, {
+        width: contentWidth - 16
+      });
+      document.y += 31;
+
+      technicianRecords.forEach((record, index) => {
+        if (ensureSpace(31)) {
+          widths = drawTimeSheetHeader();
+        }
+
+        const rowY = document.y;
+        const values = [
+          record.TechnicianName || "",
+          formatReportDateOnly(record.ServiceDate),
+          record.ClientName || "",
+          record.ProjectName || "",
+          formatReportTime(record.MorningStart),
+          formatReportTime(record.MorningEnd),
+          formatReportTime(record.AfternoonStart),
+          formatReportTime(record.AfternoonEnd),
+          `${formatReportNumber(record.TotalHours)} h`
+        ];
+        let x = margin;
+
+        if (index % 2 === 0) {
+          document.rect(margin, rowY, contentWidth, 26).fill("#fbfdff");
+        }
+
+        values.forEach((value, valueIndex) => {
+          document.fillColor(slate).font("Helvetica").fontSize(6.8).text(value, x + 4, rowY + 8, {
+            width: widths[valueIndex] - 8,
+            align: valueIndex >= 4 ? "center" : "left",
+            ellipsis: true
+          });
+          x += widths[valueIndex];
+        });
+        document.moveTo(margin, rowY + 26).lineTo(pageWidth - margin, rowY + 26).strokeColor(border).lineWidth(0.5).stroke();
+        document.y = rowY + 26;
+      });
+    });
+  };
+
+  const drawFooter = () => {
+    const range = document.bufferedPageRange();
+
+    for (let index = 0; index < range.count; index += 1) {
+      document.switchToPage(range.start + index);
+      document.save();
+      document.moveTo(margin, pageHeight - 42).lineTo(pageWidth - margin, pageHeight - 42).strokeColor(border).lineWidth(0.6).stroke();
+      document.fillColor(muted).font("Helvetica").fontSize(8).text("Solutions By Design", margin, pageHeight - 31, {
+        width: 190
+      });
+      document.text(`Generado: ${generatedLabel}`, margin + 200, pageHeight - 31, {
+        width: 160,
+        align: "center"
+      });
+      document.text(`Pagina ${index + 1} de ${range.count}`, pageWidth - margin - 120, pageHeight - 31, {
+        width: 120,
+        align: "right"
+      });
+      document.restore();
+    }
+  };
+
+  drawHeader();
+  drawMetaPanel();
+  drawExecutiveSummary();
+  drawServiceBreakdown();
+  drawTimeSheet();
+  drawFooter();
+  document.end();
 }
 
 function getReportedBy(ticket) {
@@ -3359,105 +3790,55 @@ app.delete("/api/invoices/:id", requireAdmin, async (req, res) => {
 });
 
 app.get("/api/reports/service-hours", requireAdminOrTechnician, async (req, res) => {
-  const from = String(req.query.from || "").trim();
-  const to = String(req.query.to || "").trim();
-  const status = String(req.query.status || "").trim();
-  const rawFilters = {
-    TechnicianUserID: req.query.technicianUserId,
-    ClientID: req.query.clientId,
-    ProjectID: req.query.projectId
-  };
-  const numericFilters = {};
+  const filters = getServiceHoursReportFilters(req);
 
-  if ((from && !isValidServiceDate(from)) || (to && !isValidServiceDate(to))) {
-    return res.status(400).json({ message: "from y to deben usar formato YYYY-MM-DD." });
-  }
-
-  if (from && to && from > to) {
-    return res.status(400).json({ message: "from no puede ser posterior a to." });
-  }
-
-  if (status && !SERVICE_RECORD_STATUSES.has(status)) {
-    return res.status(400).json({ message: "status debe ser Recorded, Billed o Canceled." });
-  }
-
-  for (const [name, rawValue] of Object.entries(rawFilters)) {
-    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
-    const value = Number(rawValue);
-
-    if (!Number.isInteger(value) || value <= 0) {
-      return res.status(400).json({ message: `${name} invalido.` });
-    }
-
-    numericFilters[name] = value;
-  }
-
-  if (req.session.user.Role === "Technician") {
-    const sessionUserId = Number(req.session.user.UserID);
-
-    if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
-      return res.status(403).json({ message: "Los tecnicos solo pueden ver sus propios registros." });
-    }
-
-    numericFilters.TechnicianUserID = sessionUserId;
+  if (filters.error) {
+    return res.status(filters.statusCode || 400).json({ message: filters.error });
   }
 
   try {
     const pool = await getPool();
-    const request = pool.request();
-    const whereClauses = [];
+    const records = await getServiceHoursReportRecords(pool, filters);
 
-    if (from) {
-      request.input("FromDate", sql.Date, from);
-      whereClauses.push("sr.ServiceDate >= @FromDate");
-    }
-
-    if (to) {
-      request.input("ToDate", sql.Date, to);
-      whereClauses.push("sr.ServiceDate <= @ToDate");
-    }
-
-    if (status) {
-      request.input("Status", sql.NVarChar(20), status);
-      whereClauses.push("sr.Status = @Status");
-    }
-
-    for (const [name, value] of Object.entries(numericFilters)) {
-      request.input(name, sql.Int, value);
-      whereClauses.push(`sr.${name} = @${name}`);
-    }
-
-    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
-    const result = await request.query(`
-      SELECT
-        sr.ServiceRecordID,
-        sr.TechnicianUserID,
-        technician.FullName AS TechnicianName,
-        sr.ClientID,
-        client.ClientName,
-        sr.ProjectID,
-        project.ProjectName,
-        sr.ServiceDate,
-        sr.MorningStart,
-        sr.MorningEnd,
-        sr.AfternoonStart,
-        sr.AfternoonEnd,
-        sr.TotalHours,
-        sr.ServiceDescription,
-        sr.Status
-      FROM dbo.ServiceRecords sr
-      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
-      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
-      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
-      ${whereSql}
-      ORDER BY sr.ServiceDate DESC, sr.ServiceRecordID DESC
-    `);
-
-    res.json(result.recordset.map(mapServiceHoursReport));
+    res.json(records);
   } catch (error) {
     poolPromise = null;
     console.error(error);
     res.status(500).json({ message: "Error al obtener reporte de horas de servicio." });
+  }
+});
+
+app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, res) => {
+  const filters = getServiceHoursReportFilters(req);
+
+  if (filters.error) {
+    return res.status(filters.statusCode || 400).json({ message: filters.error });
+  }
+
+  try {
+    const pool = await getPool();
+    const records = await getServiceHoursReportRecords(pool, filters);
+
+    if (records.length === 0) {
+      return res.status(404).json({ message: "No hay registros para generar el PDF." });
+    }
+
+    await createReportNotification(pool, req, "Reporte PDF generado");
+
+    const generatedAt = new Date();
+    const filenameDate = generatedAt.toISOString().slice(0, 10);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=solutions-by-design-service-hours-${filenameDate}.pdf`);
+    drawServiceHoursPdf(records, filters, generatedAt, res);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Error al exportar PDF." });
+    } else {
+      res.end();
+    }
   }
 });
 

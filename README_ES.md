@@ -78,7 +78,7 @@ Proxima fase: Fase 17D - Advertencias contractuales en Service Records
 - Flujo de solicitud de recuperacion de password.
 - Notificaciones para actividad administrativa.
 - Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
-- Los controles de exportacion quedan limitados a botones deshabilitados `PDF (Proximamente)` y `Excel (Proximamente)` para la demo.
+- Los controles de exportacion incluyen PDF activo para reportes de horas de servicio; Excel permanece deshabilitado como `Excel (Proximamente)` para la demo.
 - Interfaz web responsive para desktop, tablet y movil.
 
 ## Direccion Del Sistema
@@ -1209,13 +1209,25 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Los labels de graficas del Dashboard General y Technician Dashboard se actualizan correctamente al cambiar el idioma.
 - Esta fase solo cambia textos de interfaz y no modifica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
 
+### Fase 32: Reportes PDF Profesionales Y Time Sheet
+
+- Reports ahora incluye exportacion PDF activa para reportes de horas de servicio usando los filtros actuales: rango de fechas, tecnico, cliente, proyecto y estado.
+- Se elimino el filtro mensual separado `Periodo` de Reports; el periodo del reporte ahora se define solamente con `Fecha desde` y `Fecha hasta`.
+- El nuevo PDF usa un diseno corporativo de Solutions By Design con encabezado, contexto de cliente/proyecto/invoice, periodo, fecha de generacion, resumen ejecutivo, desglose de servicios y Time Sheet final.
+- El desglose de servicios incluye fecha, numero de orden legacy cuando existe, tecnico, descripcion limpia del servicio, estado y total de horas.
+- La seccion Time Sheet agrupa registros por tecnico y muestra tecnico, fecha, cliente, proyecto/departamento, entradas/salidas AM/PM y total de horas.
+- Cada pagina del PDF incluye Solutions By Design, fecha de generacion y numero de pagina en el pie.
+- Se evita generar PDFs vacios: el frontend mantiene PDF deshabilitado hasta que haya un reporte con registros y el backend devuelve un mensaje claro si los filtros no producen datos.
+- Los valores de horas mantienen el formato global `en-US`, por ejemplo `10,000.50 h`.
+- Esta fase no modifica ServiceSBD_20260629, estructura de ServiceBillingDB, Dashboard, Users, Clients, Projects ni CRUD de Service Records.
+
 ## Ajuste De Demo: Reports E Invoices
 
 - La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
 - Reports muestra tecnico, cliente, proyecto, fecha de servicio, horas trabajadas, descripcion del servicio y estado del registro.
 - Reports ya no llama endpoints legacy de reportes de tickets desde el frontend.
 - Los botones temporales de imprimir/exportar hoja quedan ocultos para la demo.
-- Los botones PDF y Excel permanecen visibles, deshabilitados y rotulados `PDF (Proximamente)` y `Excel (Proximamente)` hasta implementar exportacion de horas de servicio.
+- La exportacion PDF esta activa para reportes de horas de servicio, mientras Excel permanece visible, deshabilitado y rotulado `Excel (Proximamente)` hasta implementar exportacion de hojas de calculo.
 - La navegacion visible del frontend oculta `Invoices` temporalmente para claridad de demo.
 - Las APIs de Invoices, la logica backend, las tablas SQL y la implementacion frontend existente permanecen en el codigo.
 

@@ -260,7 +260,6 @@ const totalCount = document.querySelector("#totalCount");
 const reportsForm = document.querySelector("#reportsForm");
 const reportFrom = document.querySelector("#reportFrom");
 const reportTo = document.querySelector("#reportTo");
-const reportPeriod = document.querySelector("#reportPeriod");
 const reportStatus = document.querySelector("#reportStatus");
 const reportTechnician = document.querySelector("#reportTechnician");
 const reportClient = document.querySelector("#reportClient");
@@ -669,6 +668,8 @@ const translations = {
     reportInitial: "Genera un reporte para ver resultados.",
     noReportTickets: "No hay registros para los filtros seleccionados.",
     reportError: "No se pudo generar el reporte.",
+    pdfReady: "PDF generado correctamente.",
+    pdfNoData: "Genera un reporte con registros antes de exportar PDF.",
     exportError: "No se pudo exportar el reporte.",
     invalidApiResponse: "El servidor devolvio una respuesta HTML en lugar de JSON. Verifica que el servidor este reiniciado y que el endpoint API exista.",
     passwordResets: "Solicitudes de recuperacion",
@@ -1062,6 +1063,8 @@ const translations = {
     reportInitial: "Generate a report to view results.",
     noReportTickets: "No records found for the selected filters.",
     reportError: "The report could not be generated.",
+    pdfReady: "PDF generated successfully.",
+    pdfNoData: "Generate a report with records before exporting PDF.",
     exportError: "The report could not be exported.",
     invalidApiResponse: "The server returned HTML instead of JSON. Make sure the server was restarted and the API endpoint exists.",
     passwordResets: "Forgot Password Requests",
@@ -5465,14 +5468,13 @@ function applyStaticLanguage() {
   setText("#reportsTitle", t("reports"));
   setText('label[for="reportFrom"]', t("dateFrom"));
   setText('label[for="reportTo"]', t("dateTo"));
-  setText('label[for="reportPeriod"]', currentLanguage === "es" ? "Periodo" : "Period");
   setText('label[for="reportTechnician"]', currentLanguage === "es" ? "Tecnico" : "Technician");
   setText('label[for="reportClient"]', currentLanguage === "es" ? "Cliente" : "Client");
   setText('label[for="reportProject"]', currentLanguage === "es" ? "Proyecto" : "Project");
   setText('label[for="reportStatus"]', t("status"));
   reportsTotalCount.parentElement.lastChild.textContent = currentLanguage === "es" ? " registros" : " records";
   generateReportButton.textContent = t("generateReport");
-  exportPdfButton.textContent = currentLanguage === "es" ? "PDF (Proximamente)" : "PDF (Coming soon)";
+  exportPdfButton.textContent = t("exportPdf");
   exportExcelButton.textContent = currentLanguage === "es" ? "Excel (Proximamente)" : "Excel (Coming soon)";
 
   setText("#editModal .section-title .eyebrow", t("admin"));
@@ -5909,10 +5911,60 @@ async function generateReport(event) {
     reportSummary = summaryData;
     hasGeneratedReport = true;
     renderServiceHoursReport();
+    updateReportExportActions();
     reportsMessage.textContent = t("reportReady");
   } catch (error) {
     console.error(error);
+    updateReportExportActions();
     reportsMessage.textContent = error.message || t("reportError");
+  }
+}
+
+async function exportServiceHoursPdf() {
+  reportsMessage.textContent = "";
+
+  if (!hasGeneratedReport || reportServiceRecords.length === 0) {
+    reportsMessage.textContent = t("pdfNoData");
+    return;
+  }
+
+  const query = getReportQueryString();
+
+  try {
+    exportPdfButton.disabled = true;
+    const response = await fetch(`/api/reports/service-hours/pdf${query ? `?${query}` : ""}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") || "";
+      const errorData = contentType.includes("application/json") ? await response.json() : {};
+      throw new Error(translateServerMessage(errorData.message) || t("exportError"));
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `solutions-by-design-service-hours-${today}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    reportsMessage.textContent = t("pdfReady");
+  } catch (error) {
+    console.error(error);
+    reportsMessage.textContent = error.message || t("exportError");
+  } finally {
+    updateReportExportActions();
+  }
+}
+
+function updateReportExportActions() {
+  if (exportPdfButton) {
+    exportPdfButton.disabled = !hasGeneratedReport || reportServiceRecords.length === 0;
   }
 }
 
@@ -5922,6 +5974,7 @@ function renderServiceHoursReport() {
 
   if (reportServiceRecords.length === 0) {
     const message = hasGeneratedReport ? t("noReportTickets") : t("reportInitial");
+    updateReportExportActions();
     showReportsMessage(message);
     return;
   }
@@ -5938,10 +5991,12 @@ function renderServiceHoursReport() {
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
     </tr>
   `).join("");
+  updateReportExportActions();
 }
 
 function showReportsMessage(message) {
   reportsTotalCount.textContent = formatNumber(reportServiceRecords.length, 0);
+  updateReportExportActions();
   reportsTableBody.innerHTML = `
     <tr>
       <td colspan="8" class="empty-state">${message}</td>
@@ -5976,18 +6031,6 @@ function renderReportsSummary() {
       </div>
     </article>
   `).join("");
-}
-
-function applyReportPeriod() {
-  if (!reportPeriod.value) return;
-
-  const [year, month] = reportPeriod.value.split("-").map(Number);
-
-  if (!year || !month) return;
-
-  const lastDay = new Date(year, month, 0).getDate();
-  reportFrom.value = `${year}-${String(month).padStart(2, "0")}-01`;
-  reportTo.value = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 }
 
 function getUserRoleClass(role) {
@@ -6697,7 +6740,7 @@ userForm.addEventListener("submit", createUser);
 usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);
-reportPeriod.addEventListener("change", applyReportPeriod);
+exportPdfButton.addEventListener("click", exportServiceHoursPdf);
 reportClient.addEventListener("change", () => {
   reportProject.value = "";
   renderReportLookupOptions();

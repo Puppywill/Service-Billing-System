@@ -78,7 +78,7 @@ Next phase: Phase 17D - Service Record contract warnings
 - Password recovery request workflow.
 - Notifications for administrative activity.
 - Existing record workflow still powered internally by the legacy ticket module.
-- Report export controls are limited to disabled `PDF (Coming soon)` and `Excel (Coming soon)` buttons for the demo.
+- Report export controls include active PDF export for service-hour reports; Excel remains disabled as `Excel (Coming soon)` for the demo.
 - Responsive web interface for desktop, tablet, and mobile.
 
 ## Target Direction
@@ -1209,6 +1209,18 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - The Dashboard and Technician Dashboard chart labels now update correctly when the language toggle changes.
 - This phase is UI text only and does not modify backend logic, databases, ServiceBillingDB, or ServiceSBD_20260629.
 
+### Phase 32: Professional PDF Reports and Time Sheet
+
+- Reports now includes an active PDF export for service-hour reports using the current filters: date range, technician, client, project, and status.
+- The separate `Period` month filter was removed from Reports; the report period is now defined only by `Date from` and `Date to`.
+- The new PDF uses a corporate Solutions By Design layout with header, client/project/invoice context, report period, generation date, executive summary cards, service breakdown, and final time sheet.
+- Service breakdown records include service date, legacy order number when available, technician, clean service description, status, and total hours.
+- The Time Sheet section groups records by technician and shows technician, date, client, project/department, AM/PM time entries, and total hours.
+- Each PDF page includes Solutions By Design, generation date, and page numbering in the footer.
+- Empty PDFs are blocked: the frontend keeps PDF disabled until a report with records is generated, and the backend returns a clear no-data message if filters produce no records.
+- Numeric hour values keep the global `en-US` format, for example `10,000.50 h`.
+- This phase does not modify ServiceSBD_20260629, ServiceBillingDB schema, dashboard behavior, users, clients, projects, or service record CRUD.
+
 ### API Examples
 
 ```http
@@ -1239,7 +1251,7 @@ GET /api/dashboard/recent-activity
 - Reports show technician, client, project, service date, worked hours, service description, and service record status.
 - Reports no longer call legacy ticket report endpoints from the frontend.
 - The temporary service sheet print/export buttons are hidden for the demo.
-- PDF and Excel buttons remain visible, disabled, and labeled `PDF (Coming soon)` and `Excel (Coming soon)` until service-hour exports are implemented.
+- PDF export is active for service-hour reports, while Excel remains visible, disabled, and labeled `Excel (Coming soon)` until spreadsheet export is implemented.
 - The visible frontend navigation hides `Invoices` temporarily for demo clarity.
 - Invoice APIs, backend logic, SQL tables, and existing frontend implementation remain in the codebase.
 
