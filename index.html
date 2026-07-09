@@ -171,6 +171,15 @@
         </svg>
         Reports
       </button>
+      <button type="button" id="manualInvoicesTabButton" class="tab-button" data-tab="manual-invoices">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 3h10l2 2v16l-3-2-3 2-3-2-3 2V3Z"/>
+          <path d="M9 8h6"/>
+          <path d="M9 12h6"/>
+          <path d="M9 16h4"/>
+        </svg>
+        Facturas
+      </button>
       <button type="button" id="notificationsTabButton" class="tab-button legacy-nav hidden" data-tab="notifications">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
@@ -1134,6 +1143,138 @@
             </tbody>
           </table>
         </div>
+      </section>
+    </section>
+
+    <section id="manualInvoicesTabPanel" class="tab-panel hidden">
+      <section class="panel table-panel manual-invoice-panel">
+        <div class="table-header">
+          <div class="section-title">
+            <p class="eyebrow">Facturacion manual</p>
+            <h2 id="manualInvoicesTitle">Facturas</h2>
+          </div>
+        </div>
+
+        <form id="manualInvoiceForm" class="manual-invoice-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="manualInvoiceNumber">Invoice #</label>
+              <input type="text" id="manualInvoiceNumber" placeholder="8877" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="manualInvoiceDate">Date</label>
+              <input type="date" id="manualInvoiceDate">
+            </div>
+
+            <div class="form-group">
+              <label for="manualInvoicePoNumber">P.O. No.</label>
+              <input type="text" id="manualInvoicePoNumber" placeholder="P.O. No." autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="manualInvoiceTerms">Terms</label>
+              <input type="text" id="manualInvoiceTerms" placeholder="Net 30" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="manualInvoiceDueDate">Due Date</label>
+              <input type="date" id="manualInvoiceDueDate">
+            </div>
+
+            <div class="form-group">
+              <label for="manualInvoiceProject">Project</label>
+              <input type="text" id="manualInvoiceProject" placeholder="Project" autocomplete="off">
+            </div>
+
+            <div class="form-group span-2">
+              <label for="manualInvoiceBillTo">Bill To</label>
+              <textarea id="manualInvoiceBillTo" rows="3" placeholder="Client name and billing address"></textarea>
+            </div>
+
+            <section class="manual-invoice-lines span-2" aria-labelledby="manualInvoiceLinesTitle">
+              <div class="table-header compact-table-header">
+                <div class="section-title">
+                  <p class="eyebrow">Lineas</p>
+                  <h3 id="manualInvoiceLinesTitle">Lineas de factura</h3>
+                </div>
+                <button type="button" id="addManualInvoiceLineButton" class="btn session-button">+ Agregar linea</button>
+              </div>
+
+              <div class="manual-invoice-lines-table">
+                <div class="manual-invoice-line manual-invoice-line-header">
+                  <span>Cantidad</span>
+                  <span>Descripcion</span>
+                  <span>Rate</span>
+                  <span>Amount</span>
+                  <span></span>
+                </div>
+                <div id="manualInvoiceLinesBody"></div>
+              </div>
+
+              <div class="manual-invoice-tax-controls">
+                <label class="checkbox-label" for="manualInvoiceApplyTax">
+                  <input type="checkbox" id="manualInvoiceApplyTax" checked>
+                  <span>Aplicar IVU</span>
+                </label>
+                <label class="manual-invoice-tax-rate" for="manualInvoiceTaxRate">
+                  <span>IVU %</span>
+                  <input type="number" id="manualInvoiceTaxRate" min="0" step="0.01" value="11.5">
+                </label>
+              </div>
+
+              <div class="manual-invoice-summary">
+                <div>
+                  <span>Subtotal</span>
+                  <strong id="manualInvoiceSubtotalDisplay">$0.00</strong>
+                </div>
+                <div>
+                  <span id="manualInvoiceTaxLabel">IVU (11.5%)</span>
+                  <strong id="manualInvoiceTaxDisplay">$0.00</strong>
+                </div>
+                <div class="manual-invoice-summary-total">
+                  <span>Total</span>
+                  <strong id="manualInvoiceTotalDisplay">$0.00</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="manual-invoice-signatures span-2" aria-labelledby="manualInvoiceSignaturesTitle">
+              <div class="section-title compact-title">
+                <p class="eyebrow">Firmas</p>
+                <h3 id="manualInvoiceSignaturesTitle">Firmas de factura</h3>
+              </div>
+
+              <div class="manual-invoice-signature-grid">
+                <div class="form-group">
+                  <label for="manualInvoiceSignature1Name">Firma 1 - Nombre</label>
+                  <input type="text" id="manualInvoiceSignature1Name" placeholder="Nombre" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceSignature1Title">Firma 1 - Cargo</label>
+                  <input type="text" id="manualInvoiceSignature1Title" placeholder="Cargo" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceSignature2Name">Firma 2 - Nombre</label>
+                  <input type="text" id="manualInvoiceSignature2Name" placeholder="Nombre" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceSignature2Title">Firma 2 - Cargo</label>
+                  <input type="text" id="manualInvoiceSignature2Title" placeholder="Cargo" autocomplete="off">
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="report-actions">
+            <button type="submit" id="generateManualInvoicePdfButton" class="btn btn-primary">Generar factura PDF</button>
+          </div>
+        </form>
+
+        <p id="manualInvoiceMessage" class="form-message" aria-live="polite"></p>
       </section>
     </section>
   </main>

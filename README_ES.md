@@ -1294,6 +1294,55 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Las alertas visuales usan verde para `OK`, amarillo para `LOW_HOURS`, naranja para `EXPIRING_SOON`, rojo para estados sin horas/expirados y gris para `NO_CONTRACT`.
 - No se muestran campos monetarios ni tarifas por hora.
 
+## Fase 34: Modulo Manual De Facturas PDF
+
+- Se agrego un tab visible `Facturas` para preparar facturas manuales, separado de `Reports`.
+- `Reports` sigue enfocado en desglose de servicios y PDF de Time Sheet.
+- La pantalla de facturas usa campos manuales de encabezado y lineas dinamicas de factura.
+- Las lineas usan `Cantidad`, `Descripcion`, `Rate` y `Amount` calculado; no se usa campo `Item`.
+- `Amount` se calcula como `Cantidad x Rate`, y el `Total` se calcula sumando todos los amounts.
+- La secretaria puede agregar o eliminar lineas antes de generar el PDF.
+- Se agrego `POST /api/manual-invoices/pdf` para generar un PDF profesional de factura desde los valores del formulario.
+- El PDF incluye todas las lineas dinamicas, branding de Solutions By Design, metadata de factura, Bill To, terminos/proyecto, total, certificacion, lineas de firma y footer de pagina.
+- En esta fase no se guarda informacion de facturas en la base de datos.
+- La implementacion no modifica `ServiceSBD_20260629`, `ServiceBillingDB`, Reports, Dashboard, Clients, Projects, Users ni Service Records.
+
+### Flujo De Prueba De Factura Manual
+
+1. Iniciar sesion en la aplicacion.
+2. Abrir `Facturas`.
+3. Llenar los campos manuales del encabezado.
+4. Agregar una o mas lineas con cantidad, descripcion y rate.
+5. Confirmar que cada amount y el total se calculan automaticamente.
+6. Presionar `Generar factura PDF`.
+7. Confirmar que el PDF descarga y muestra todas las lineas con el total calculado.
+
+### Fase 34.1: Lineas Dinamicas Estilo QuickBooks
+
+- La UI de factura manual ahora usa una tabla limpia de lineas similar a QuickBooks.
+- Cada linea permite `Cantidad`, `Descripcion`, `Rate` y `Amount` calculado automaticamente.
+- El boton `+ Agregar linea` agrega mas lineas de factura, y cada linea puede eliminarse.
+- El PDF incluye todas las lineas dinamicas y calcula el total desde los amounts.
+- No se guarda informacion en la base de datos.
+
+### Fase 34.2: Subtotal, IVU E Impuesto Opcional
+
+- Las facturas manuales ahora muestran un resumen profesional con `Subtotal`, `IVU` y `Total`.
+- `Subtotal` se calcula desde todos los amounts de las lineas.
+- `Aplicar IVU` puede activarse o desactivarse.
+- El porcentaje por defecto de IVU es `11.5%`, y puede cambiarse manualmente.
+- Si el IVU esta desactivado, el impuesto es `0.00` y el total es igual al subtotal.
+- El PDF muestra el mismo resumen de subtotal, IVU y total.
+- Los calculos siguen siendo temporales/manuales y no se guardan en la base de datos.
+
+### Fase 34.3: Firmas Manuales Configurables
+
+- Las facturas manuales ahora incluyen dos bloques configurables de firma.
+- Cada firma tiene campos manuales de `Nombre` y `Cargo`.
+- El PDF renderiza dos secciones profesionales con linea de firma y linea de fecha.
+- Si los campos quedan vacios, se mantiene la linea sin nombres hardcodeados.
+- Los valores de firma no se guardan en la base de datos.
+
 ### Ejemplos De API
 
 ```http

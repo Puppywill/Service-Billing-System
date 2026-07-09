@@ -32,6 +32,8 @@ const usersTabButton = document.querySelector("#usersTabButton");
 const usersTabPanel = document.querySelector("#usersTabPanel");
 const reportsTabButton = document.querySelector("#reportsTabButton");
 const reportsTabPanel = document.querySelector("#reportsTabPanel");
+const manualInvoicesTabButton = document.querySelector("#manualInvoicesTabButton");
+const manualInvoicesTabPanel = document.querySelector("#manualInvoicesTabPanel");
 const settingsTabPanel = document.querySelector("#settingsTabPanel");
 
 const addClientButton = document.querySelector("#addClientButton");
@@ -272,6 +274,28 @@ const reportsSummaryGrid = document.querySelector("#reportsSummaryGrid");
 const generateReportButton = document.querySelector("#generateReportButton");
 const exportPdfButton = document.querySelector("#exportPdfButton");
 const exportExcelButton = document.querySelector("#exportExcelButton");
+const manualInvoiceForm = document.querySelector("#manualInvoiceForm");
+const manualInvoiceNumber = document.querySelector("#manualInvoiceNumber");
+const manualInvoiceDate = document.querySelector("#manualInvoiceDate");
+const manualInvoiceBillTo = document.querySelector("#manualInvoiceBillTo");
+const manualInvoicePoNumber = document.querySelector("#manualInvoicePoNumber");
+const manualInvoiceTerms = document.querySelector("#manualInvoiceTerms");
+const manualInvoiceDueDate = document.querySelector("#manualInvoiceDueDate");
+const manualInvoiceProject = document.querySelector("#manualInvoiceProject");
+const manualInvoiceLinesBody = document.querySelector("#manualInvoiceLinesBody");
+const addManualInvoiceLineButton = document.querySelector("#addManualInvoiceLineButton");
+const manualInvoiceApplyTax = document.querySelector("#manualInvoiceApplyTax");
+const manualInvoiceTaxRate = document.querySelector("#manualInvoiceTaxRate");
+const manualInvoiceSubtotalDisplay = document.querySelector("#manualInvoiceSubtotalDisplay");
+const manualInvoiceTaxLabel = document.querySelector("#manualInvoiceTaxLabel");
+const manualInvoiceTaxDisplay = document.querySelector("#manualInvoiceTaxDisplay");
+const manualInvoiceTotalDisplay = document.querySelector("#manualInvoiceTotalDisplay");
+const manualInvoiceSignature1Name = document.querySelector("#manualInvoiceSignature1Name");
+const manualInvoiceSignature1Title = document.querySelector("#manualInvoiceSignature1Title");
+const manualInvoiceSignature2Name = document.querySelector("#manualInvoiceSignature2Name");
+const manualInvoiceSignature2Title = document.querySelector("#manualInvoiceSignature2Title");
+const manualInvoiceMessage = document.querySelector("#manualInvoiceMessage");
+const generateManualInvoicePdfButton = document.querySelector("#generateManualInvoicePdfButton");
 
 let tickets = [];
 let clients = [];
@@ -282,6 +306,8 @@ let serviceRecordTechnicians = [];
 let serviceRecordClients = [];
 let serviceRecordProjects = [];
 let reportTechnicians = [];
+let manualInvoiceLines = [];
+let nextManualInvoiceLineId = 1;
 let invoices = [];
 let invoiceClients = [];
 let dashboardSummary = null;
@@ -451,6 +477,12 @@ const translations = {
     clients: "Clientes",
     projects: "Proyectos",
     invoices: "Facturas",
+    manualInvoices: "Facturas",
+    manualInvoicesEyebrow: "Facturacion manual",
+    manualInvoicePdfButton: "Generar factura PDF",
+    manualInvoiceGenerating: "Generando factura PDF...",
+    manualInvoiceReady: "Factura PDF generada correctamente.",
+    manualInvoiceError: "No se pudo generar la factura PDF.",
     settings: "Configuracion",
     dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el resumen.",
@@ -850,6 +882,12 @@ const translations = {
     clients: "Clients",
     projects: "Projects",
     invoices: "Invoices",
+    manualInvoices: "Invoices",
+    manualInvoicesEyebrow: "Manual invoicing",
+    manualInvoicePdfButton: "Generate invoice PDF",
+    manualInvoiceGenerating: "Generating invoice PDF...",
+    manualInvoiceReady: "Invoice PDF generated successfully.",
+    manualInvoiceError: "Invoice PDF could not be generated.",
     settings: "Settings",
     dashboardTitle: "Summary",
     dashboardLoadError: "Dashboard could not be loaded.",
@@ -1416,6 +1454,7 @@ async function switchTab(tabName) {
   notificationsTabPanel.classList.toggle("hidden", activeTab !== "notifications");
   usersTabPanel.classList.toggle("hidden", activeTab !== "users");
   reportsTabPanel.classList.toggle("hidden", activeTab !== "reports");
+  manualInvoicesTabPanel.classList.toggle("hidden", activeTab !== "manual-invoices");
   settingsTabPanel.classList.toggle("hidden", activeTab !== "settings");
 
   tabButtons.forEach((button) => {
@@ -5533,6 +5572,34 @@ function applyStaticLanguage() {
   exportPdfButton.textContent = t("exportPdf");
   exportExcelButton.textContent = currentLanguage === "es" ? "Excel (Proximamente)" : "Excel (Coming soon)";
 
+  setText("#manualInvoicesTabPanel .section-title .eyebrow", t("manualInvoicesEyebrow"));
+  setText("#manualInvoicesTitle", t("manualInvoices"));
+  setText('label[for="manualInvoiceNumber"]', "Invoice #");
+  setText('label[for="manualInvoiceDate"]', currentLanguage === "es" ? "Fecha" : "Date");
+  setText('label[for="manualInvoiceBillTo"]', "Bill To");
+  setText('label[for="manualInvoicePoNumber"]', "P.O. No.");
+  setText('label[for="manualInvoiceTerms"]', "Terms");
+  setText('label[for="manualInvoiceDueDate"]', currentLanguage === "es" ? "Fecha de vencimiento" : "Due Date");
+  setText('label[for="manualInvoiceProject"]', currentLanguage === "es" ? "Proyecto" : "Project");
+  setText("#manualInvoiceLinesTitle", currentLanguage === "es" ? "Lineas de factura" : "Invoice lines");
+  setText(".manual-invoice-lines .section-title .eyebrow", currentLanguage === "es" ? "Lineas" : "Lines");
+  addManualInvoiceLineButton.textContent = currentLanguage === "es" ? "+ Agregar linea" : "+ Add line";
+  setText("#manualInvoiceSignaturesTitle", currentLanguage === "es" ? "Firmas de factura" : "Invoice signatures");
+  setText(".manual-invoice-signatures .section-title .eyebrow", currentLanguage === "es" ? "Firmas" : "Signatures");
+  setText('label[for="manualInvoiceSignature1Name"]', currentLanguage === "es" ? "Firma 1 - Nombre" : "Signature 1 - Name");
+  setText('label[for="manualInvoiceSignature1Title"]', currentLanguage === "es" ? "Firma 1 - Cargo" : "Signature 1 - Title");
+  setText('label[for="manualInvoiceSignature2Name"]', currentLanguage === "es" ? "Firma 2 - Nombre" : "Signature 2 - Name");
+  setText('label[for="manualInvoiceSignature2Title"]', currentLanguage === "es" ? "Firma 2 - Cargo" : "Signature 2 - Title");
+  const manualInvoiceLineHeaders = document.querySelectorAll(".manual-invoice-line-header span");
+  if (manualInvoiceLineHeaders.length >= 4) {
+    manualInvoiceLineHeaders[0].textContent = currentLanguage === "es" ? "Cantidad" : "Quantity";
+    manualInvoiceLineHeaders[1].textContent = currentLanguage === "es" ? "Descripcion" : "Description";
+    manualInvoiceLineHeaders[2].textContent = "Rate";
+    manualInvoiceLineHeaders[3].textContent = "Amount";
+  }
+  generateManualInvoicePdfButton.textContent = t("manualInvoicePdfButton");
+  renderManualInvoiceLines();
+
   setText("#editModal .section-title .eyebrow", t("admin"));
   setText("#edit-title", t("editTicket"));
   setText('label[for="editDescription"]', t("issueDescription"));
@@ -5585,6 +5652,7 @@ function applyLanguage() {
   setButtonText(document.querySelector('[data-tab="projects"]'), t("projects"));
   setButtonText(document.querySelector('[data-tab="tickets"]'), t("tickets"));
   setButtonText(document.querySelector('[data-tab="invoices"]'), t("invoices"));
+  setButtonText(manualInvoicesTabButton, t("manualInvoices"));
   setButtonText(document.querySelector('[data-tab="notifications"]'), t("notifications"));
   setButtonText(usersTabButton, t("users"));
   setButtonText(reportsTabButton, t("reports"));
@@ -6061,6 +6129,171 @@ async function exportServiceHoursPdf() {
     reportsMessage.textContent = error.message || t("exportError");
   } finally {
     updateReportExportActions();
+  }
+}
+
+function formatManualInvoiceCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value) || 0);
+}
+
+function calculateManualInvoiceLineAmount(line) {
+  const quantity = Number(line.quantity) || 0;
+  const rate = Number(line.rate) || 0;
+
+  return quantity * rate;
+}
+
+function getManualInvoiceTotal() {
+  return manualInvoiceLines.reduce((sum, line) => sum + calculateManualInvoiceLineAmount(line), 0);
+}
+
+function getManualInvoiceTotals() {
+  const subtotal = getManualInvoiceTotal();
+  const taxRate = Math.max(0, Number(manualInvoiceTaxRate?.value) || 0);
+  const applyTax = Boolean(manualInvoiceApplyTax?.checked);
+  const taxAmount = applyTax ? subtotal * (taxRate / 100) : 0;
+  const total = subtotal + taxAmount;
+
+  return { subtotal, taxRate, applyTax, taxAmount, total };
+}
+
+function updateManualInvoiceSummary() {
+  const totals = getManualInvoiceTotals();
+
+  manualInvoiceSubtotalDisplay.textContent = formatManualInvoiceCurrency(totals.subtotal);
+  manualInvoiceTaxLabel.textContent = `IVU (${formatNumber(totals.applyTax ? totals.taxRate : 0, 2)}%)`;
+  manualInvoiceTaxDisplay.textContent = formatManualInvoiceCurrency(totals.taxAmount);
+  manualInvoiceTotalDisplay.textContent = formatManualInvoiceCurrency(totals.total);
+  manualInvoiceTaxRate.disabled = !totals.applyTax;
+}
+
+function renderManualInvoiceLines() {
+  if (!manualInvoiceLinesBody) return;
+
+  if (manualInvoiceLines.length === 0) {
+    manualInvoiceLines = [{ id: nextManualInvoiceLineId++, quantity: "", description: "", rate: "" }];
+  }
+
+  manualInvoiceLinesBody.innerHTML = manualInvoiceLines.map((line) => `
+    <div class="manual-invoice-line" data-line-id="${line.id}">
+      <input type="number" class="manual-invoice-line-quantity" min="0" step="0.01" value="${escapeHTML(String(line.quantity || ""))}" aria-label="${currentLanguage === "es" ? "Cantidad" : "Quantity"}">
+      <textarea class="manual-invoice-line-description" rows="2" aria-label="${currentLanguage === "es" ? "Descripcion" : "Description"}">${escapeHTML(line.description || "")}</textarea>
+      <input type="number" class="manual-invoice-line-rate" min="0" step="0.01" value="${escapeHTML(String(line.rate || ""))}" aria-label="Rate">
+      <output class="manual-invoice-line-amount">${formatManualInvoiceCurrency(calculateManualInvoiceLineAmount(line))}</output>
+      <button type="button" class="icon-button manual-invoice-line-remove" aria-label="${currentLanguage === "es" ? "Eliminar linea" : "Remove line"}" ${manualInvoiceLines.length === 1 ? "disabled" : ""}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+  `).join("");
+
+  updateManualInvoiceSummary();
+}
+
+function updateManualInvoiceLine(lineId, field, value) {
+  manualInvoiceLines = manualInvoiceLines.map((line) => (
+    line.id === lineId ? { ...line, [field]: value } : line
+  ));
+  updateManualInvoiceSummary();
+}
+
+function addManualInvoiceLine() {
+  manualInvoiceLines.push({ id: nextManualInvoiceLineId++, quantity: "", description: "", rate: "" });
+  renderManualInvoiceLines();
+}
+
+function removeManualInvoiceLine(lineId) {
+  if (manualInvoiceLines.length <= 1) return;
+
+  manualInvoiceLines = manualInvoiceLines.filter((line) => line.id !== lineId);
+  renderManualInvoiceLines();
+}
+
+function getManualInvoicePayloadLines() {
+  return manualInvoiceLines
+    .map((line) => ({
+      quantity: Number(line.quantity) || 0,
+      description: String(line.description || "").trim(),
+      rate: Number(line.rate) || 0,
+      amount: calculateManualInvoiceLineAmount(line)
+    }))
+    .filter((line) => line.quantity > 0 || line.description || line.rate > 0 || line.amount > 0);
+}
+
+async function generateManualInvoicePdf(event) {
+  event.preventDefault();
+  manualInvoiceMessage.textContent = "";
+
+  const lines = getManualInvoicePayloadLines();
+  const totals = getManualInvoiceTotals();
+
+  const payload = {
+    invoiceNumber: manualInvoiceNumber.value.trim(),
+    invoiceDate: manualInvoiceDate.value,
+    billTo: manualInvoiceBillTo.value.trim(),
+    poNumber: manualInvoicePoNumber.value.trim(),
+    terms: manualInvoiceTerms.value.trim(),
+    dueDate: manualInvoiceDueDate.value,
+    project: manualInvoiceProject.value.trim(),
+    lines,
+    applyTax: totals.applyTax,
+    taxRate: totals.taxRate,
+    subtotal: totals.subtotal,
+    taxAmount: totals.taxAmount,
+    total: totals.total,
+    signatures: [
+      {
+        name: manualInvoiceSignature1Name.value.trim(),
+        title: manualInvoiceSignature1Title.value.trim()
+      },
+      {
+        name: manualInvoiceSignature2Name.value.trim(),
+        title: manualInvoiceSignature2Title.value.trim()
+      }
+    ]
+  };
+
+  try {
+    generateManualInvoicePdfButton.disabled = true;
+    generateManualInvoicePdfButton.textContent = t("manualInvoiceGenerating");
+
+    const response = await fetch("/api/manual-invoices/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") || "";
+      const errorData = contentType.includes("application/json") ? await response.json() : {};
+      throw new Error(translateServerMessage(errorData.message) || t("manualInvoiceError"));
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const invoiceSlug = payload.invoiceNumber || new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `solutions-by-design-invoice-${invoiceSlug}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    manualInvoiceMessage.textContent = t("manualInvoiceReady");
+  } catch (error) {
+    console.error(error);
+    manualInvoiceMessage.textContent = error.message || t("manualInvoiceError");
+  } finally {
+    generateManualInvoicePdfButton.disabled = false;
+    generateManualInvoicePdfButton.textContent = t("manualInvoicePdfButton");
   }
 }
 
@@ -6843,6 +7076,41 @@ usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);
 exportPdfButton.addEventListener("click", exportServiceHoursPdf);
+manualInvoiceForm.addEventListener("submit", generateManualInvoicePdf);
+addManualInvoiceLineButton.addEventListener("click", addManualInvoiceLine);
+manualInvoiceApplyTax.addEventListener("change", updateManualInvoiceSummary);
+manualInvoiceTaxRate.addEventListener("input", updateManualInvoiceSummary);
+manualInvoiceLinesBody.addEventListener("input", (event) => {
+  const row = event.target.closest(".manual-invoice-line");
+  if (!row) return;
+
+  const lineId = Number(row.dataset.lineId);
+
+  if (event.target.classList.contains("manual-invoice-line-quantity")) {
+    updateManualInvoiceLine(lineId, "quantity", event.target.value);
+  }
+
+  if (event.target.classList.contains("manual-invoice-line-description")) {
+    updateManualInvoiceLine(lineId, "description", event.target.value);
+  }
+
+  if (event.target.classList.contains("manual-invoice-line-rate")) {
+    updateManualInvoiceLine(lineId, "rate", event.target.value);
+  }
+
+  const line = manualInvoiceLines.find((item) => item.id === lineId);
+  const amountOutput = row.querySelector(".manual-invoice-line-amount");
+  if (line && amountOutput) {
+    amountOutput.textContent = formatManualInvoiceCurrency(calculateManualInvoiceLineAmount(line));
+  }
+});
+manualInvoiceLinesBody.addEventListener("click", (event) => {
+  const removeButton = event.target.closest(".manual-invoice-line-remove");
+  if (!removeButton) return;
+
+  const row = removeButton.closest(".manual-invoice-line");
+  removeManualInvoiceLine(Number(row.dataset.lineId));
+});
 reportClient.addEventListener("change", async () => {
   reportProject.value = "";
   renderReportLookupOptions();

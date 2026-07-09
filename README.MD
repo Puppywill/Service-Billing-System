@@ -1317,8 +1317,55 @@ GET /api/dashboard/recent-activity
 - Calculated values remain read-only: `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus`, and `ContractStatus`.
 - Visual alerts use green for `OK`, yellow for `LOW_HOURS`, orange for `EXPIRING_SOON`, red for exhausted/expired states, and gray for `NO_CONTRACT`.
 - No monetary fields or hourly rates are shown.
-6. Sign in as a technician and confirm the dashboard is limited by backend permissions.
-7. Temporarily interrupt an API or database connection during local testing and confirm the dashboard error message appears.
+
+## Phase 34: Manual Invoice PDF Module
+
+- Added a visible `Invoices` tab for secretary/admin invoice preparation, separate from `Reports`.
+- `Reports` remains focused on service breakdowns and Time Sheet PDFs.
+- The invoice screen uses manual header fields plus dynamic invoice lines.
+- Invoice lines use `Quantity`, `Description`, `Rate`, and calculated `Amount`; there is no `Item` field.
+- `Amount` is calculated as `Quantity x Rate`, and the invoice `Total` is calculated from all line amounts.
+- The secretary can add or remove invoice lines before generating the PDF.
+- Added `POST /api/manual-invoices/pdf` to generate a professional invoice PDF from the submitted form values.
+- The invoice PDF includes all dynamic lines, Solutions By Design branding, invoice metadata, Bill To, project/payment terms, total, certification text, signature lines, and page footer.
+- No invoice data is stored in the database during this phase.
+- The implementation does not modify `ServiceSBD_20260629`, `ServiceBillingDB`, Reports, Dashboard, Clients, Projects, Users, or Service Records.
+
+### Manual Invoice Test Flow
+
+1. Sign in to the application.
+2. Open `Invoices`.
+3. Fill the manual invoice header fields.
+4. Add one or more invoice lines with quantity, description, and rate.
+5. Confirm each amount and the invoice total calculate automatically.
+6. Click `Generate invoice PDF`.
+7. Confirm the PDF downloads and displays every line and the calculated total.
+
+### Phase 34.1: QuickBooks-Style Dynamic Invoice Lines
+
+- The manual invoice UI now uses a clean line table similar to QuickBooks.
+- Each line supports `Quantity`, `Description`, `Rate`, and auto-calculated `Amount`.
+- The `+ Add line` button adds more invoice lines, and each line can be removed.
+- The PDF includes every dynamic line and calculates the total from line amounts.
+- No data is stored in the database.
+
+### Phase 34.2: Subtotal, IVU, and Optional Tax
+
+- Manual invoices now show a professional summary with `Subtotal`, `IVU`, and `Total`.
+- `Subtotal` is calculated from all line amounts.
+- `Apply IVU` can be enabled or disabled.
+- The default IVU rate is `11.5%`, and the rate can be changed manually.
+- If IVU is disabled, tax is `0.00` and total equals subtotal.
+- The PDF shows the same subtotal, IVU, and total summary.
+- Calculations remain temporary/manual and are not stored in the database.
+
+### Phase 34.3: Configurable Manual Signatures
+
+- Manual invoices now include two configurable signature blocks.
+- Each signature has manual `Name` and `Title` fields.
+- The PDF renders two professional signature sections with a signature line and date line.
+- Empty signature fields leave the line visible without hardcoded names.
+- Signature values are not stored in the database.
 
 Next phase: Phase 17D - Service Record contract warnings.
 

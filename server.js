@@ -2021,6 +2021,378 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
   document.end();
 }
 
+function cleanManualInvoiceValue(value, fallback = "N/A") {
+  const text = String(value ?? "").replace(/\r/g, "").trim();
+  return text || fallback;
+}
+
+function formatManualInvoiceDate(value) {
+  if (!value) return "N/A";
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return cleanManualInvoiceValue(value);
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric"
+  }).format(date);
+}
+
+function formatManualInvoiceNumber(value) {
+  const text = cleanManualInvoiceValue(value, "");
+  return text ? `#${text.replace(/^#/, "")}` : "N/A";
+}
+
+function formatManualInvoiceQuantity(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return cleanManualInvoiceValue(value);
+
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(number);
+}
+
+function formatManualInvoiceMoney(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return cleanManualInvoiceValue(value);
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(number);
+}
+
+function normalizeManualInvoiceLines(invoice) {
+  const sourceLines = Array.isArray(invoice.lines) ? invoice.lines : [{
+    quantity: invoice.quantity,
+    description: invoice.description,
+    rate: invoice.rate
+  }];
+  const lines = sourceLines.map((line) => {
+    const quantity = Number(line.quantity) || 0;
+    const rate = Number(line.rate) || 0;
+    const amount = quantity * rate;
+
+    return {
+      quantity,
+      description: cleanManualInvoiceValue(line.description, ""),
+      rate,
+      amount
+    };
+  }).filter((line) => line.quantity > 0 || line.description || line.rate > 0 || line.amount > 0);
+
+  return lines.length ? lines : [{
+    quantity: 0,
+    description: "N/A",
+    rate: 0,
+    amount: 0
+  }];
+}
+
+function normalizeManualInvoiceSignatures(invoice) {
+  const sourceSignatures = Array.isArray(invoice.signatures) ? invoice.signatures : [];
+  const signatures = sourceSignatures.slice(0, 2).map((signature) => ({
+    name: cleanManualInvoiceValue(signature?.name, ""),
+    title: cleanManualInvoiceValue(signature?.title, "")
+  }));
+
+  while (signatures.length < 2) {
+    signatures.push({ name: "", title: "" });
+  }
+
+  return signatures;
+}
+
+function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
+  const document = new PDFDocument({ margin: 42, size: "LETTER", bufferPages: true });
+  const margin = 42;
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const contentWidth = pageWidth - margin * 2;
+  const navy = "#17365d";
+  const slate = "#111827";
+  const muted = "#4b5563";
+  const border = "#94a3b8";
+  const soft = "#f3f6fb";
+  const invoiceNumber = formatManualInvoiceNumber(invoice.invoiceNumber);
+  const invoiceDate = formatManualInvoiceDate(invoice.invoiceDate);
+  const dueDate = formatManualInvoiceDate(invoice.dueDate);
+  const billTo = cleanManualInvoiceValue(invoice.billTo);
+  const poNumber = cleanManualInvoiceValue(invoice.poNumber);
+  const terms = cleanManualInvoiceValue(invoice.terms);
+  const project = cleanManualInvoiceValue(invoice.project);
+  const invoiceLines = normalizeManualInvoiceLines(invoice);
+  const subtotal = invoiceLines.reduce((sum, line) => sum + line.amount, 0);
+  const taxRate = Math.max(0, Number(invoice.taxRate) || 0);
+  const applyTax = invoice.applyTax !== false && invoice.applyTax !== "false";
+  const taxAmount = applyTax ? subtotal * (taxRate / 100) : 0;
+  const total = subtotal + taxAmount;
+  const signatures = normalizeManualInvoiceSignatures(invoice);
+  const logoCandidates = [
+    path.join(__dirname, "assets", "logo.png"),
+    path.join(__dirname, "assets", "solutions-by-design-logo.png"),
+    path.join(__dirname, "public", "logo.png"),
+    path.join(__dirname, "public", "solutions-by-design-logo.png")
+  ];
+  const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
+
+  document.pipe(outputStream);
+
+  const drawBrand = () => {
+    if (logoPath) {
+      document.image(logoPath, margin, 42, { fit: [170, 54] });
+      return;
+    }
+
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(18).text("Solutions By Design", margin, 48, {
+      width: 230
+    });
+    document.fillColor(muted).font("Helvetica").fontSize(8.5).text("Professional services and technology solutions", margin, 72, {
+      width: 230
+    });
+  };
+
+  const drawFooter = () => {
+    const range = document.bufferedPageRange();
+    const generatedLabel = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    }).format(generatedAt);
+
+    for (let index = 0; index < range.count; index += 1) {
+      document.switchToPage(range.start + index);
+      document.save();
+      document.moveTo(margin, pageHeight - 48).lineTo(pageWidth - margin, pageHeight - 48).strokeColor(border).lineWidth(0.5).stroke();
+      document.fillColor(muted).font("Helvetica").fontSize(8).text("Solutions By Design", margin, pageHeight - 36, {
+        width: 160,
+        lineBreak: false
+      });
+      document.text(generatedLabel, margin + 170, pageHeight - 36, {
+        width: 210,
+        align: "center",
+        lineBreak: false
+      });
+      document.text(`Page ${index + 1} of ${range.count}`, pageWidth - margin - 120, pageHeight - 36, {
+        width: 120,
+        align: "right",
+        lineBreak: false
+      });
+      document.restore();
+    }
+  };
+
+  drawBrand();
+  document.fillColor(navy).font("Helvetica-Bold").fontSize(26).text("INVOICE", pageWidth - margin - 190, 44, {
+    width: 190,
+    align: "right"
+  });
+  document.fillColor(slate).font("Helvetica-Bold").fontSize(10).text(`Invoice #: ${invoiceNumber}`, pageWidth - margin - 190, 78, {
+    width: 190,
+    align: "right"
+  });
+  document.fillColor(muted).font("Helvetica").fontSize(9).text(`Date: ${invoiceDate}`, pageWidth - margin - 190, 94, {
+    width: 190,
+    align: "right"
+  });
+
+  let y = 132;
+  document.rect(margin, y, contentWidth, 94).strokeColor(border).lineWidth(0.8).stroke();
+  document.rect(margin, y, 250, 24).fill(soft);
+  document.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("Bill To", margin + 12, y + 8, {
+    width: 220
+  });
+  document.fillColor(slate).font("Helvetica").fontSize(9).text(billTo, margin + 12, y + 34, {
+    width: 226,
+    height: 48,
+    lineGap: 2
+  });
+
+  const metaX = margin + 270;
+  const metaColWidth = (contentWidth - 270) / 2;
+  const metaRows = [
+    ["P.O. No.", poNumber],
+    ["Terms", terms],
+    ["Due Date", dueDate],
+    ["Project", project]
+  ];
+
+  metaRows.forEach((row, index) => {
+    const rowX = metaX + (index % 2) * metaColWidth;
+    const rowY = y + Math.floor(index / 2) * 47;
+
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(row[0], rowX, rowY + 10, {
+      width: metaColWidth - 12
+    });
+    document.fillColor(slate).font("Helvetica").fontSize(9).text(row[1], rowX, rowY + 25, {
+      width: metaColWidth - 12,
+      height: 18,
+      ellipsis: true
+    });
+  });
+
+  y += 126;
+  const columns = [
+    { label: "Quantity", width: 78, align: "right" },
+    { label: "Description", width: contentWidth - 272, align: "left" },
+    { label: "Rate", width: 92, align: "right" },
+    { label: "Amount", width: 102, align: "right" }
+  ];
+  const pageBottom = pageHeight - 84;
+  const drawInvoiceLinesHeader = () => {
+    let x = margin;
+
+    document.rect(margin, y, contentWidth, 24).fill(navy);
+    columns.forEach((column) => {
+      document.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8.5).text(column.label, x + 8, y + 8, {
+        width: column.width - 16,
+        align: column.align
+      });
+      x += column.width;
+    });
+    y += 24;
+  };
+
+  drawInvoiceLinesHeader();
+
+  invoiceLines.forEach((line, index) => {
+    document.font("Helvetica").fontSize(9);
+    const descriptionHeight = document.heightOfString(line.description || "N/A", {
+      width: columns[1].width - 16,
+      lineGap: 2
+    });
+    const rowHeight = Math.max(34, descriptionHeight + 18);
+
+    if (y + rowHeight > pageBottom) {
+      document.addPage({ margin });
+      y = margin;
+      drawInvoiceLinesHeader();
+    }
+
+    if (index % 2 === 0) {
+      document.rect(margin, y, contentWidth, rowHeight).fill("#fbfdff");
+    }
+    document.rect(margin, y, contentWidth, rowHeight).strokeColor(border).lineWidth(0.6).stroke();
+
+    let x = margin;
+    [
+      formatManualInvoiceQuantity(line.quantity),
+      line.description || "N/A",
+      formatManualInvoiceMoney(line.rate),
+      formatManualInvoiceMoney(line.amount)
+    ].forEach((value, valueIndex) => {
+      const column = columns[valueIndex];
+
+      document.fillColor(slate).font("Helvetica").fontSize(valueIndex === 1 ? 9 : 8.8).text(value, x + 8, y + 10, {
+        width: column.width - 16,
+        height: rowHeight - 18,
+        align: column.align,
+        lineGap: valueIndex === 1 ? 2 : 0
+      });
+      x += column.width;
+    });
+
+    y += rowHeight;
+  });
+
+  y += 10;
+  if (y + 180 > pageBottom) {
+    document.addPage({ margin });
+    y = margin;
+  }
+  const summaryX = pageWidth - margin - 230;
+  const summaryLabelWidth = 118;
+  const summaryValueWidth = 112;
+  const summaryRows = [
+    ["Subtotal", formatManualInvoiceMoney(subtotal), false],
+    [`IVU (${formatManualInvoiceQuantity(applyTax ? taxRate : 0)}%)`, formatManualInvoiceMoney(taxAmount), false],
+    ["TOTAL", formatManualInvoiceMoney(total), true]
+  ];
+
+  document.moveTo(summaryX, y).lineTo(pageWidth - margin, y).strokeColor(border).lineWidth(0.7).stroke();
+  summaryRows.forEach((row, index) => {
+    const rowY = y + 8 + index * 24;
+    const isTotal = row[2];
+
+    if (isTotal) {
+      document.rect(summaryX, rowY - 5, summaryLabelWidth + summaryValueWidth, 24).fill(soft).strokeColor(border).stroke();
+    }
+
+    document.fillColor(isTotal ? navy : muted).font("Helvetica-Bold").fontSize(isTotal ? 10.5 : 9).text(row[0], summaryX + 8, rowY, {
+      width: summaryLabelWidth - 12,
+      align: "left",
+      lineBreak: false
+    });
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(isTotal ? 10.5 : 9).text(row[1], summaryX + summaryLabelWidth, rowY, {
+      width: summaryValueWidth - 8,
+      align: "right",
+      lineBreak: false
+    });
+  });
+
+  y += 108;
+  document.fillColor(navy).font("Helvetica-Bold").fontSize(10).text("Certificación", margin, y, {
+    width: contentWidth
+  });
+  document.fillColor(slate).font("Helvetica").fontSize(9).text(
+    "Certificamos que los servicios descritos fueron ofrecidos según los términos acordados y están listos para revisión administrativa.",
+    margin,
+    y + 18,
+    { width: contentWidth, lineGap: 2 }
+  );
+
+  y += 102;
+  const signatureLineWidth = 210;
+  const signatureDateWidth = 112;
+  const signatureBlockGap = contentWidth - signatureLineWidth - signatureDateWidth;
+  const signatureDateX = margin + signatureLineWidth + signatureBlockGap;
+
+  signatures.forEach((signature) => {
+    if (y + 64 > pageBottom) {
+      document.addPage({ margin });
+      y = margin;
+    }
+
+    document.moveTo(margin, y).lineTo(margin + signatureLineWidth, y).strokeColor(border).lineWidth(0.7).stroke();
+    document.moveTo(signatureDateX, y).lineTo(signatureDateX + signatureDateWidth, y).strokeColor(border).lineWidth(0.7).stroke();
+
+    if (signature.name) {
+      document.fillColor(slate).font("Helvetica").fontSize(9).text(signature.name, margin, y + 8, {
+        width: signatureLineWidth,
+        align: "center",
+        lineBreak: false
+      });
+    }
+
+    if (signature.title) {
+      document.fillColor(muted).font("Helvetica").fontSize(8).text(signature.title, margin, y + 22, {
+        width: signatureLineWidth,
+        align: "center",
+        lineBreak: false
+      });
+    }
+
+    document.fillColor(muted).font("Helvetica").fontSize(8).text("Fecha", signatureDateX, y + 8, {
+      width: signatureDateWidth,
+      align: "center",
+      lineBreak: false
+    });
+
+    y += 68;
+  });
+
+  drawFooter();
+  document.end();
+}
+
 function getReportedBy(ticket) {
   return ticket.ReportedBy || `Usuario #${ticket.CreatedByUserID || ""}`.trim();
 }
@@ -4093,6 +4465,25 @@ app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, 
     console.error(error);
     if (!res.headersSent) {
       res.status(500).json({ message: "Error al exportar PDF." });
+    } else {
+      res.end();
+    }
+  }
+});
+
+app.post("/api/manual-invoices/pdf", requireAuth, (req, res) => {
+  try {
+    const generatedAt = new Date();
+    const invoiceNumber = cleanManualInvoiceValue(req.body.invoiceNumber, "").replace(/^#/, "") || generatedAt.toISOString().slice(0, 10);
+    const safeInvoiceNumber = invoiceNumber.replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "") || "manual";
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=solutions-by-design-invoice-${safeInvoiceNumber}.pdf`);
+    drawManualInvoicePdf(req.body || {}, generatedAt, res);
+  } catch (error) {
+    console.error(error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Error al generar la factura PDF." });
     } else {
       res.end();
     }
