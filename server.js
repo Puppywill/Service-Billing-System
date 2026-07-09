@@ -1424,13 +1424,18 @@ function cleanReportText(value) {
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(div|p|li)>/gi, "\n")
     .replace(/<[^>]*>/g, "")
-    .replace(/&ntilde;/gi, "n")
-    .replace(/&Ntilde;/g, "N")
-    .replace(/&aacute;/gi, "a")
-    .replace(/&eacute;/gi, "e")
-    .replace(/&iacute;/gi, "i")
-    .replace(/&oacute;/gi, "o")
-    .replace(/&uacute;/gi, "u")
+    .replace(/&Ntilde;/g, "Ñ")
+    .replace(/&ntilde;/g, "ñ")
+    .replace(/&Aacute;/g, "Á")
+    .replace(/&aacute;/g, "á")
+    .replace(/&Eacute;/g, "É")
+    .replace(/&eacute;/g, "é")
+    .replace(/&Iacute;/g, "Í")
+    .replace(/&iacute;/g, "í")
+    .replace(/&Oacute;/g, "Ó")
+    .replace(/&oacute;/g, "ó")
+    .replace(/&Uacute;/g, "Ú")
+    .replace(/&uacute;/g, "ú")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
@@ -1445,7 +1450,24 @@ function cleanReportText(value) {
 }
 
 function formatReportTime(value) {
-  return value ? String(value).slice(0, 5) : "—";
+  if (!value) return "—";
+
+  const timeValue = String(value).trim();
+  const match = timeValue.match(/^(\d{1,2}):(\d{2})/);
+
+  if (!match) return timeValue;
+
+  const hours24 = Number(match[1]);
+  const minutes = match[2];
+
+  if (!Number.isInteger(hours24) || hours24 < 0 || hours24 > 23) {
+    return timeValue.slice(0, 5);
+  }
+
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+
+  return `${hours12}:${minutes} ${period}`;
 }
 
 async function tableColumnExists(pool, tableName, columnName) {
@@ -1565,6 +1587,51 @@ async function getServiceHoursReportRecords(pool, filters) {
   return result.recordset.map(mapServiceHoursReport);
 }
 
+async function getServiceHoursReportTechnicians(pool, filters) {
+  const request = pool.request();
+  const whereClauses = ["COALESCE(technician.IsActive, 1) = 1"];
+
+  if (filters.from) {
+    request.input("FromDate", sql.Date, filters.from);
+    whereClauses.push("sr.ServiceDate >= @FromDate");
+  }
+
+  if (filters.to) {
+    request.input("ToDate", sql.Date, filters.to);
+    whereClauses.push("sr.ServiceDate <= @ToDate");
+  }
+
+  if (filters.status) {
+    request.input("Status", sql.NVarChar(20), filters.status);
+    whereClauses.push("sr.Status = @Status");
+  }
+
+  for (const [name, value] of Object.entries(filters.numericFilters || {})) {
+    request.input(name, sql.Int, value);
+    whereClauses.push(`sr.${name} = @${name}`);
+  }
+
+  applyReportDemoExclusion(request, whereClauses);
+
+  const whereSql = `WHERE ${whereClauses.join(" AND ")}`;
+  const result = await request.query(`
+    SELECT DISTINCT
+      technician.UserID,
+      technician.FullName,
+      technician.Email,
+      technician.Role,
+      technician.IsActive
+    FROM dbo.ServiceRecords sr
+    INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+    INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+    INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+    ${whereSql}
+    ORDER BY technician.FullName, technician.Email
+  `);
+
+  return result.recordset;
+}
+
 function drawServiceHoursPdf(records, filters, generatedAt, outputStream, options = {}) {
   const document = new PDFDocument({ margin: 30, size: "LETTER", bufferPages: true });
   const margin = 30;
@@ -1635,7 +1702,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
     document.fillColor(muted).font("Helvetica").fontSize(8).text(`Departamento/Proyecto: ${projectLabel}`, margin, y + 50, {
       width: pageWidth - margin * 2 - 190
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Periodo: ${period}`, pageWidth - margin - 180, y + 50, {
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Período: ${period}`, pageWidth - margin - 180, y + 50, {
       width: 180,
       align: "right"
     });
@@ -1651,8 +1718,8 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
     return [
       { label: "Fecha", width: 58, align: "left" },
       { label: "Orden", width: 50, align: "left" },
-      { label: "Tecnico", width: 88, align: "left" },
-      { label: "Descripcion", width: tableWidth - 244, align: "left" },
+      { label: "Técnico", width: 88, align: "left" },
+      { label: "Descripción", width: tableWidth - 244, align: "left" },
       { label: "Horas", width: 48, align: "right" }
     ];
   };
@@ -1696,7 +1763,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
 
     records.forEach((record, recordIndex) => {
       const isLastRecord = recordIndex === records.length - 1;
-      const description = cleanReportText(record.ServiceDescription) || "Sin descripcion.";
+      const description = cleanReportText(record.ServiceDescription) || "Sin descripción.";
       const maxRowHeight = getPageBottom() - document.y - 2;
       let descriptionFontSize = 7.6;
       document.font("Helvetica").fontSize(descriptionFontSize);
@@ -1801,15 +1868,15 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
   };
 
   const getTimeSheetColumns = () => [
-    { label: "Tecnico", width: 80, align: "left" },
-    { label: "Dia", width: 56, align: "left" },
-    { label: "Cliente", width: 120, align: "left" },
-    { label: "Departamento/Proyecto", width: 174, align: "left" },
-    { label: "Manana Entrada", width: 58, align: "center" },
-    { label: "Manana Salida", width: 58, align: "center" },
-    { label: "Tarde Entrada", width: 58, align: "center" },
-    { label: "Tarde Salida", width: 58, align: "center" },
-    { label: "Total", width: 52, align: "right" }
+    { label: "Técnico", width: 80, align: "left" },
+    { label: "Día", width: 54, align: "left" },
+    { label: "Cliente", width: 112, align: "left" },
+    { label: "Departamento/Proyecto", width: 158, align: "left" },
+    { label: "Mañana Entrada", width: 64, align: "center" },
+    { label: "Mañana Salida", width: 64, align: "center" },
+    { label: "Tarde Entrada", width: 64, align: "center" },
+    { label: "Tarde Salida", width: 64, align: "center" },
+    { label: "Total", width: 54, align: "right" }
   ];
 
   const drawTimeSheetHeader = () => {
@@ -1821,11 +1888,11 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
 
     document.rect(margin, y, sheetWidth, 19).fill(soft).stroke(border);
     columns.forEach((column) => {
-      document.fillColor(slate).font("Helvetica-Bold").fontSize(7.5).text(column.label, x + 4, y + 5, {
-        width: column.width - 8,
-        height: 10,
+      document.fillColor(slate).font("Helvetica-Bold").fontSize(6.2).text(column.label, x + 3, y + 5, {
+        width: column.width - 6,
+        height: 12,
         align: column.align,
-        ellipsis: true
+        lineBreak: false
       });
       x += column.width;
     });
@@ -1840,7 +1907,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
 
     const recordsByTechnician = new Map();
     records.forEach((record) => {
-      const technician = record.TechnicianName || "Sin tecnico";
+      const technician = record.TechnicianName || "Sin técnico";
       if (!recordsByTechnician.has(technician)) recordsByTechnician.set(technician, []);
       recordsByTechnician.get(technician).push(record);
     });
@@ -1938,7 +2005,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
         height: 10,
         lineBreak: false
       });
-      document.text(`Pagina ${index + 1} de ${range.count}`, footerWidth - margin - 120, footerHeight - 28, {
+      document.text(`Página ${index + 1} de ${range.count}`, footerWidth - margin - 120, footerHeight - 28, {
         width: 120,
         height: 10,
         align: "right",
@@ -3977,6 +4044,25 @@ app.get("/api/reports/service-hours", requireAdminOrTechnician, async (req, res)
   }
 });
 
+app.get("/api/reports/service-hours/technicians", requireAdminOrTechnician, async (req, res) => {
+  const filters = getServiceHoursReportFilters(req);
+
+  if (filters.error) {
+    return res.status(filters.statusCode || 400).json({ message: filters.error });
+  }
+
+  try {
+    const pool = await getPool();
+    const technicians = await getServiceHoursReportTechnicians(pool, filters);
+
+    res.json(technicians);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener tecnicos del reporte." });
+  }
+});
+
 app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, res) => {
   const filters = getServiceHoursReportFilters(req);
 
@@ -5169,7 +5255,7 @@ app.get("/api/reports/tickets/pdf", logReportEndpoint, requireAdmin, async (req,
       document.restore();
     };
 
-    const pageLabel = req.query.lang === "en" ? "Page" : "Pagina";
+    const pageLabel = req.query.lang === "en" ? "Page" : "Página";
     const pageOfLabel = req.query.lang === "en" ? "of" : "de";
 
     const drawFooter = (pageNumber, pageCount) => {

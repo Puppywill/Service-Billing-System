@@ -281,6 +281,7 @@ let serviceRecords = [];
 let serviceRecordTechnicians = [];
 let serviceRecordClients = [];
 let serviceRecordProjects = [];
+let reportTechnicians = [];
 let invoices = [];
 let invoiceClients = [];
 let dashboardSummary = null;
@@ -5907,7 +5908,34 @@ function getReportQueryString() {
 
 async function loadReportLookups() {
   await loadServiceRecordLookups();
+  await loadReportTechnicianOptions();
   renderReportLookupOptions();
+}
+
+function getReportTechnicianLookupQueryString() {
+  const params = new URLSearchParams();
+
+  if (reportFrom.value) params.set("from", reportFrom.value);
+  if (reportTo.value) params.set("to", reportTo.value);
+  if (reportStatus.value) params.set("status", reportStatus.value);
+  if (reportClient.value) params.set("clientId", reportClient.value);
+  if (reportProject.value) params.set("projectId", reportProject.value);
+
+  return params.toString();
+}
+
+async function loadReportTechnicianOptions() {
+  const query = getReportTechnicianLookupQueryString();
+  const response = await fetch(`/api/reports/service-hours/technicians${query ? `?${query}` : ""}`, {
+    cache: "no-store"
+  });
+  const data = await parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(translateServerMessage(data.message) || t("reportError"));
+  }
+
+  reportTechnicians = Array.isArray(data) ? data : [];
 }
 
 function renderReportLookupOptions() {
@@ -5916,7 +5944,7 @@ function renderReportLookupOptions() {
   const selectedTechnician = reportTechnician.value;
   const selectedClient = reportClient.value;
   const selectedProject = reportProject.value;
-  const technicianOptions = serviceRecordTechnicians.map((user) => `
+  const technicianOptions = reportTechnicians.map((user) => `
     <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
   `).join("");
   const clientOptions = serviceRecordClients.map((client) => `
@@ -5932,9 +5960,21 @@ function renderReportLookupOptions() {
   reportTechnician.innerHTML = `<option value="">${escapeHTML(t("allTechnicians"))}</option>${technicianOptions}`;
   reportClient.innerHTML = `<option value="">${escapeHTML(t("allClients"))}</option>${clientOptions}`;
   reportProject.innerHTML = `<option value="">${escapeHTML(t("allProjects"))}</option>${projectOptions}`;
-  reportTechnician.value = selectedTechnician;
+  reportTechnician.value = reportTechnicians.some((user) => String(user.UserID) === selectedTechnician) ? selectedTechnician : "";
   reportClient.value = selectedClient;
   reportProject.value = visibleProjects.some((project) => String(project.ProjectID) === selectedProject) ? selectedProject : "";
+}
+
+async function refreshReportTechnicianOptions() {
+  try {
+    await loadReportTechnicianOptions();
+    renderReportLookupOptions();
+  } catch (error) {
+    console.error(error);
+    reportTechnicians = [];
+    renderReportLookupOptions();
+    reportsMessage.textContent = error.message || t("reportError");
+  }
 }
 
 async function generateReport(event) {
@@ -6803,10 +6843,15 @@ usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);
 exportPdfButton.addEventListener("click", exportServiceHoursPdf);
-reportClient.addEventListener("change", () => {
+reportClient.addEventListener("change", async () => {
   reportProject.value = "";
   renderReportLookupOptions();
+  await refreshReportTechnicianOptions();
 });
+reportProject.addEventListener("change", refreshReportTechnicianOptions);
+reportFrom.addEventListener("change", refreshReportTechnicianOptions);
+reportTo.addEventListener("change", refreshReportTechnicianOptions);
+reportStatus.addEventListener("change", refreshReportTechnicianOptions);
 editTicketForm.addEventListener("submit", updateTicket);
 closeEditModal.addEventListener("click", closeEditor);
 editUserForm.addEventListener("submit", updateUser);
