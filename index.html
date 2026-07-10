@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solutions By Design</title>
+  <title>Solutions By Design - Service Billing System</title>
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="app-header">
     <div class="header-content">
-      <p class="eyebrow">Registro de horas y facturacion de servicios</p>
-      <h1>Solutions By Design</h1>
-      <p>Solutions By Design ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.</p>
+      <div class="brand-lockup">
+        <img class="brand-logo brand-logo-horizontal" src="assets/logo-horizontal.png" alt="Solutions By Design">
+        <div class="brand-copy">
+          <p class="eyebrow">Registro de horas y facturacion de servicios</p>
+          <p>Solutions By Design ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.</p>
+        </div>
+      </div>
       <div class="header-tools">
         <button type="button" id="languageToggle" class="tool-button">English</button>
         <button type="button" id="notificationBell" class="tool-button notification-bell hidden" aria-label="Notificaciones">
@@ -41,6 +49,9 @@
 
   <section id="loginView" class="login-view">
     <form id="loginForm" class="panel login-panel">
+      <div class="login-brand">
+        <img class="login-logo login-logo-horizontal" src="assets/logo-horizontal.png" alt="Solutions By Design">
+      </div>
       <div class="section-title">
         <p class="eyebrow">Acceso seguro</p>
         <h2>Iniciar sesion</h2>
@@ -97,6 +108,9 @@
 
   <section id="forgotPasswordView" class="login-view hidden">
     <form id="forgotPasswordForm" class="panel login-panel">
+      <div class="login-brand">
+        <img class="login-logo login-logo-horizontal" src="assets/logo-horizontal.png" alt="Solutions By Design">
+      </div>
       <div class="section-title">
         <p class="eyebrow">Acceso seguro</p>
         <h2 id="forgotPasswordTitle">Recuperar contrasena</h2>

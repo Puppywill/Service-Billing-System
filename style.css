@@ -1,9 +1,10 @@
 :root {
-  --background: #09111f;
-  --background-soft: #0d1728;
-  --surface: #101b2e;
-  --surface-strong: #142137;
-  --surface-soft: #17243a;
+  color-scheme: dark;
+  --background: #071120;
+  --background-soft: #0b1627;
+  --surface: #0f1a2d;
+  --surface-strong: #15243a;
+  --surface-soft: #192940;
   --text: #edf3fb;
   --muted: #97a6ba;
   --line: rgba(148, 163, 184, 0.2);
@@ -14,8 +15,85 @@
   --success: #22c55e;
   --warning: #f59e0b;
   --info: #60a5fa;
-  --shadow: 0 18px 48px rgba(0, 0, 0, 0.26);
+  --shadow: 0 20px 55px rgba(0, 0, 0, 0.3);
   --focus: 0 0 0 4px rgba(56, 189, 248, 0.16);
+  --page-bg:
+    radial-gradient(circle at 18% -8%, rgba(48, 97, 154, 0.28), transparent 34rem),
+    linear-gradient(180deg, rgba(12, 30, 52, 0.9), rgba(7, 17, 32, 0) 380px),
+    linear-gradient(135deg, #06101f 0%, #0a1424 52%, #0d1728 100%);
+  --header-overlay:
+    linear-gradient(90deg, rgba(51, 101, 161, 0.18), rgba(114, 187, 44, 0.07), transparent 70%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.58), rgba(15, 23, 42, 0));
+  --surface-panel: linear-gradient(180deg, rgba(18, 31, 51, 0.94), rgba(12, 22, 38, 0.94));
+  --surface-panel-strong: rgba(8, 13, 23, 0.82);
+  --surface-panel-soft: rgba(13, 24, 42, 0.86);
+  --surface-field: rgba(2, 6, 23, 0.52);
+  --surface-field-hover: rgba(15, 23, 42, 0.62);
+  --surface-row: rgba(148, 163, 184, 0.025);
+  --surface-row-hover: rgba(96, 165, 250, 0.075);
+  --surface-muted: rgba(7, 13, 24, 0.46);
+  --text-strong: #f8fafc;
+  --text-soft: #d5e0ef;
+  --text-inverse: #ffffff;
+  --line-strong: rgba(148, 163, 184, 0.32);
+  --button-bg: rgba(9, 17, 31, 0.72);
+  --button-hover-bg: rgba(56, 189, 248, 0.12);
+  --tab-active-bg: linear-gradient(180deg, rgba(37, 99, 235, 0.25), rgba(29, 78, 216, 0.18));
+  --brand-shadow: drop-shadow(0 20px 42px rgba(2, 6, 23, 0.36));
+  --chart-fill: linear-gradient(90deg, #38bdf8, #22c55e);
+  --scrollbar-track: rgba(15, 23, 42, 0.45);
+  --scrollbar-thumb: rgba(100, 116, 139, 0.72);
+  --modal-backdrop: rgba(2, 6, 23, 0.74);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --background: #f4f7fb;
+    --background-soft: #eaf0f7;
+    --surface: #ffffff;
+    --surface-strong: #f8fafc;
+    --surface-soft: #eef4fb;
+    --text: #152033;
+    --muted: #5d6b7f;
+    --line: rgba(92, 111, 134, 0.24);
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --danger: #dc2626;
+    --danger-dark: #b91c1c;
+    --success: #15803d;
+    --warning: #b45309;
+    --info: #2563eb;
+    --shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    --focus: 0 0 0 4px rgba(37, 99, 235, 0.16);
+    --page-bg:
+      radial-gradient(circle at 14% -10%, rgba(61, 126, 202, 0.18), transparent 34rem),
+      linear-gradient(180deg, rgba(225, 237, 249, 0.95), rgba(244, 247, 251, 0) 380px),
+      linear-gradient(135deg, #f8fbff 0%, #eef4fb 52%, #f6f9fc 100%);
+    --header-overlay:
+      linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(114, 187, 44, 0.1), transparent 70%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0));
+    --surface-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 254, 0.96));
+    --surface-panel-strong: rgba(255, 255, 255, 0.86);
+    --surface-panel-soft: rgba(248, 250, 252, 0.92);
+    --surface-field: rgba(255, 255, 255, 0.9);
+    --surface-field-hover: rgba(248, 250, 252, 0.98);
+    --surface-row: rgba(37, 99, 235, 0.025);
+    --surface-row-hover: rgba(37, 99, 235, 0.075);
+    --surface-muted: rgba(241, 245, 249, 0.82);
+    --text-strong: #0f172a;
+    --text-soft: #334155;
+    --text-inverse: #ffffff;
+    --line-strong: rgba(92, 111, 134, 0.34);
+    --button-bg: rgba(255, 255, 255, 0.86);
+    --button-hover-bg: rgba(37, 99, 235, 0.08);
+    --tab-active-bg: linear-gradient(180deg, rgba(37, 99, 235, 0.14), rgba(37, 99, 235, 0.08));
+    --brand-shadow: drop-shadow(0 18px 34px rgba(15, 23, 42, 0.16));
+    --chart-fill: linear-gradient(90deg, #2563eb, #65a30d);
+    --scrollbar-track: rgba(226, 232, 240, 0.9);
+    --scrollbar-thumb: rgba(100, 116, 139, 0.54);
+    --modal-backdrop: rgba(15, 23, 42, 0.42);
+  }
 }
 
 * {
@@ -34,8 +112,9 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   background:
-    linear-gradient(180deg, rgba(14, 35, 60, 0.88), rgba(9, 17, 31, 0) 360px),
-    linear-gradient(135deg, #09111f 0%, #0b1424 50%, #0d1728 100%);
+    radial-gradient(circle at 18% -8%, rgba(48, 97, 154, 0.28), transparent 34rem),
+    linear-gradient(180deg, rgba(12, 30, 52, 0.9), rgba(7, 17, 32, 0) 380px),
+    linear-gradient(135deg, #06101f 0%, #0a1424 52%, #0d1728 100%);
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 15px;
@@ -69,7 +148,7 @@ button,
   position: relative;
   overflow: hidden;
   color: #ffffff;
-  padding: 28px clamp(18px, 5vw, 64px) 70px;
+  padding: 34px clamp(22px, 5vw, 72px) 86px;
 }
 
 .app-header::before {
@@ -77,15 +156,47 @@ button,
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(56, 189, 248, 0.16), rgba(34, 197, 94, 0.05), transparent),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0));
+    linear-gradient(90deg, rgba(51, 101, 161, 0.18), rgba(114, 187, 44, 0.07), transparent 70%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.58), rgba(15, 23, 42, 0));
   pointer-events: none;
 }
 
 .header-content {
   position: relative;
-  width: min(1120px, 100%);
+  width: min(1320px, 100%);
   margin: 0 auto;
+}
+
+.brand-lockup {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+  max-width: 850px;
+}
+
+.brand-logo,
+.login-logo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.brand-logo-horizontal {
+  width: min(860px, 94vw);
+  height: auto;
+  max-height: 168px;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 20px 42px rgba(2, 6, 23, 0.36));
+  object-fit: contain;
+  object-position: left center;
+}
+
+.brand-copy {
+  min-width: 0;
 }
 
 .app-header h1 {
@@ -99,8 +210,9 @@ button,
 .app-header p {
   max-width: 720px;
   margin: 0;
-  color: #b9c6d6;
-  font-size: 1rem;
+  color: #d5e0ef;
+  font-size: 1.04rem;
+  line-height: 1.58;
 }
 
 .session-bar {
@@ -213,13 +325,13 @@ button,
 }
 
 .app-shell {
-  width: min(1200px, calc(100% - 32px));
-  margin: -38px auto 44px;
+  width: min(1320px, calc(100% - 32px));
+  margin: -46px auto 48px;
 }
 
 .tabs-nav {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 16px;
@@ -227,8 +339,10 @@ button,
   overflow-y: hidden;
   padding: 6px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(7, 13, 24, 0.5);
+  border-radius: 14px;
+  background: rgba(7, 13, 24, 0.68);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(16px);
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
@@ -238,14 +352,14 @@ button,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 42px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 10px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   font-weight: 800;
-  padding: 9px 14px;
+  padding: 10px 15px;
   white-space: nowrap;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
@@ -256,8 +370,8 @@ button,
 }
 
 .tab-button.active {
-  border-color: rgba(56, 189, 248, 0.25);
-  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(125, 211, 252, 0.34);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.25), rgba(29, 78, 216, 0.18));
   color: #f8fbff;
 }
 
@@ -292,15 +406,41 @@ button,
 }
 
 .login-view {
-  width: min(430px, calc(100% - 32px));
-  margin: -42px auto 44px;
+  width: min(700px, calc(100% - 32px));
+  margin: -48px auto 50px;
 }
 
 .login-panel {
   display: grid;
-  gap: 16px;
-  padding: 24px;
+  gap: 18px;
+  padding: 36px;
   animation: riseIn 0.45s ease both;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.login-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+}
+
+.login-logo-horizontal {
+  width: min(600px, 100%);
+  height: auto;
+  max-height: 158px;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 22px 44px rgba(2, 6, 23, 0.38));
+  object-fit: contain;
 }
 
 .workspace {
@@ -529,11 +669,12 @@ button,
 
 .panel,
 .stat-card {
-  background: linear-gradient(180deg, rgba(20, 33, 55, 0.98), rgba(16, 27, 46, 0.98));
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(19, 32, 52, 0.96), rgba(12, 22, 38, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
 }
 
 .panel {
@@ -542,7 +683,7 @@ button,
 
 .form-panel,
 .table-panel {
-  padding: 22px;
+  padding: 24px;
 }
 
 .section-title {
@@ -566,7 +707,7 @@ button,
   gap: 6px;
   padding: 14px;
   border: 1px solid rgba(56, 189, 248, 0.22);
-  border-radius: 8px;
+  border-radius: 12px;
   background:
     linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(37, 99, 235, 0.08)),
     rgba(7, 13, 24, 0.58);
@@ -833,8 +974,8 @@ textarea:focus {
   display: flex;
   gap: 14px;
   align-items: center;
-  min-height: 104px;
-  padding: 16px;
+  min-height: 102px;
+  padding: 18px;
   overflow: hidden;
   animation: riseIn 0.45s ease both;
 }
@@ -846,7 +987,7 @@ textarea:focus {
   width: 130px;
   height: 130px;
   border-radius: 999px;
-  background: rgba(56, 189, 248, 0.06);
+  background: rgba(125, 211, 252, 0.045);
 }
 
 .stat-icon {
@@ -855,7 +996,7 @@ textarea:focus {
   width: 48px;
   height: 48px;
   flex: 0 0 48px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -908,15 +1049,15 @@ textarea:focus {
 
 .interactive-card:hover,
 .interactive-card:focus-visible {
-  border-color: rgba(96, 165, 250, 0.46);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+  border-color: rgba(125, 211, 252, 0.44);
+  box-shadow: 0 22px 46px rgba(2, 6, 23, 0.34);
   transform: translateY(-2px);
 }
 
 #dashboardTabPanel > .dashboard-overview-panel {
-  padding: 18px;
-  background: rgba(15, 23, 42, 0.92);
-  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.22);
+  padding: 20px;
+  background: rgba(11, 20, 35, 0.9);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
 }
 
 #dashboardTabPanel > .dashboard-overview-panel .table-header {
@@ -929,12 +1070,12 @@ textarea:focus {
 }
 
 #dashboardSummaryGrid .dashboard-summary-card {
-  min-height: 86px;
-  padding: 14px;
+  min-height: 92px;
+  padding: 16px;
   gap: 12px;
-  background: rgba(15, 23, 42, 0.84);
+  background: rgba(13, 24, 42, 0.86);
   border-color: rgba(148, 163, 184, 0.16);
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.18);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.22);
 }
 
 #dashboardSummaryGrid .dashboard-summary-card::after {
@@ -1738,13 +1879,13 @@ body {
 }
 
 .app-header {
-  padding-bottom: 64px;
+  padding-bottom: 86px;
 }
 
 .app-header::before {
   background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0)),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(20, 184, 166, 0.04), transparent);
+    linear-gradient(180deg, rgba(12, 22, 38, 0.78), rgba(15, 23, 42, 0)),
+    linear-gradient(90deg, rgba(55, 112, 177, 0.14), rgba(114, 187, 44, 0.06), transparent);
 }
 
 .app-header h1 {
@@ -1752,17 +1893,17 @@ body {
 }
 
 .tabs-nav {
-  gap: 4px;
-  padding: 5px;
-  border-color: rgba(148, 163, 184, 0.16);
-  background: rgba(8, 13, 23, 0.78);
-  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.24);
+  gap: 6px;
+  padding: 7px;
+  border-color: rgba(148, 163, 184, 0.17);
+  background: rgba(8, 13, 23, 0.82);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.28);
 }
 
 .tab-button {
   position: relative;
-  min-height: 38px;
-  border-radius: 8px;
+  min-height: 42px;
+  border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 760;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.16s ease;
@@ -1776,9 +1917,9 @@ body {
 
 .tab-button.active {
   border-color: rgba(96, 165, 250, 0.34);
-  background: rgba(37, 99, 235, 0.18);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.25), rgba(30, 64, 175, 0.18));
   color: #ffffff;
-  box-shadow: inset 0 -2px 0 rgba(56, 189, 248, 0.85), 0 8px 20px rgba(2, 6, 23, 0.22);
+  box-shadow: inset 0 -2px 0 rgba(125, 211, 252, 0.88), 0 10px 24px rgba(2, 6, 23, 0.24);
 }
 
 .button-icon {
@@ -1787,21 +1928,22 @@ body {
 
 .panel,
 .stat-card {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.15);
-  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.24);
+  background: linear-gradient(180deg, rgba(18, 31, 51, 0.94), rgba(12, 22, 38, 0.94));
+  border-color: rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  box-shadow: 0 20px 44px rgba(2, 6, 23, 0.28);
 }
 
 .panel:hover,
 .stat-card:hover {
-  border-color: rgba(148, 163, 184, 0.22);
+  border-color: rgba(148, 163, 184, 0.25);
 }
 
 .form-panel,
 .table-panel,
 .foundation-hero,
 .foundation-card {
-  padding: 20px;
+  padding: 24px;
 }
 
 .section-title {
@@ -1819,9 +1961,9 @@ body {
 }
 
 .login-panel {
-  padding: 26px;
-  border-color: rgba(125, 211, 252, 0.18);
-  box-shadow: 0 24px 55px rgba(2, 6, 23, 0.34);
+  padding: 38px;
+  border-color: rgba(125, 211, 252, 0.2);
+  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.42);
 }
 
 label {
@@ -2014,6 +2156,259 @@ tbody tr:hover {
 .modal-panel .btn-primary,
 .modal-panel .session-button {
   justify-self: end;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--text);
+}
+
+.app-header {
+  color: var(--text-strong);
+}
+
+.app-header::before {
+  background: var(--header-overlay);
+}
+
+.brand-logo-horizontal,
+.login-logo-horizontal {
+  filter: var(--brand-shadow);
+}
+
+.app-header p,
+.brand-copy p {
+  color: var(--text-soft);
+}
+
+.session-bar,
+.tool-button,
+.session-button,
+.tabs-nav,
+.ticket-toolbar,
+.client-toolbar,
+.project-toolbar,
+.service-record-toolbar,
+.invoice-toolbar,
+.report-toolbar {
+  background: var(--surface-panel-strong);
+  border-color: var(--line);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.tool-button,
+.session-button,
+.link-button {
+  color: var(--text);
+}
+
+.tool-button:hover,
+.link-button:hover,
+.session-button:hover,
+.tab-button:hover,
+.interactive-bar-row:hover {
+  background: var(--button-hover-bg);
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--line));
+  color: var(--text-strong);
+}
+
+.tab-button {
+  color: var(--muted);
+}
+
+.tab-button.active {
+  background: var(--tab-active-bg);
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--line));
+  color: var(--text-strong);
+}
+
+.panel,
+.form-panel,
+.table-panel,
+.stat-card,
+.login-panel,
+.chart-panel,
+.activity-panel,
+.foundation-card,
+.foundation-hero,
+.dashboard-detail-panel,
+.project-dashboard-panel,
+.technician-dashboard-panel,
+.modal-panel {
+  background: var(--surface-panel);
+  border-color: var(--line);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+#dashboardTabPanel > .dashboard-overview-panel,
+#dashboardSummaryGrid .dashboard-summary-card,
+.dashboard-detail-panel,
+.project-dashboard-info-item,
+.detail-summary-grid div,
+.contract-status-grid div,
+.current-user-card,
+.notification-item,
+.invoice-line-row,
+.invoice-summary-panel,
+.invoice-signature-panel {
+  background: var(--surface-panel-soft);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.section-title h2,
+.chart-panel h3,
+.activity-panel h3,
+.foundation-card h3,
+.current-user-card strong,
+.stat-card strong,
+.bar-row-header strong,
+.notification-item strong,
+.session-bar span,
+th,
+td {
+  color: var(--text-strong);
+}
+
+.eyebrow,
+.session-bar strong,
+.link-button {
+  color: var(--primary);
+}
+
+.foundation-copy,
+.foundation-card p,
+.notification-item span,
+.bar-row-header,
+.detail-subheader-row th,
+.ticket-description,
+label,
+.form-message,
+.empty-state,
+.helper-text {
+  color: var(--muted);
+}
+
+input,
+select,
+textarea,
+.password-field input {
+  background: var(--surface-field);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  background: var(--surface-field-hover);
+  border-color: var(--line-strong);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--text-inverse);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--primary-dark) 26%, transparent);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 88%, white), var(--primary-dark));
+}
+
+.table-wrapper {
+  background: var(--surface-muted);
+  border-color: var(--line);
+}
+
+th {
+  background: var(--surface-panel-strong);
+}
+
+tbody tr:nth-child(even) {
+  background: var(--surface-row);
+}
+
+tbody tr:hover,
+.detail-section-row td {
+  background: var(--surface-row-hover);
+}
+
+.bar-track {
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+}
+
+.bar-fill,
+.bar-row:hover .bar-fill,
+.interactive-bar-row:hover .bar-fill {
+  background: var(--chart-fill);
+}
+
+.modal-backdrop {
+  background: var(--modal-backdrop);
+}
+
+.badge,
+.action-btn,
+.icon-button {
+  border-color: var(--line);
+}
+
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border-color: var(--scrollbar-track);
+  background: var(--scrollbar-thumb);
+}
+
+@media (prefers-color-scheme: light) {
+  .app-header,
+  .app-header p,
+  .brand-copy p,
+  .session-bar span,
+  .section-title h2,
+  .stat-card strong,
+  th,
+  td {
+    color: var(--text);
+  }
+
+  .brand-logo-horizontal,
+  .login-logo-horizontal {
+    filter: var(--brand-shadow);
+  }
+
+  .notification-count,
+  .btn-primary,
+  .action-btn {
+    color: var(--text-inverse);
+  }
+
+  .login-panel,
+  .modal-panel,
+  .panel,
+  .stat-card {
+    backdrop-filter: blur(12px);
+  }
 }
 
 @keyframes fadeIn {
@@ -2213,12 +2608,22 @@ tbody tr:hover {
   .app-header {
     padding-top: 24px;
     padding-inline: 12px;
-    padding-bottom: 58px;
+    padding-bottom: 72px;
   }
 
   .header-content {
     width: 100%;
     max-width: 100%;
+  }
+
+  .brand-lockup {
+    gap: 10px;
+  }
+
+  .brand-logo-horizontal {
+    width: min(620px, 94vw);
+    height: auto;
+    max-height: 118px;
   }
 
   .app-shell {
@@ -2246,14 +2651,19 @@ tbody tr:hover {
   }
 
   .login-view {
-    width: min(100% - 24px, 430px);
-    margin-top: -36px;
+    width: min(100% - 24px, 560px);
+    margin-top: -44px;
     margin-bottom: 28px;
   }
 
   .login-panel {
     gap: 14px;
-    padding: 18px;
+    padding: 22px;
+  }
+
+  .login-logo-horizontal {
+    width: min(520px, 100%);
+    max-height: 116px;
   }
 
   .login-panel .link-button {
@@ -2410,7 +2820,12 @@ tbody tr:hover {
   }
 
   .app-header {
-    padding-bottom: 56px;
+    padding-bottom: 64px;
+  }
+
+  .brand-logo-horizontal {
+    width: min(440px, 94vw);
+    max-height: 92px;
   }
 
   .app-header h1 {
@@ -2431,13 +2846,18 @@ tbody tr:hover {
 
   .login-view {
     width: 100%;
-    max-width: 430px;
+    max-width: 520px;
     padding-inline: 8px;
-    margin-top: -24px;
+    margin-top: -34px;
+  }
+
+  .login-logo-horizontal {
+    width: min(430px, 100%);
+    max-height: 98px;
   }
 
   .tabs-nav {
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 5px;
   }
 
@@ -2455,13 +2875,13 @@ tbody tr:hover {
   .service-record-toolbar,
   .invoice-toolbar,
   .report-toolbar {
-    border-radius: 8px;
+    border-radius: 12px;
   }
 
   .form-panel,
   .table-panel,
   .login-panel {
-    padding: 14px;
+    padding: 18px;
   }
 
   .stat-card {

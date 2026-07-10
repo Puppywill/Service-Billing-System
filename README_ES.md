@@ -1229,7 +1229,7 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - Las descripciones completas se mantienen visibles y la columna de descripcion tiene mas ancho.
 - El total de horas aparece al final del desglose de servicios.
 - La pagina final `Time Sheet` usa una tabla compacta en landscape agrupada por tecnico con `Tecnico`, `Dia`, `Cliente`, `Departamento/Proyecto`, `Manana`, `Tarde` y `Total`.
-- El generador PDF queda preparado para usar un logo futuro desde `assets/logo.png`, `assets/solutions-by-design-logo.png`, `public/logo.png` o `public/solutions-by-design-logo.png`; mientras tanto imprime `Solutions By Design` como texto.
+- El generador PDF usa `assets/logo-horizontal.png` y usa texto `Solutions By Design` como fallback si falta el archivo.
 
 ### Fase 33: Invoice Manual Para Reportes PDF
 
@@ -1342,6 +1342,36 @@ El Dashboard tambien incluye un panel interno `Technician Dashboard`:
 - El PDF renderiza dos secciones profesionales con linea de firma y linea de fecha.
 - Si los campos quedan vacios, se mantiene la linea sin nombres hardcodeados.
 - Los valores de firma no se guardan en la base de datos.
+
+### Fase 34.5: Logo Oficial De Solutions By Design
+
+- Se agrego el primer asset oficial de logo de Solutions By Design.
+- Este asset fue reemplazado luego por el logo horizontal transparente en la Fase 34.8.
+
+### Fase 34.6: Favicon Oficial
+
+- Se generaron assets de favicon desde el logo oficial:
+  - `assets/favicon.ico`
+  - `assets/favicon-32x32.png`
+  - `assets/favicon-16x16.png`
+  - `assets/apple-touch-icon.png`
+- Se agregaron los links estandar de favicon y Apple touch icon en `index.html`.
+- Se actualizo el titulo de la pestana a `Solutions By Design - Service Billing System`.
+- Para actualizar el favicon en el futuro solo hay que reemplazar los archivos favicon dentro de `assets`.
+
+### Fase 34.7: Logo Horizontal Oficial
+
+- Se agrego el logo horizontal de Solutions By Design como marca principal.
+- Este asset fue reemplazado por la version oficial transparente en la Fase 34.8.
+
+### Fase 34.8: Reemplazo Por Logo Oficial Transparente
+
+- Se reemplazaron todos los logos anteriores con el nuevo logo oficial transparente.
+- La ruta activa del logo es `assets/logo-horizontal.png`.
+- Login, header, Dashboard, Reports, Facturas, Report PDF, Time Sheet PDF, Invoice PDF y futuros templates PDF usan el mismo asset.
+- Los archivos de favicon se regeneraron desde el nuevo logo.
+- Los archivos viejos de logo fueron removidos de `assets`.
+- Para reemplazar el logo en el futuro solo hay que cambiar `assets/logo-horizontal.png` y regenerar los favicons si tambien debe cambiar el icono del navegador.
 
 ### Ejemplos De API
 

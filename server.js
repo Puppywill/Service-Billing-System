@@ -1661,17 +1661,14 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
   const manualInvoiceNumber = String(options.invoiceNumber || "").trim();
   const invoiceLabel = manualInvoiceNumber ? `#${manualInvoiceNumber.replace(/^#/, "")}` : "N/A";
   const logoCandidates = [
-    path.join(__dirname, "assets", "logo.png"),
-    path.join(__dirname, "assets", "solutions-by-design-logo.png"),
-    path.join(__dirname, "public", "logo.png"),
-    path.join(__dirname, "public", "solutions-by-design-logo.png")
+    path.join(__dirname, "assets", "logo-horizontal.png")
   ];
   const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
 
-  const drawBrand = (x, y, width = 132) => {
+  const drawBrand = (x, y, width = 360, height = 106) => {
     document.save();
     if (logoPath) {
-      document.image(logoPath, x, y, { fit: [width, 42] });
+      document.image(logoPath, x, y, { fit: [width, height] });
     } else {
       document.fillColor(navy).font("Helvetica-Bold").fontSize(12).text("Solutions By Design", x, y + 8, {
         width,
@@ -1686,29 +1683,29 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
     const y = margin;
 
     document.save();
-    drawBrand(margin, y, 138);
-    document.fillColor(slate).font("Helvetica-Bold").fontSize(11).text(clientLabel, margin + 150, y + 2, {
-      width: pageWidth - margin * 2 - 300,
+    drawBrand(margin, y, 360, 100);
+    document.fillColor(slate).font("Helvetica-Bold").fontSize(11).text(clientLabel, margin, y + 112, {
+      width: pageWidth - margin * 2,
       align: "center"
     });
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(14).text("Desglose de servicios prestados", margin + 150, y + 20, {
-      width: pageWidth - margin * 2 - 300,
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(14).text("Desglose de servicios prestados", margin, y + 130, {
+      width: pageWidth - margin * 2,
       align: "center"
     });
-    document.fillColor(slate).font("Helvetica").fontSize(9).text(`Invoice: ${invoiceLabel}`, pageWidth - margin - 140, y + 8, {
+    document.fillColor(slate).font("Helvetica").fontSize(9).text(`Invoice: ${invoiceLabel}`, pageWidth - margin - 140, y + 12, {
       width: 140,
       align: "right"
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Departamento/Proyecto: ${projectLabel}`, margin, y + 50, {
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Departamento/Proyecto: ${projectLabel}`, margin, y + 158, {
       width: pageWidth - margin * 2 - 190
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Período: ${period}`, pageWidth - margin - 180, y + 50, {
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Período: ${period}`, pageWidth - margin - 180, y + 158, {
       width: 180,
       align: "right"
     });
-    document.moveTo(margin, y + 66).lineTo(pageWidth - margin, y + 66).strokeColor(border).lineWidth(0.8).stroke();
+    document.moveTo(margin, y + 176).lineTo(pageWidth - margin, y + 176).strokeColor(border).lineWidth(0.8).stroke();
     document.restore();
-    document.y = y + 74;
+    document.y = y + 186;
   };
 
   const getPageBottom = () => document.page.height - footerMargin;
@@ -1832,7 +1829,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       align: "right",
       lineBreak: false
     });
-    document.text(`${formatReportNumber(totalHours)} h`, hoursX + 4, totalLineY + 7, {
+    document.text(formatReportNumber(totalHours), hoursX + 4, totalLineY + 7, {
       width: hoursWidth - 8,
       align: "right",
       lineBreak: false
@@ -1842,29 +1839,30 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
   const drawTimeSheetPageHeader = () => {
     const pageWidth = document.page.width;
     const y = margin;
+    const titleX = margin + 250;
+    const titleWidth = pageWidth - margin * 2 - 500;
 
     document.save();
-    document.fillColor(slate).font("Helvetica-Bold").fontSize(10).text("Solutions By Design, Inc.", margin, y, {
-      width: 170
-    });
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(14).text("Time Sheet", margin + 190, y - 2, {
-      width: pageWidth - margin * 2 - 380,
+    drawBrand(margin, y - 8, 330, 90);
+    document.fillColor(navy).font("Helvetica-Bold").fontSize(15).text("Time Sheet", titleX, y + 2, {
+      width: titleWidth,
       align: "center"
     });
-    document.fillColor(slate).font("Helvetica").fontSize(9).text(`Invoice: ${invoiceLabel}`, pageWidth - margin - 170, y, {
+    document.fillColor(slate).font("Helvetica").fontSize(9).text(`Invoice: ${invoiceLabel}`, pageWidth - margin - 170, y + 4, {
       width: 170,
       align: "right"
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Del ${filters.from || "inicio"} al ${filters.to || "actual"}`, margin + 190, y + 18, {
-      width: pageWidth - margin * 2 - 380,
+    document.fillColor(muted).font("Helvetica").fontSize(8).text(`Del ${filters.from || "inicio"} al ${filters.to || "actual"}`, titleX, y + 25, {
+      width: titleWidth,
       align: "center"
     });
-    document.fillColor(muted).font("Helvetica").fontSize(7.5).text(`Cliente: ${clientLabel} | Departamento/Proyecto: ${projectLabel}`, margin, y + 34, {
-      width: pageWidth - margin * 2
+    document.fillColor(muted).font("Helvetica").fontSize(7.5).text(`Cliente: ${clientLabel} | Departamento/Proyecto: ${projectLabel}`, margin, y + 88, {
+      width: pageWidth - margin * 2,
+      ellipsis: true
     });
-    document.moveTo(margin, y + 48).lineTo(pageWidth - margin, y + 48).strokeColor(border).lineWidth(0.8).stroke();
+    document.moveTo(margin, y + 100).lineTo(pageWidth - margin, y + 100).strokeColor(border).lineWidth(0.8).stroke();
     document.restore();
-    document.y = y + 58;
+    document.y = y + 110;
   };
 
   const getTimeSheetColumns = () => [
@@ -1926,7 +1924,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
         drawTimeSheetPageHeader();
         timeSheetColumns = drawTimeSheetHeader();
       }
-      document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(`${technician} - ${formatReportNumber(technicianHours)} h`, margin, document.y + 7, {
+      document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(`${technician} - ${formatReportNumber(technicianHours)}`, margin, document.y + 7, {
         width: document.page.width - margin * 2
       });
       document.y += 22;
@@ -1950,7 +1948,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
           formatReportTime(record.MorningEnd),
           formatReportTime(record.AfternoonStart),
           formatReportTime(record.AfternoonEnd),
-          `${formatReportNumber(record.TotalHours)} h`
+          formatReportNumber(record.TotalHours)
         ];
         let x = margin;
 
@@ -1985,7 +1983,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
       align: "right",
       lineBreak: false
     });
-    document.text(`${formatReportNumber(totalHours)} h`, totalX + 4, totalLineY + 8, {
+    document.text(formatReportNumber(totalHours), totalX + 4, totalLineY + 8, {
       width: totalWidth - 8,
       align: "right",
       lineBreak: false
@@ -2088,12 +2086,29 @@ function normalizeManualInvoiceLines(invoice) {
     };
   }).filter((line) => line.quantity > 0 || line.description || line.rate > 0 || line.amount > 0);
 
-  return lines.length ? lines : [{
-    quantity: 0,
-    description: "N/A",
-    rate: 0,
-    amount: 0
-  }];
+  return lines;
+}
+
+function getManualInvoiceValidationError(invoice) {
+  const lines = normalizeManualInvoiceLines(invoice);
+
+  if (!lines.length) {
+    return "Agrega al menos una línea válida antes de generar la factura.";
+  }
+
+  const hasInvalidLine = lines.some((line) => (
+    !Number.isFinite(line.quantity)
+    || line.quantity <= 0
+    || !Number.isFinite(line.rate)
+    || line.rate < 0
+    || !line.description
+  ));
+
+  if (hasInvalidLine) {
+    return "Cada línea debe tener cantidad mayor que 0, descripción y rate válido.";
+  }
+
+  return "";
 }
 
 function normalizeManualInvoiceSignatures(invoice) {
@@ -2136,21 +2151,32 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   const total = subtotal + taxAmount;
   const signatures = normalizeManualInvoiceSignatures(invoice);
   const logoCandidates = [
-    path.join(__dirname, "assets", "logo.png"),
-    path.join(__dirname, "assets", "solutions-by-design-logo.png"),
-    path.join(__dirname, "public", "logo.png"),
-    path.join(__dirname, "public", "solutions-by-design-logo.png")
+    path.join(__dirname, "assets", "logo-horizontal.png")
   ];
   const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
 
+  document.on("error", (error) => {
+    console.error("[manual-invoice-pdf] Error de PDFKit:", error);
+    if (typeof outputStream.destroy === "function" && !outputStream.destroyed) {
+      outputStream.destroy(error);
+    }
+  });
+
   document.pipe(outputStream);
+  console.log("[manual-invoice-pdf] PDF iniciado");
 
   const drawBrand = () => {
     if (logoPath) {
-      document.image(logoPath, margin, 42, { fit: [170, 54] });
-      return;
+      try {
+        document.image(logoPath, margin, 38, { fit: [224, 108] });
+        console.log("[manual-invoice-pdf] Logo cargado");
+        return;
+      } catch (error) {
+        console.error("[manual-invoice-pdf] Error al cargar logo, usando fallback tipografico:", error);
+      }
     }
 
+    console.log("[manual-invoice-pdf] Logo no disponible, usando fallback tipografico");
     document.fillColor(navy).font("Helvetica-Bold").fontSize(18).text("Solutions By Design", margin, 48, {
       width: 230
     });
@@ -2170,19 +2196,20 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
 
     for (let index = 0; index < range.count; index += 1) {
       document.switchToPage(range.start + index);
+      const footerBottom = document.page.height - document.page.margins.bottom;
+      const footerLineY = footerBottom - 30;
+      const footerTextY = footerBottom - 20;
+
       document.save();
-      document.moveTo(margin, pageHeight - 48).lineTo(pageWidth - margin, pageHeight - 48).strokeColor(border).lineWidth(0.5).stroke();
-      document.fillColor(muted).font("Helvetica").fontSize(8).text("Solutions By Design", margin, pageHeight - 36, {
+      document.moveTo(margin, footerLineY).lineTo(pageWidth - margin, footerLineY).strokeColor(border).lineWidth(0.5).stroke();
+      document.fillColor(muted).font("Helvetica").fontSize(8).text("Solutions By Design", margin, footerTextY, {
         width: 160,
+        height: 10,
         lineBreak: false
       });
-      document.text(generatedLabel, margin + 170, pageHeight - 36, {
-        width: 210,
-        align: "center",
-        lineBreak: false
-      });
-      document.text(`Page ${index + 1} of ${range.count}`, pageWidth - margin - 120, pageHeight - 36, {
+      document.text(`Page ${index + 1} of ${range.count}`, pageWidth - margin - 120, footerTextY, {
         width: 120,
+        height: 10,
         align: "right",
         lineBreak: false
       });
@@ -2191,6 +2218,16 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   };
 
   drawBrand();
+  document.fillColor(muted).font("Helvetica").fontSize(8.8).text(
+    "50 Calle Isabel II STE 103\nBayamón, PR 00961-6355\nTel. (787) 946-1534\nFax (787) 946-7830",
+    margin + 176,
+    62,
+    {
+      width: 180,
+      align: "left",
+      lineGap: 2
+    }
+  );
   document.fillColor(navy).font("Helvetica-Bold").fontSize(26).text("INVOICE", pageWidth - margin - 190, 44, {
     width: 190,
     align: "right"
@@ -2204,7 +2241,7 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
     align: "right"
   });
 
-  let y = 132;
+  let y = 190;
   document.rect(margin, y, contentWidth, 94).strokeColor(border).lineWidth(0.8).stroke();
   document.rect(margin, y, 250, 24).fill(soft);
   document.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("Bill To", margin + 12, y + 8, {
@@ -2246,7 +2283,14 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
     { label: "Rate", width: 92, align: "right" },
     { label: "Amount", width: 102, align: "right" }
   ];
-  const pageBottom = pageHeight - 84;
+  const footerSafeBottom = pageHeight - margin - 42;
+  const pageBottom = footerSafeBottom;
+  const ensureInvoiceSpace = (requiredHeight) => {
+    if (y + requiredHeight <= pageBottom) return;
+    document.addPage({ margin });
+    y = margin;
+  };
+
   const drawInvoiceLinesHeader = () => {
     let x = margin;
 
@@ -2272,8 +2316,7 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
     const rowHeight = Math.max(34, descriptionHeight + 18);
 
     if (y + rowHeight > pageBottom) {
-      document.addPage({ margin });
-      y = margin;
+      ensureInvoiceSpace(rowHeight + 24);
       drawInvoiceLinesHeader();
     }
 
@@ -2304,10 +2347,7 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   });
 
   y += 10;
-  if (y + 180 > pageBottom) {
-    document.addPage({ margin });
-    y = margin;
-  }
+  ensureInvoiceSpace(156);
   const summaryX = pageWidth - margin - 230;
   const summaryLabelWidth = 118;
   const summaryValueWidth = 112;
@@ -2338,7 +2378,8 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
     });
   });
 
-  y += 108;
+  y += 92;
+  ensureInvoiceSpace(78);
   document.fillColor(navy).font("Helvetica-Bold").fontSize(10).text("Certificación", margin, y, {
     width: contentWidth
   });
@@ -2349,17 +2390,14 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
     { width: contentWidth, lineGap: 2 }
   );
 
-  y += 102;
+  y += 88;
   const signatureLineWidth = 210;
   const signatureDateWidth = 112;
   const signatureBlockGap = contentWidth - signatureLineWidth - signatureDateWidth;
   const signatureDateX = margin + signatureLineWidth + signatureBlockGap;
 
   signatures.forEach((signature) => {
-    if (y + 64 > pageBottom) {
-      document.addPage({ margin });
-      y = margin;
-    }
+    ensureInvoiceSpace(64);
 
     document.moveTo(margin, y).lineTo(margin + signatureLineWidth, y).strokeColor(border).lineWidth(0.7).stroke();
     document.moveTo(signatureDateX, y).lineTo(signatureDateX + signatureDateWidth, y).strokeColor(border).lineWidth(0.7).stroke();
@@ -2390,6 +2428,10 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   });
 
   drawFooter();
+  const finalPageRange = document.bufferedPageRange();
+  console.log(`[manual-invoice-pdf] Paginas antes de doc.end(): ${finalPageRange.count}`);
+  console.log("[manual-invoice-pdf] Contenido agregado");
+  console.log("[manual-invoice-pdf] doc.end() ejecutado");
   document.end();
 }
 
@@ -4472,16 +4514,33 @@ app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, 
 });
 
 app.post("/api/manual-invoices/pdf", requireAuth, (req, res) => {
+  console.log("[manual-invoice-pdf] Solicitud recibida");
+
   try {
+    const validationError = getManualInvoiceValidationError(req.body || {});
+
+    if (validationError) {
+      console.log("[manual-invoice-pdf] Validacion fallida:", validationError);
+      return res.status(400).json({ message: validationError });
+    }
+
+    console.log("[manual-invoice-pdf] Datos validados");
     const generatedAt = new Date();
     const invoiceNumber = cleanManualInvoiceValue(req.body.invoiceNumber, "").replace(/^#/, "") || generatedAt.toISOString().slice(0, 10);
     const safeInvoiceNumber = invoiceNumber.replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "") || "manual";
+
+    res.on("finish", () => {
+      console.log("[manual-invoice-pdf] Respuesta finalizada");
+    });
+    res.on("error", (error) => {
+      console.error("[manual-invoice-pdf] Error de respuesta:", error);
+    });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename=solutions-by-design-invoice-${safeInvoiceNumber}.pdf`);
     drawManualInvoicePdf(req.body || {}, generatedAt, res);
   } catch (error) {
-    console.error(error);
+    console.error("[manual-invoice-pdf] Error:", error);
     if (!res.headersSent) {
       res.status(500).json({ message: "Error al generar la factura PDF." });
     } else {

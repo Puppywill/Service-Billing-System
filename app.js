@@ -461,7 +461,7 @@ async function refreshWorkspace() {
 
 const translations = {
   es: {
-    documentTitle: "Solutions By Design",
+    documentTitle: "Solutions By Design - Service Billing System",
     headerEyebrow: "Registro de horas y facturacion de servicios",
     headerTitle: "Solutions By Design",
     headerSubtitle: "Solutions By Design ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.",
@@ -483,6 +483,8 @@ const translations = {
     manualInvoiceGenerating: "Generando factura PDF...",
     manualInvoiceReady: "Factura PDF generada correctamente.",
     manualInvoiceError: "No se pudo generar la factura PDF.",
+    manualInvoiceLineRequired: "Agrega al menos una linea valida antes de generar la factura.",
+    manualInvoiceLineInvalid: "Cada linea debe tener cantidad mayor que 0, descripcion y rate valido.",
     settings: "Configuracion",
     dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el resumen.",
@@ -866,7 +868,7 @@ const translations = {
     }
   },
   en: {
-    documentTitle: "Solutions By Design",
+    documentTitle: "Solutions By Design - Service Billing System",
     headerEyebrow: "Service time tracking and billing",
     headerTitle: "Solutions By Design",
     headerSubtitle: "Solutions By Design provides a platform to record, manage, and monitor hourly service work efficiently.",
@@ -888,6 +890,8 @@ const translations = {
     manualInvoiceGenerating: "Generating invoice PDF...",
     manualInvoiceReady: "Invoice PDF generated successfully.",
     manualInvoiceError: "Invoice PDF could not be generated.",
+    manualInvoiceLineRequired: "Add at least one valid line before generating the invoice.",
+    manualInvoiceLineInvalid: "Each line must include quantity greater than 0, description, and a valid rate.",
     settings: "Settings",
     dashboardTitle: "Summary",
     dashboardLoadError: "Dashboard could not be loaded.",
@@ -5328,8 +5332,7 @@ function applyStaticLanguage() {
   document.documentElement.lang = currentLanguage;
 
   setText(".app-header .eyebrow", t("headerEyebrow"));
-  setText(".app-header h1", t("headerTitle"));
-  setText(".app-header h1 + p", t("headerSubtitle"));
+  setText(".brand-copy > p:last-child", t("headerSubtitle"));
   setAriaLabel("#notificationBell", t("notifications"));
   setAriaLabel(".tabs-nav", t("navigationLabel"));
   setAriaLabel("#dashboardTabPanel .stats-grid", t("executiveSummary"));
@@ -6227,12 +6230,32 @@ function getManualInvoicePayloadLines() {
     .filter((line) => line.quantity > 0 || line.description || line.rate > 0 || line.amount > 0);
 }
 
+function getManualInvoiceLinesValidationMessage(lines) {
+  if (!lines.length) return t("manualInvoiceLineRequired");
+
+  const hasInvalidLine = lines.some((line) => (
+    !Number.isFinite(line.quantity)
+    || line.quantity <= 0
+    || !line.description
+    || !Number.isFinite(line.rate)
+    || line.rate < 0
+  ));
+
+  return hasInvalidLine ? t("manualInvoiceLineInvalid") : "";
+}
+
 async function generateManualInvoicePdf(event) {
   event.preventDefault();
   manualInvoiceMessage.textContent = "";
 
   const lines = getManualInvoicePayloadLines();
   const totals = getManualInvoiceTotals();
+  const validationMessage = getManualInvoiceLinesValidationMessage(lines);
+
+  if (validationMessage) {
+    manualInvoiceMessage.textContent = validationMessage;
+    return;
+  }
 
   const payload = {
     invoiceNumber: manualInvoiceNumber.value.trim(),
@@ -6259,6 +6282,9 @@ async function generateManualInvoicePdf(event) {
       }
     ]
   };
+  const originalButtonText = generateManualInvoicePdfButton.textContent;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 60000);
 
   try {
     generateManualInvoicePdfButton.disabled = true;
@@ -6267,7 +6293,8 @@ async function generateManualInvoicePdf(event) {
     const response = await fetch("/api/manual-invoices/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
     if (!response.ok) {
@@ -6290,10 +6317,13 @@ async function generateManualInvoicePdf(event) {
     manualInvoiceMessage.textContent = t("manualInvoiceReady");
   } catch (error) {
     console.error(error);
-    manualInvoiceMessage.textContent = error.message || t("manualInvoiceError");
+    manualInvoiceMessage.textContent = error.name === "AbortError"
+      ? t("manualInvoiceError")
+      : error.message || t("manualInvoiceError");
   } finally {
+    window.clearTimeout(timeoutId);
     generateManualInvoicePdfButton.disabled = false;
-    generateManualInvoicePdfButton.textContent = t("manualInvoicePdfButton");
+    generateManualInvoicePdfButton.textContent = originalButtonText || t("manualInvoicePdfButton");
   }
 }
 

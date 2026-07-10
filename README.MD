@@ -1229,7 +1229,7 @@ The Dashboard also includes an internal `Technician Dashboard` panel:
 - Full service descriptions remain visible with more width allocated to the description column.
 - The service breakdown total appears at the end of the breakdown section.
 - The final `Time Sheet` page uses a compact landscape table grouped by technician with `Tecnico`, `Dia`, `Cliente`, `Departamento/Proyecto`, `Manana`, `Tarde`, and `Total`.
-- The PDF generator is ready to use a future logo file from `assets/logo.png`, `assets/solutions-by-design-logo.png`, `public/logo.png`, or `public/solutions-by-design-logo.png`; until then it prints `Solutions By Design` as text.
+- The PDF generator uses `assets/logo-horizontal.png` and falls back to `Solutions By Design` text if the file is missing.
 
 ### Phase 33: Manual Invoice Number for PDF Reports
 
@@ -1366,6 +1366,36 @@ GET /api/dashboard/recent-activity
 - The PDF renders two professional signature sections with a signature line and date line.
 - Empty signature fields leave the line visible without hardcoded names.
 - Signature values are not stored in the database.
+
+### Phase 34.5: Official Solutions By Design Logo
+
+- Added the first official Solutions By Design logo asset.
+- This asset was later replaced by the transparent horizontal logo in Phase 34.8.
+
+### Phase 34.6: Official Favicon
+
+- Generated browser favicon assets from the official logo:
+  - `assets/favicon.ico`
+  - `assets/favicon-32x32.png`
+  - `assets/favicon-16x16.png`
+  - `assets/apple-touch-icon.png`
+- Added standard favicon and Apple touch icon links to `index.html`.
+- Updated the browser tab title to `Solutions By Design - Service Billing System`.
+- Future favicon updates only require replacing the favicon files in `assets`.
+
+### Phase 34.7: Official Horizontal Logo
+
+- Added the horizontal Solutions By Design logo as the primary brand mark.
+- This asset was replaced by the transparent official version in Phase 34.8.
+
+### Phase 34.8: Transparent Official Logo Replacement
+
+- Replaced all previous logo assets with the new transparent official logo.
+- The active logo path is `assets/logo-horizontal.png`.
+- Login, header, Dashboard, Reports, Invoices, Report PDF, Time Sheet PDF, Invoice PDF, and future PDF templates use the same asset.
+- Browser favicon files were regenerated from the new logo.
+- Old logo files were removed from `assets`.
+- Future logo replacement only requires replacing `assets/logo-horizontal.png` and regenerating favicon files if the browser icon should also change.
 
 Next phase: Phase 17D - Service Record contract warnings.
 
