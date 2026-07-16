@@ -34,6 +34,7 @@ const reportsTabButton = document.querySelector("#reportsTabButton");
 const reportsTabPanel = document.querySelector("#reportsTabPanel");
 const manualInvoicesTabButton = document.querySelector("#manualInvoicesTabButton");
 const manualInvoicesTabPanel = document.querySelector("#manualInvoicesTabPanel");
+const settingsTabButton = document.querySelector("#settingsTabButton");
 const settingsTabPanel = document.querySelector("#settingsTabPanel");
 
 const addClientButton = document.querySelector("#addClientButton");
@@ -169,6 +170,8 @@ const userEmail = document.querySelector("#userEmail");
 const userPassword = document.querySelector("#userPassword");
 const userRole = document.querySelector("#userRole");
 const userFormMessage = document.querySelector("#userFormMessage");
+const userSearchInput = document.querySelector("#userSearchInput");
+const userStatusFilter = document.querySelector("#userStatusFilter");
 const usersTableBody = document.querySelector("#usersTableBody");
 const usersTotalCount = document.querySelector("#usersTotalCount");
 const passwordResetsTableBody = document.querySelector("#passwordResetsTableBody");
@@ -804,6 +807,9 @@ const translations = {
     loadUsersError: "No se pudo cargar el panel de usuarios.",
     usersAdminOnly: "Panel disponible solo para administradores.",
     noUsers: "No hay usuarios registrados.",
+    noUserMatches: "No hay usuarios que coincidan con la busqueda y el estado seleccionado.",
+    userSearchPlaceholder: "Nombre, email o rol",
+    usersCount: "usuarios",
     registeredUsers: "usuarios registrados",
     administration: "Administracion",
     security: "Seguridad",
@@ -1234,6 +1240,9 @@ const translations = {
     loadUsersError: "The users panel could not be loaded.",
     usersAdminOnly: "Panel available only to administrators.",
     noUsers: "No users registered.",
+    noUserMatches: "No users match the search and selected status.",
+    userSearchPlaceholder: "Name, email, or role",
+    usersCount: "users",
     registeredUsers: "registered users",
     administration: "Administration",
     security: "Security",
@@ -1412,8 +1421,10 @@ function setAuthenticatedUser(user, options = {}) {
   notificationBell.classList.remove("hidden");
   setRoleControls();
   usersTabButton.classList.toggle("hidden", !isAdmin());
+  settingsTabButton.classList.toggle("hidden", !isAdmin());
+  manualInvoicesTabButton.classList.toggle("hidden", !isAdmin());
   reportsTabButton.classList.remove("hidden");
-  if (switchToTickets) {
+  if (switchToTickets || !canAccessTab(activeTab)) {
     switchTab("tickets");
   }
   applyLanguage();
@@ -1427,6 +1438,8 @@ function showLogin() {
   loginView.classList.remove("hidden");
   notificationBell.classList.add("hidden");
   usersTabButton.classList.add("hidden");
+  settingsTabButton.classList.add("hidden");
+  manualInvoicesTabButton.classList.add("hidden");
   reportsTabButton.classList.remove("hidden");
   activeTab = "tickets";
   dashboardTabPanel.classList.add("hidden");
@@ -1460,6 +1473,10 @@ function isTechnician() {
   return currentUser?.Role === "Technician";
 }
 
+function canAccessTab(tabName) {
+  return !["users", "settings", "manual-invoices", "invoices"].includes(tabName) || isAdmin();
+}
+
 function canManageOwnServiceRecords() {
   return ["Technician", "User"].includes(currentUser?.Role);
 }
@@ -1489,11 +1506,11 @@ async function loadPasswordResetsIfAdmin() {
 }
 
 async function switchTab(tabName) {
-  if (tabName === "users" && !isAdmin()) {
+  if (!canAccessTab(tabName)) {
     tabName = "tickets";
   }
 
-  if (tabName === "invoices") {
+  if (tabName === "invoices" && !isAdmin()) {
     tabName = "dashboard";
   }
 
@@ -1681,13 +1698,13 @@ function renderClients() {
       <td>${escapeHTML(client.BillingName || "")}</td>
       <td>${escapeHTML(client.TaxID || "")}</td>
         <td><span class="badge ${client.IsActive ? "user-status-active" : "user-status-inactive"}">${client.IsActive ? t("active") : t("inactive")}</span></td>
-      <td>
+      <td class="client-admin-actions ${canManageClients ? "" : "hidden"}">
         ${canManageClients ? `
           <div class="actions">
             <button type="button" class="action-btn edit-btn" data-client-action="edit" data-id="${client.ClientID}">${t("edit")}</button>
             <button type="button" class="action-btn ${client.IsActive ? "delete-btn" : "close-btn"}" data-client-action="toggle-status" data-next-active="${client.IsActive ? "false" : "true"}" data-id="${client.ClientID}">${client.IsActive ? t("deactivateClient") : t("activateClient")}</button>
           </div>
-        ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+        ` : ""}
       </td>
     </tr>
   `).join("");
@@ -1963,13 +1980,13 @@ function renderProjects() {
       <td>${escapeHTML(formatDateOnly(project.ContractEndDate) || "-")}</td>
       <td>${renderContractBadge(project.ContractStatus)}</td>
       <td><span class="badge ${project.IsActive ? "user-status-active" : "user-status-inactive"}">${project.IsActive ? t("active") : t("inactive")}</span></td>
-      <td>
+      <td class="project-admin-actions ${canManageProjects ? "" : "hidden"}">
         ${canManageProjects ? `
           <div class="actions">
             <button type="button" class="action-btn edit-btn" data-project-action="edit" data-id="${project.ProjectID}">${t("edit")}</button>
             <button type="button" class="action-btn ${project.IsActive ? "delete-btn" : "close-btn"}" data-project-action="toggle-status" data-next-active="${project.IsActive ? "false" : "true"}" data-id="${project.ProjectID}">${project.IsActive ? t("deactivateProject") : t("activateProject")}</button>
           </div>
-        ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+        ` : ""}
       </td>
     </tr>
   `).join("");
@@ -3013,7 +3030,7 @@ function renderNotifications() {
       <td><span class="badge role-user">${escapeHTML(translateNotificationType(notification.Type))}</span></td>
       <td>${formatDate(notification.CreatedAt)}</td>
       <td><span class="badge ${getNotificationStatusClass(notification)}">${getNotificationStatusLabel(notification)}</span></td>
-      <td>
+      <td class="notifications-admin-actions ${isAdmin() ? "" : "hidden"}">
         <div class="actions">
           ${renderNotificationActions(notification)}
         </div>
@@ -3939,12 +3956,12 @@ function renderDashboardTechnicianRecords(records) {
       <td>${formatNumber(record.TotalHours)}</td>
       <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
       <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
-      <td>
+      <td class="dashboard-technician-admin-actions ${isAdmin() ? "" : "hidden"}">
         ${isAdmin() ? `
           <button type="button" class="action-btn edit-btn" data-dashboard-technician-record-action="edit-description" data-id="${record.ServiceRecordID}">
             ${t("edit")}
           </button>
-        ` : `<span class="read-only-note">${t("readOnly")}</span>`}
+        ` : ""}
       </td>
     </tr>
   `).join("");
@@ -5667,7 +5684,14 @@ function applyStaticLanguage() {
 
   setText("#usersTabPanel .table-panel .section-title .eyebrow", t("security"));
   setText("#users-table-title", t("users"));
-  usersTotalCount.parentElement.lastChild.textContent = ` ${t("registeredUsers")}`;
+  setText('label[for="userSearchInput"]', t("search"));
+  setText('label[for="userStatusFilter"]', t("statusFilter"));
+  setPlaceholder("#userSearchInput", t("userSearchPlaceholder"));
+  if (userStatusFilter) {
+    userStatusFilter.options[0].textContent = t("allEntityStatuses");
+    userStatusFilter.options[1].textContent = t("activeOnly");
+    userStatusFilter.options[2].textContent = t("inactiveOnly");
+  }
   setText(".password-resets-panel .section-title .eyebrow", t("security"));
   setText("#password-resets-title", t("passwordResets"));
   passwordResetsTotalCount.parentElement.lastChild.textContent = ` ${t("passwordResetRequests")}`;
@@ -5806,18 +5830,31 @@ function applyLanguage() {
 }
 
 function setRoleControls() {
-  statusInput.disabled = !isAdmin();
-  statusHelp.classList.toggle("hidden", isAdmin());
-  addClientButton.classList.toggle("hidden", !isAdmin());
-  addProjectButton.classList.toggle("hidden", !isAdmin());
+  const canAdminister = isAdmin();
+  statusInput.disabled = !canAdminister;
+  statusHelp.classList.toggle("hidden", canAdminister);
+  addClientButton.classList.toggle("hidden", !canAdminister);
+  addProjectButton.classList.toggle("hidden", !canAdminister);
   addServiceRecordButton.classList.toggle("hidden", !canCreateServiceRecords());
-  generateInvoiceButton.classList.toggle("hidden", !isAdmin());
-  serviceRecordStatus.disabled = !isAdmin();
-  serviceRecordTechnicianId.disabled = !isAdmin();
+  generateInvoiceButton.classList.toggle("hidden", !canAdminister);
+  serviceRecordStatus.disabled = !canAdminister;
+  serviceRecordTechnicianId.disabled = !canAdminister;
+  document.querySelectorAll(".client-admin-actions, .project-admin-actions, .dashboard-technician-admin-actions, .notifications-admin-actions").forEach((element) => {
+    element.classList.toggle("hidden", !canAdminister);
+  });
+  document.querySelector(".report-invoice-field")?.classList.toggle("hidden", !canAdminister);
+  reportTechnician?.closest(".filter-field")?.classList.toggle("hidden", !canAdminister);
+  serviceRecordTechnicianFilter?.closest(".filter-field")?.classList.toggle("hidden", !canAdminister);
+  serviceRecordTechnicianId?.closest(".form-group")?.classList.toggle("hidden", !canAdminister);
+  serviceRecordStatus?.closest(".form-group")?.classList.toggle("hidden", !canAdminister);
+  dashboardTechnicianSearchInput?.closest(".search-field")?.classList.toggle("hidden", !canAdminister);
+  dashboardTechnicianSelect?.closest(".filter-field")?.classList.toggle("hidden", !canAdminister);
+  hoursByTechnicianChart?.closest(".chart-panel")?.classList.toggle("hidden", !canAdminister);
 
-  if (!isAdmin()) {
+  if (!canAdminister) {
     statusInput.value = "Abierto";
     serviceRecordStatus.value = "Recorded";
+    reportInvoiceNumber.value = "";
   }
 
   renderCreatingTicketAs();
@@ -5940,8 +5977,6 @@ function renderTickets() {
 }
 
 function renderUsers() {
-  usersTotalCount.textContent = formatNumber(users.length, 0);
-
   if (!isAdmin()) {
     showUsersMessage(t("usersAdminOnly"));
     return;
@@ -5952,8 +5987,32 @@ function renderUsers() {
     return;
   }
 
-  usersTableBody.innerHTML = users.map((user) => {
-    const isActive = user.IsActive !== false;
+  const search = normalizeSearchKey(userSearchInput?.value);
+  const selectedStatus = userStatusFilter?.value || "all";
+  const visibleUsers = users.filter((user) => {
+    const isActive = isUserActive(user);
+    const matchesStatus = selectedStatus === "all"
+      || (selectedStatus === "active" && isActive)
+      || (selectedStatus === "inactive" && !isActive);
+    const matchesSearch = !search || [user.FullName, user.Email, user.Role]
+      .some((value) => normalizeSearchKey(value).includes(search));
+
+    return matchesStatus && matchesSearch;
+  });
+
+  updateUsersCount(visibleUsers.length, selectedStatus);
+
+  if (visibleUsers.length === 0) {
+    usersTableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="empty-state">${t("noUserMatches")}</td>
+      </tr>
+    `;
+    return;
+  }
+
+  usersTableBody.innerHTML = visibleUsers.map((user) => {
+    const isActive = isUserActive(user);
     const isCurrentUser = Number(currentUser?.UserID) === Number(user.UserID);
 
     return `
@@ -5982,8 +6041,23 @@ function renderUsers() {
   }).join("");
 }
 
+function isUserActive(user) {
+  return user?.IsActive === true || user?.IsActive === 1 || user?.IsActive === "1";
+}
+
+function updateUsersCount(count, selectedStatus = userStatusFilter?.value || "all") {
+  const countLabel = selectedStatus === "active"
+    ? t("activeCount")
+    : selectedStatus === "inactive"
+      ? t("inactiveCount")
+      : t("usersCount");
+
+  usersTotalCount.textContent = formatNumber(count, 0);
+  usersTotalCount.parentElement.lastChild.textContent = ` ${countLabel}`;
+}
+
 function showUsersMessage(message) {
-  usersTotalCount.textContent = formatNumber(users.length, 0);
+  updateUsersCount(users.length, "all");
   usersTableBody.innerHTML = `
     <tr>
       <td colspan="8" class="empty-state">${message}</td>
@@ -7261,6 +7335,8 @@ ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);
 userForm.addEventListener("submit", createUser);
+userSearchInput.addEventListener("input", renderUsers);
+userStatusFilter.addEventListener("change", renderUsers);
 usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);

@@ -1515,7 +1515,7 @@ function getServiceHoursReportFilters(req) {
     numericFilters[name] = value;
   }
 
-  if (req.session.user.Role === "Technician") {
+  if (req.session.user.Role !== "Admin") {
     const sessionUserId = Number(req.session.user.UserID);
 
     if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
@@ -2759,7 +2759,7 @@ async function markPasswordResetNotificationsRead(pool, request) {
   `);
 }
 
-app.get("/api/test-db", async (req, res) => {
+app.get("/api/test-db", requireAdmin, async (req, res) => {
   try {
     const pool = await getPool();
     const result = await pool.request().query("SELECT 1 AS connectionTest");
@@ -3948,6 +3948,16 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
     numericFilters[name] = value;
   }
 
+  if (req.session.user.Role !== "Admin") {
+    const sessionUserId = Number(req.session.user.UserID);
+
+    if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
+      return res.status(403).json({ message: "Solo puedes consultar tus propios registros." });
+    }
+
+    numericFilters.TechnicianUserID = sessionUserId;
+  }
+
   const serviceDate = String(req.query.serviceDate || req.query.ServiceDate || "").trim();
   const status = String(req.query.status || req.query.Status || "").trim();
 
@@ -4043,6 +4053,11 @@ app.get("/api/service-records/:id", requireAdminOrTechnician, async (req, res) =
       return res.status(404).json({ message: "Registro de servicio no encontrado." });
     }
 
+    if (req.session.user.Role !== "Admin"
+      && Number(serviceRecord.TechnicianUserID) !== Number(req.session.user.UserID)) {
+      return res.status(403).json({ message: "Solo puedes consultar tus propios registros." });
+    }
+
     res.json(serviceRecord);
   } catch (error) {
     poolPromise = null;
@@ -4064,6 +4079,12 @@ app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
     return res.status(403).json({ message: "Solo puedes crear registros a tu propio nombre." });
   }
 
+  if (req.session.user.Role !== "Admin"
+    && serviceRecord.status
+    && serviceRecord.status !== "Recorded") {
+    return res.status(403).json({ message: "Solo un administrador puede asignar estados administrativos." });
+  }
+
   try {
     const pool = await getPool();
     const referenceError = await validateServiceRecordReferences(pool, serviceRecord);
@@ -4083,7 +4104,7 @@ app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
       .input("AfternoonEnd", sql.VarChar(8), serviceRecord.afternoonEnd)
       .input("TotalHours", sql.Decimal(6, 2), serviceRecord.totalHours)
       .input("ServiceDescription", sql.NVarChar(sql.MAX), serviceRecord.serviceDescription)
-      .input("Status", sql.NVarChar(20), serviceRecord.status || "Recorded")
+      .input("Status", sql.NVarChar(20), req.session.user.Role === "Admin" ? (serviceRecord.status || "Recorded") : "Recorded")
       .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
       .query(`
         INSERT INTO dbo.ServiceRecords (
@@ -4309,6 +4330,19 @@ app.get("/api/invoices", requireAuth, requireInvoiceReadAccess, async (req, res)
     if (periodTo) {
       request.input("PeriodTo", sql.Date, periodTo);
       whereClauses.push("i.PeriodFrom <= @PeriodTo");
+    }
+
+    if (req.session.user.Role === "Technician") {
+      request.input("TechnicianUserID", sql.Int, Number(req.session.user.UserID));
+      whereClauses.push(`
+        EXISTS (
+          SELECT 1
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = i.InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        )
+      `);
     }
 
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
@@ -4554,6 +4588,24 @@ app.get("/api/invoices/:id", requireAuth, requireInvoiceReadAccess, async (req, 
 
   try {
     const pool = await getPool();
+
+    if (req.session.user.Role === "Technician") {
+      const accessResult = await pool.request()
+        .input("InvoiceID", sql.Int, invoiceId)
+        .input("TechnicianUserID", sql.Int, Number(req.session.user.UserID))
+        .query(`
+          SELECT TOP 1 1 AS HasAccess
+          FROM dbo.InvoiceLines il
+          INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
+          WHERE il.InvoiceID = @InvoiceID
+            AND sr.TechnicianUserID = @TechnicianUserID
+        `);
+
+      if (accessResult.recordset.length === 0) {
+        return res.status(403).json({ message: "Solo puedes consultar facturas relacionadas con tus registros." });
+      }
+    }
+
     const invoice = await getInvoiceById(pool, invoiceId, true);
 
     if (!invoice) {
@@ -4919,7 +4971,7 @@ app.get("/api/reports/service-hours/excel", requireAdminOrTechnician, async (req
   }
 });
 
-app.post("/api/manual-invoices/pdf", requireAuth, (req, res) => {
+app.post("/api/manual-invoices/pdf", requireAdmin, (req, res) => {
   console.log("[manual-invoice-pdf] Solicitud recibida");
 
   try {
@@ -5290,7 +5342,7 @@ app.get("/api/reports/invoices/summary", requireAuth, requireInvoiceReadAccess, 
 });
 
 app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => {
-  const isTechnician = req.session.user.Role === "Technician";
+  const isTechnician = req.session.user.Role !== "Admin";
   const technicianUserId = Number(req.session.user.UserID);
 
   try {
@@ -5331,18 +5383,25 @@ app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => 
     `);
     const summary = result.recordset[0];
 
-    res.json({
+    const dashboardSummary = {
       TotalClients: Number(summary.TotalClients),
       TotalProjects: Number(summary.TotalProjects),
       TotalServiceRecords: Number(summary.TotalServiceRecords),
-      TotalInvoices: Number(summary.TotalInvoices),
       TotalHours: Number(summary.TotalHours),
       UnbilledHours: Number(summary.UnbilledHours),
-      BilledHours: Number(summary.BilledHours),
-      TotalBilledAmount: Number(summary.TotalBilledAmount),
-      PendingInvoiceAmount: Number(summary.PendingInvoiceAmount),
-      PaidAmount: Number(summary.PaidAmount)
-    });
+      BilledHours: Number(summary.BilledHours)
+    };
+
+    if (!isTechnician) {
+      Object.assign(dashboardSummary, {
+        TotalInvoices: Number(summary.TotalInvoices),
+        TotalBilledAmount: Number(summary.TotalBilledAmount),
+        PendingInvoiceAmount: Number(summary.PendingInvoiceAmount),
+        PaidAmount: Number(summary.PaidAmount)
+      });
+    }
+
+    res.json(dashboardSummary);
   } catch (error) {
     poolPromise = null;
     console.error(error);
@@ -5351,7 +5410,7 @@ app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => 
 });
 
 app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
-  const isTechnician = req.session.user.Role === "Technician";
+  const isTechnician = req.session.user.Role !== "Admin";
   const technicianUserId = Number(req.session.user.UserID);
 
   try {
@@ -5427,11 +5486,11 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
 
     res.json({
       HoursByMonth: result.recordsets[0].map((row) => mapReportGroupRow(row, "Month")),
-      BillingByMonth: result.recordsets[1].map((row) => mapReportGroupRow(row, "Month", "TotalAmount")),
+      BillingByMonth: isTechnician ? [] : result.recordsets[1].map((row) => mapReportGroupRow(row, "Month", "TotalAmount")),
       HoursByClient: result.recordsets[2].map((row) => mapReportGroupRow(row, "ClientName")),
       HoursByProject: result.recordsets[3].map((row) => mapReportGroupRow(row, "ProjectName")),
       HoursByTechnician: result.recordsets[4].map((row) => mapReportGroupRow(row, "TechnicianName")),
-      InvoicesByStatus: result.recordsets[5].map((row) => mapReportGroupRow(row, "Status", "TotalInvoices"))
+      InvoicesByStatus: isTechnician ? [] : result.recordsets[5].map((row) => mapReportGroupRow(row, "Status", "TotalInvoices"))
     });
   } catch (error) {
     poolPromise = null;
@@ -5441,7 +5500,7 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
 });
 
 app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, res) => {
-  const isTechnician = req.session.user.Role === "Technician";
+  const isTechnician = req.session.user.Role !== "Admin";
   const technicianUserId = Number(req.session.user.UserID);
 
   try {
@@ -5546,7 +5605,7 @@ app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, 
 
     res.json({
       ServiceRecords: result.recordsets[0].map(mapDashboardServiceRecord),
-      Invoices: result.recordsets[1].map((invoice) => mapInvoice(invoice)),
+      Invoices: isTechnician ? [] : result.recordsets[1].map((invoice) => mapInvoice(invoice)),
       Clients: result.recordsets[2].map(mapDashboardClient),
       Projects: result.recordsets[3].map(mapDashboardProject)
     });
