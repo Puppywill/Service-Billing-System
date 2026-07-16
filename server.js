@@ -3248,10 +3248,20 @@ app.delete("/api/users/:id", requireAdmin, async (req, res) => {
 
 app.get("/api/clients", requireAuth, async (req, res) => {
   const search = String(req.query.search || req.query.q || "").trim().slice(0, 180);
+  const status = String(req.query.status || "active").trim().toLowerCase();
+
+  if (!["active", "inactive", "all"].includes(status)) {
+    return res.status(400).json({ message: "El filtro status debe ser active, inactive o all." });
+  }
 
   try {
     const pool = await getPool();
     const request = pool.request();
+    const statusClause = status === "all"
+      ? ""
+      : status === "inactive"
+        ? "AND IsActive = 0"
+        : "AND IsActive = 1";
     let searchClause = "";
 
     if (search) {
@@ -3279,7 +3289,8 @@ app.get("/api/clients", requireAuth, async (req, res) => {
         CreatedAt,
         UpdatedAt
       FROM dbo.Clients
-      WHERE IsActive = 1
+      WHERE 1 = 1
+      ${statusClause}
       ${searchClause}
       ORDER BY ClientName ASC
     `);
@@ -3301,7 +3312,7 @@ app.get("/api/clients/:id", requireAuth, async (req, res) => {
 
   try {
     const pool = await getPool();
-    const client = await getClientById(pool, clientId);
+    const client = await getClientById(pool, clientId, false);
 
     if (!client) {
       return res.status(404).json({ message: "Cliente no encontrado." });
@@ -3430,6 +3441,43 @@ app.put("/api/clients/:id", requireAdmin, async (req, res) => {
   }
 });
 
+app.put("/api/clients/:id/status", requireAdmin, async (req, res) => {
+  const clientId = Number(req.params.id);
+  const isActive = req.body?.IsActive;
+
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    return res.status(400).json({ message: "ID de cliente invalido." });
+  }
+
+  if (typeof isActive !== "boolean") {
+    return res.status(400).json({ message: "IsActive debe ser booleano." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("ClientID", sql.Int, clientId)
+      .input("IsActive", sql.Bit, isActive)
+      .query(`
+        UPDATE dbo.Clients
+        SET IsActive = @IsActive,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ClientID = @ClientID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Cliente no encontrado." });
+    }
+
+    const updatedClient = await getClientById(pool, clientId, false);
+    res.json(updatedClient);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al actualizar el estado del cliente." });
+  }
+});
+
 app.delete("/api/clients/:id", requireAdmin, async (req, res) => {
   const clientId = Number(req.params.id);
 
@@ -3463,6 +3511,7 @@ app.delete("/api/clients/:id", requireAdmin, async (req, res) => {
 
 app.get("/api/projects", requireAuth, async (req, res) => {
   const search = String(req.query.search || req.query.q || "").trim().slice(0, 180);
+  const status = String(req.query.status || "active").trim().toLowerCase();
   const rawClientId = req.query.clientId ?? req.query.ClientID;
   const hasClientFilter = rawClientId !== undefined && rawClientId !== null && rawClientId !== "";
   const clientId = hasClientFilter ? Number(rawClientId) : null;
@@ -3471,10 +3520,17 @@ app.get("/api/projects", requireAuth, async (req, res) => {
     return res.status(400).json({ message: "ClientID invalido." });
   }
 
+  if (!["active", "inactive", "all"].includes(status)) {
+    return res.status(400).json({ message: "El filtro status debe ser active, inactive o all." });
+  }
+
   try {
     const pool = await getPool();
     const request = pool.request();
-    const whereClauses = ["p.IsActive = 1"];
+    const whereClauses = [];
+
+    if (status === "active") whereClauses.push("p.IsActive = 1");
+    if (status === "inactive") whereClauses.push("p.IsActive = 0");
 
     if (search) {
       request.input("Search", sql.NVarChar(400), `%${search}%`);
@@ -3519,7 +3575,7 @@ app.get("/api/projects", requireAuth, async (req, res) => {
       FROM dbo.Projects p
       INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
       LEFT JOIN dbo.vw_ProjectContractStatus pcs ON pcs.ProjectID = p.ProjectID
-      WHERE ${whereClauses.join(" AND ")}
+      ${whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : ""}
       ORDER BY c.ClientName ASC, p.ProjectName ASC
     `);
 
@@ -3540,7 +3596,7 @@ app.get("/api/projects/:id", requireAuth, async (req, res) => {
 
   try {
     const pool = await getPool();
-    const project = await getProjectById(pool, projectId);
+    const project = await getProjectById(pool, projectId, false);
 
     if (!project) {
       return res.status(404).json({ message: "Proyecto no encontrado." });
@@ -3691,6 +3747,53 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
   }
 });
 
+app.put("/api/projects/:id/status", requireAdmin, async (req, res) => {
+  const projectId = Number(req.params.id);
+  const isActive = req.body?.IsActive;
+
+  if (!Number.isInteger(projectId) || projectId <= 0) {
+    return res.status(400).json({ message: "ID de proyecto invalido." });
+  }
+
+  if (typeof isActive !== "boolean") {
+    return res.status(400).json({ message: "IsActive debe ser booleano." });
+  }
+
+  try {
+    const pool = await getPool();
+    const existingProject = await getProjectById(pool, projectId, false);
+
+    if (!existingProject) {
+      return res.status(404).json({ message: "Proyecto no encontrado." });
+    }
+
+    if (isActive) {
+      const activeClient = await getClientById(pool, Number(existingProject.ClientID));
+
+      if (!activeClient) {
+        return res.status(400).json({ message: "No se puede activar el proyecto mientras su cliente este inactivo." });
+      }
+    }
+
+    await pool.request()
+      .input("ProjectID", sql.Int, projectId)
+      .input("IsActive", sql.Bit, isActive)
+      .query(`
+        UPDATE dbo.Projects
+        SET IsActive = @IsActive,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE ProjectID = @ProjectID
+      `);
+
+    const updatedProject = await getProjectById(pool, projectId, false);
+    res.json(updatedProject);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al actualizar el estado del proyecto." });
+  }
+});
+
 app.put("/api/projects/:id", requireAdmin, async (req, res) => {
   const projectId = Number(req.params.id);
   const project = getProjectPayload(req.body || {});
@@ -3719,9 +3822,18 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
 
   try {
     const pool = await getPool();
-    const activeClient = await getClientById(pool, project.clientId);
+    const existingProject = await getProjectById(pool, projectId, false);
 
-    if (!activeClient) {
+    if (!existingProject) {
+      return res.status(404).json({ message: "Proyecto no encontrado." });
+    }
+
+    const activeClient = await getClientById(pool, project.clientId);
+    const canKeepInactiveClient = !existingProject.IsActive
+      && project.isActive === false
+      && Number(existingProject.ClientID) === project.clientId;
+
+    if (!activeClient && !canKeepInactiveClient) {
       return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
     }
 

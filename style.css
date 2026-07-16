@@ -8,6 +8,10 @@
   --text: #edf3fb;
   --muted: #97a6ba;
   --line: rgba(148, 163, 184, 0.2);
+  --text-muted: var(--muted);
+  --border: var(--line);
+  --border-strong: rgba(148, 163, 184, 0.32);
+  --accent: #38bdf8;
   --primary: #38bdf8;
   --primary-dark: #0284c7;
   --danger: #f43f5e;
@@ -46,6 +50,14 @@
   --disabled-border: rgba(148, 163, 184, 0.25);
   --disabled-text: #93a1b4;
   --table-header-bg: #101c2d;
+  --table-header: var(--table-header-bg);
+  --table-row: rgba(7, 13, 24, 0.44);
+  --table-row-alt: rgba(148, 163, 184, 0.04);
+  --table-row-hover: rgba(96, 165, 250, 0.1);
+  --badge-active: rgba(34, 197, 94, 0.16);
+  --badge-active-text: #bbf7d0;
+  --badge-inactive: rgba(244, 63, 94, 0.18);
+  --badge-inactive-text: #fecdd3;
   --tab-active-bg: linear-gradient(180deg, rgba(37, 99, 235, 0.25), rgba(29, 78, 216, 0.18));
   --brand-shadow: drop-shadow(0 20px 42px rgba(2, 6, 23, 0.36));
   --chart-fill: linear-gradient(90deg, #38bdf8, #22c55e);
@@ -65,6 +77,10 @@
     --text: #172033;
     --muted: #526276;
     --line: rgba(71, 85, 105, 0.3);
+    --text-muted: #526276;
+    --border: #aebccc;
+    --border-strong: #7d90a8;
+    --accent: #1d4ed8;
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
     --danger: #dc2626;
@@ -101,6 +117,14 @@
     --disabled-border: #b6c0cc;
     --disabled-text: #667386;
     --table-header-bg: #dfe7f0;
+    --table-header: #dbe4ee;
+    --table-row: #f8fafc;
+    --table-row-alt: #edf2f7;
+    --table-row-hover: #dde9f6;
+    --badge-active: #d8f3e3;
+    --badge-active-text: #14532d;
+    --badge-inactive: #f8dede;
+    --badge-inactive-text: #991b1b;
     --tab-active-bg: linear-gradient(180deg, rgba(37, 99, 235, 0.14), rgba(37, 99, 235, 0.08));
     --brand-shadow: drop-shadow(0 18px 34px rgba(15, 23, 42, 0.16));
     --chart-fill: linear-gradient(90deg, #2563eb, #65a30d);
@@ -1265,12 +1289,12 @@ textarea:focus {
 }
 
 .client-toolbar {
-  grid-template-columns: minmax(240px, 1fr) auto;
+  grid-template-columns: minmax(240px, 1fr) minmax(150px, 190px) auto;
   align-items: end;
 }
 
 .project-toolbar {
-  grid-template-columns: minmax(240px, 1fr) minmax(180px, 240px) auto;
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 240px) minmax(150px, 190px) auto;
 }
 
 .service-record-toolbar {
@@ -2955,8 +2979,6 @@ tbody tr:hover,
 
 /* Enterprise UI consistency layer */
 :root {
-  --accent: var(--primary);
-  --border: var(--line);
   --radius-sm: 7px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -3985,4 +4007,785 @@ td.empty-state {
   height: 17px;
   flex-basis: 17px;
   stroke-width: 1.9;
+}
+
+/* Canonical application-wide light theme */
+@media (prefers-color-scheme: light) {
+  body {
+    background: var(--page-bg);
+    color: var(--text);
+  }
+
+  .app-header {
+    color: var(--text-strong);
+  }
+
+  .app-header::before {
+    background: var(--header-overlay);
+    border-bottom-color: var(--border);
+  }
+
+  .app-header p,
+  .brand-copy p,
+  .foundation-copy,
+  .foundation-card p,
+  .field-help,
+  .helper-text,
+  .notification-item span,
+  .bar-row-header,
+  .ticket-description,
+  .empty-state {
+    color: var(--text-muted);
+  }
+
+  .session-bar,
+  .tabs-nav,
+  .ticket-toolbar,
+  .client-toolbar,
+  .project-toolbar,
+  .service-record-toolbar,
+  .invoice-toolbar,
+  .report-toolbar {
+    border-color: var(--border);
+    background: var(--surface-strong);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .session-bar span,
+  .session-bar strong {
+    color: var(--text-strong);
+  }
+
+  .session-bar strong,
+  .eyebrow,
+  .link-button {
+    color: var(--primary-dark);
+  }
+
+  .tabs-nav {
+    scrollbar-color: #8fa0b4 #d9e2ec;
+  }
+
+  .tab-button {
+    border-color: transparent;
+    background: transparent;
+    color: #4b5d73;
+  }
+
+  .tab-button .button-icon {
+    color: currentColor;
+    opacity: 0.9;
+  }
+
+  .tab-button:hover {
+    border-color: #b9c9da;
+    background: #dfe8f2;
+    color: #172b47;
+  }
+
+  .tab-button.active {
+    border-color: #779ac5;
+    background: #cfdef0;
+    color: #12345d;
+    box-shadow: inset 0 -3px 0 var(--primary), 0 5px 14px rgba(37, 99, 235, 0.14);
+  }
+
+  .panel,
+  .form-panel,
+  .table-panel,
+  .stat-card,
+  .login-panel,
+  .chart-panel,
+  .activity-panel,
+  .foundation-card,
+  .foundation-hero,
+  .dashboard-detail-panel,
+  .project-dashboard-panel,
+  .technician-dashboard-panel,
+  .modal-panel,
+  #dashboardTabPanel > .dashboard-overview-panel,
+  #dashboardTabPanel > .dashboard-chart-grid .chart-panel,
+  #dashboardTabPanel > .dashboard-activity-grid .activity-panel,
+  #dashboardSummaryGrid .dashboard-summary-card {
+    border-color: var(--border);
+    background: var(--surface-panel);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel:hover,
+  .stat-card:hover,
+  .foundation-card:hover {
+    border-color: var(--border-strong);
+  }
+
+  .section-title h2,
+  .compact-title h3,
+  .chart-panel h3,
+  .activity-panel h3,
+  .foundation-card h3,
+  .current-user-card strong,
+  .stat-card strong,
+  .bar-row-header strong,
+  .notification-item strong,
+  .project-dashboard-info-item strong,
+  .detail-summary-grid strong,
+  .contract-status-grid strong {
+    color: var(--text-strong);
+  }
+
+  .current-user-card,
+  .notification-item,
+  .contract-status-grid div,
+  .project-dashboard-info-item,
+  .detail-summary-grid div,
+  .technician-dashboard-table-panel,
+  .manual-invoice-lines,
+  .manual-invoice-signatures,
+  .invoice-line-row,
+  .invoice-summary-panel,
+  .invoice-signature-panel,
+  .ticket-total,
+  .read-only-note {
+    border-color: var(--border);
+    background: var(--surface-soft);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 #ffffff;
+  }
+
+  .contract-status-grid span,
+  .project-dashboard-info-item span,
+  .detail-summary-grid span,
+  .stat-card span,
+  .read-only-note,
+  .ticket-total {
+    color: var(--text-muted);
+  }
+
+  input,
+  select,
+  textarea,
+  .checkbox-field,
+  .password-field input {
+    border-color: var(--border);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(15, 23, 42, 0.05);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #6b7a8c;
+    opacity: 1;
+  }
+
+  input:hover,
+  select:hover,
+  textarea:hover {
+    border-color: var(--border-strong);
+    background: #ffffff;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--primary);
+    background: #ffffff;
+    color: var(--text-strong);
+    box-shadow: var(--focus);
+  }
+
+  label,
+  .ticket-toolbar label,
+  .client-toolbar label,
+  .service-record-toolbar label,
+  .invoice-toolbar label,
+  .report-toolbar label,
+  .manual-invoice-form label {
+    color: #35465b;
+  }
+
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  input[readonly],
+  textarea[readonly] {
+    border-color: var(--disabled-border);
+    background: var(--disabled-bg);
+    color: var(--disabled-text);
+    opacity: 0.9;
+  }
+
+  select option {
+    background: #ffffff;
+    color: var(--text);
+  }
+
+  .btn-primary {
+    border: 1px solid #1e40af;
+    background: #1d4ed8;
+    color: #ffffff;
+    box-shadow: 0 7px 18px rgba(29, 78, 216, 0.24);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    border-color: #1e3a8a;
+    background: #1e40af;
+    color: #ffffff;
+  }
+
+  .btn.session-button,
+  .modal-panel .session-button,
+  .tool-button,
+  .icon-button,
+  .password-toggle {
+    border-color: var(--button-secondary-border);
+    background: var(--button-secondary);
+    color: var(--button-secondary-text);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+
+  .btn.session-button:hover:not(:disabled),
+  .modal-panel .session-button:hover:not(:disabled),
+  .tool-button:hover:not(:disabled),
+  .icon-button:hover:not(:disabled),
+  .password-toggle:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    background: var(--button-secondary-hover);
+    color: var(--text-strong);
+  }
+
+  .link-button {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .edit-btn {
+    border-color: #1e40af;
+    background: #1d4ed8;
+    color: #ffffff;
+  }
+
+  .edit-btn:hover:not(:disabled) {
+    border-color: #1e3a8a;
+    background: #1e40af;
+    color: #ffffff;
+  }
+
+  .delete-btn {
+    border-color: #991b1b;
+    background: #b91c1c;
+    color: #ffffff;
+  }
+
+  .delete-btn:hover:not(:disabled) {
+    border-color: #7f1d1d;
+    background: #991b1b;
+    color: #ffffff;
+  }
+
+  .close-btn {
+    border-color: #166534;
+    background: #15803d;
+    color: #ffffff;
+  }
+
+  .close-btn:hover:not(:disabled) {
+    border-color: #14532d;
+    background: #166534;
+    color: #ffffff;
+  }
+
+  .btn:disabled,
+  .action-btn:disabled,
+  .tool-button:disabled,
+  .session-button:disabled,
+  .icon-button:disabled {
+    border-color: var(--disabled-border);
+    background: var(--disabled-bg);
+    color: var(--disabled-text);
+    opacity: 0.88;
+    filter: none;
+    box-shadow: inset 0 1px 0 #f8fafc;
+  }
+
+  .badge {
+    border-color: var(--border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+  }
+
+  .status-abierto,
+  .role-admin {
+    border-color: #93b4dc;
+    background: #dbeafe;
+    color: #1e3a8a;
+  }
+
+  .status-progreso,
+  .status-en-progreso,
+  .priority-media,
+  .contract-low {
+    border-color: #e5b84b;
+    background: #fef3c7;
+    color: #78350f;
+  }
+
+  .status-cerrado,
+  .priority-baja,
+  .user-status-active,
+  .contract-ok {
+    border-color: #86c59d;
+    background: var(--badge-active);
+    color: var(--badge-active-text);
+  }
+
+  .priority-alta,
+  .user-status-inactive,
+  .contract-danger,
+  #clientsTabPanel .status-cerrado,
+  #projectsTabPanel .status-cerrado,
+  #ticketsTabPanel .status-cerrado,
+  #reportsTabPanel .status-cerrado,
+  #dashboardTabPanel .status-cerrado {
+    border-color: #dfa0a0;
+    background: var(--badge-inactive);
+    color: var(--badge-inactive-text);
+  }
+
+  .contract-warning {
+    border-color: #ed9f55;
+    background: #ffedd5;
+    color: #9a3412;
+  }
+
+  .contract-neutral,
+  .role-user {
+    border-color: #aebccc;
+    background: #e2e8f0;
+    color: #334155;
+  }
+
+  .role-technician {
+    border-color: #78bfb5;
+    background: #d5f2ed;
+    color: #115e59;
+  }
+
+  .table-wrapper,
+  .manual-invoice-lines-table {
+    border-color: var(--border);
+    background: var(--table-row);
+    box-shadow: inset 0 1px 0 #ffffff, var(--shadow-sm);
+  }
+
+  th,
+  .manual-invoice-line-header {
+    border-color: var(--border);
+    background: var(--table-header);
+    color: #2f4259;
+    box-shadow: inset 0 -1px 0 var(--border-strong);
+  }
+
+  td {
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  tbody tr,
+  .manual-invoice-line {
+    background: var(--table-row);
+  }
+
+  tbody tr:nth-child(even),
+  .manual-invoice-line:nth-child(even) {
+    background: var(--table-row-alt);
+  }
+
+  tbody tr:hover,
+  .detail-section-row td {
+    background: var(--table-row-hover);
+  }
+
+  .detail-subheader-row th {
+    color: #475569;
+  }
+
+  td.empty-state,
+  .empty-state {
+    border-color: var(--border);
+    background: var(--surface-soft);
+    color: var(--text-muted);
+  }
+
+  .bar-track {
+    background: #cbd6e3;
+  }
+
+  .interactive-bar-row:hover {
+    border-color: #9bb6d6;
+    background: #e1ebf6;
+    color: var(--text-strong);
+  }
+
+  .stat-open {
+    border-color: #9ab9df;
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .stat-progress {
+    border-color: #e5bd60;
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .stat-closed {
+    border-color: #91c9a4;
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .form-message:not(:empty) {
+    border-color: #e4a0a7;
+    background: #fce8ea;
+    color: #9f1239;
+  }
+
+  .form-message.success:not(:empty) {
+    border-color: #8bc5a0;
+    background: #e1f5e8;
+    color: #166534;
+  }
+
+  .modal-backdrop {
+    background: rgba(30, 41, 59, 0.54);
+  }
+
+  .modal-panel > .table-header:first-child {
+    border-color: var(--border);
+    background: #f1f5f9;
+  }
+
+  .manual-invoice-line-header span,
+  .manual-invoice-line input,
+  .manual-invoice-line textarea,
+  .manual-invoice-line output,
+  .manual-invoice-summary,
+  .manual-invoice-summary > div {
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .manual-invoice-line input,
+  .manual-invoice-line textarea {
+    background: transparent;
+  }
+
+  .manual-invoice-summary-total {
+    background: #dce8f6;
+  }
+
+  .manual-invoice-summary strong,
+  .manual-invoice-total-row strong,
+  .manual-invoice-line output {
+    color: var(--text-strong);
+  }
+
+  * {
+    scrollbar-color: #8192a6 #dbe3ec;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #dbe3ec;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border-color: #dbe3ec;
+    background: #8192a6;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #62758b;
+  }
+}
+
+@media (max-width: 680px) {
+  .tab-button,
+  .btn,
+  .action-btn,
+  .badge,
+  .read-only-note {
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+
+  .tab-button,
+  .action-btn,
+  .badge {
+    white-space: nowrap;
+  }
+
+  .actions {
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .action-btn {
+    width: auto;
+    min-width: max-content;
+    padding-inline: 10px;
+    font-size: 0.76rem;
+  }
+
+  .modal-panel .btn,
+  .report-actions .btn,
+  .login-panel .btn {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+  }
+
+  th,
+  td {
+    line-height: 1.4;
+  }
+}
+
+/* Dashboard depth and contrast in light mode */
+@media (prefers-color-scheme: light) {
+  #dashboardTabPanel {
+    --dashboard-panel-bg: #dce6f0;
+    --dashboard-panel-border: #9eafc2;
+    --dashboard-card-bg: #edf3f8;
+    --dashboard-card-border: #a9b9ca;
+    --dashboard-section-bg: #e5edf5;
+    --dashboard-item-bg: #f1f5f9;
+    --dashboard-item-border: #b2c0cf;
+    --dashboard-title: #10243d;
+    --dashboard-copy: #40546b;
+    --dashboard-shadow: 0 12px 28px rgba(45, 65, 90, 0.12);
+    --dashboard-card-shadow: 0 5px 14px rgba(45, 65, 90, 0.1);
+  }
+
+  #dashboardTabPanel > .dashboard-overview-panel,
+  #dashboardTabPanel > .dashboard-detail-panel,
+  #dashboardTabPanel > .project-dashboard-panel,
+  #dashboardTabPanel > .technician-dashboard-panel {
+    border-color: var(--dashboard-panel-border);
+    background: var(--dashboard-panel-bg);
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  #dashboardTabPanel > .dashboard-overview-panel {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), var(--dashboard-shadow);
+  }
+
+  #dashboardTabPanel .section-title h2,
+  #dashboardTabPanel .compact-title h3,
+  #dashboardTabPanel .chart-panel h3,
+  #dashboardTabPanel .activity-panel h3 {
+    color: var(--dashboard-title);
+  }
+
+  #dashboardTabPanel .section-title p,
+  #dashboardTabPanel .foundation-copy,
+  #dashboardTabPanel .field-help,
+  #dashboardTabPanel .helper-text {
+    color: var(--dashboard-copy);
+  }
+
+  #dashboardSummaryGrid .dashboard-summary-card,
+  #dashboardTabPanel .project-hours-grid .stat-card,
+  #dashboardTabPanel .technician-hours-grid .stat-card {
+    border-color: var(--dashboard-card-border);
+    background: var(--dashboard-card-bg);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), var(--dashboard-card-shadow);
+  }
+
+  #dashboardSummaryGrid .dashboard-summary-card:hover,
+  #dashboardSummaryGrid .dashboard-summary-card:focus-visible,
+  #dashboardTabPanel .project-hours-grid .stat-card:hover,
+  #dashboardTabPanel .technician-hours-grid .stat-card:hover {
+    border-color: #718ca9;
+    background: #f4f7fa;
+    box-shadow: 0 10px 22px rgba(38, 67, 101, 0.16);
+  }
+
+  #dashboardTabPanel .stat-card span {
+    color: #40566f;
+  }
+
+  #dashboardTabPanel .stat-card strong {
+    color: #0d2139;
+  }
+
+  #dashboardSummaryGrid .stat-icon,
+  #dashboardTabPanel .project-hours-grid .stat-icon,
+  #dashboardTabPanel .technician-hours-grid .stat-icon {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 3px 8px rgba(40, 62, 88, 0.12);
+  }
+
+  #dashboardSummaryGrid .stat-icon.stat-open,
+  #dashboardTabPanel .stat-icon.stat-open {
+    border-color: #7fa5d1;
+    background: #cfe0f4;
+    color: #174f8f;
+  }
+
+  #dashboardSummaryGrid .stat-icon.stat-progress,
+  #dashboardTabPanel .stat-icon.stat-progress {
+    border-color: #d4a743;
+    background: #f7e4b8;
+    color: #884506;
+  }
+
+  #dashboardSummaryGrid .stat-icon.stat-closed,
+  #dashboardTabPanel .stat-icon.stat-closed {
+    border-color: #78ad8b;
+    background: #d1e8da;
+    color: #14643c;
+  }
+
+  #dashboardTabPanel > .dashboard-chart-grid .chart-panel,
+  #dashboardTabPanel > .dashboard-activity-grid .activity-panel,
+  #dashboardTabPanel .technician-dashboard-grid .chart-panel,
+  #dashboardTabPanel .technician-dashboard-table-panel {
+    border-color: var(--dashboard-card-border);
+    background: var(--dashboard-section-bg);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), var(--dashboard-card-shadow);
+  }
+
+  #dashboardTabPanel .bar-row-header {
+    color: #40566f;
+  }
+
+  #dashboardTabPanel .bar-row-header strong {
+    color: #102b49;
+  }
+
+  #dashboardTabPanel .bar-track {
+    border: 1px solid #acbdce;
+    background: #c6d3e0;
+    box-shadow: inset 0 1px 2px rgba(36, 55, 78, 0.1);
+  }
+
+  #dashboardTabPanel .bar-fill {
+    background: linear-gradient(90deg, #1976b9, #2f8f69);
+    box-shadow: 0 1px 3px rgba(19, 76, 111, 0.2);
+  }
+
+  #dashboardTabPanel .interactive-bar-row {
+    border-color: transparent;
+    color: var(--dashboard-title);
+  }
+
+  #dashboardTabPanel .interactive-bar-row:hover,
+  #dashboardTabPanel .interactive-bar-row:focus-visible {
+    border-color: #86a4c2;
+    background: #d5e2ee;
+    box-shadow: 0 6px 14px rgba(43, 70, 101, 0.12);
+  }
+
+  #dashboardTabPanel .interactive-bar-row:hover .bar-track,
+  #dashboardTabPanel .interactive-bar-row:focus-visible .bar-track {
+    background: #b8c8d8;
+  }
+
+  #dashboardTabPanel .notification-item {
+    border-color: var(--dashboard-item-border);
+    background: var(--dashboard-item-bg);
+    box-shadow: inset 0 1px 0 #ffffff, 0 3px 9px rgba(45, 65, 90, 0.08);
+  }
+
+  #dashboardTabPanel .notification-item:hover {
+    border-color: #8fa6be;
+    background: #f6f8fb;
+  }
+
+  #dashboardTabPanel .notification-item strong {
+    color: #132b45;
+  }
+
+  #dashboardTabPanel .notification-item span {
+    color: #4b6077;
+  }
+
+  #dashboardTabPanel .project-dashboard-info-item,
+  #dashboardTabPanel .detail-summary-grid div,
+  #dashboardTabPanel .contract-status-grid div,
+  #dashboardTabPanel .current-user-card {
+    border-color: var(--dashboard-item-border);
+    background: var(--dashboard-item-bg);
+    box-shadow: inset 0 1px 0 #ffffff;
+  }
+
+  #dashboardTabPanel .empty-state {
+    border-color: var(--dashboard-item-border);
+    background: #eaf0f6;
+    color: #4b6077;
+  }
+}
+
+@media (prefers-color-scheme: light) and (max-width: 680px) {
+  #dashboardTabPanel > .dashboard-overview-panel,
+  #dashboardTabPanel > .dashboard-detail-panel,
+  #dashboardTabPanel > .project-dashboard-panel,
+  #dashboardTabPanel > .technician-dashboard-panel {
+    border-color: #91a5ba;
+    box-shadow: 0 8px 20px rgba(45, 65, 90, 0.12);
+  }
+
+  #dashboardSummaryGrid .dashboard-summary-card,
+  #dashboardTabPanel .project-hours-grid .stat-card,
+  #dashboardTabPanel .technician-hours-grid .stat-card {
+    min-height: 88px;
+  }
+}
+
+/* Service Record statuses use dedicated colors in every view */
+.service-status-pending {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: rgba(37, 99, 235, 0.22);
+  color: #dbeafe;
+}
+
+.service-status-processed {
+  border-color: rgba(74, 222, 128, 0.5);
+  background: rgba(21, 128, 61, 0.3);
+  color: #dcfce7;
+}
+
+.service-status-canceled {
+  border-color: rgba(251, 113, 133, 0.62);
+  background: rgba(190, 18, 60, 0.36);
+  color: #ffe4e6;
+}
+
+@media (prefers-color-scheme: light) {
+  .service-status-pending {
+    border-color: #83a9d5;
+    background: #dbeafe;
+    color: #1e3a8a;
+  }
+
+  .service-status-processed {
+    border-color: #79b58f;
+    background: #d8f3e3;
+    color: #14532d;
+  }
+
+  .service-status-canceled {
+    border-color: #cf7882;
+    background: #f6d7da;
+    color: #8f1622;
+  }
 }

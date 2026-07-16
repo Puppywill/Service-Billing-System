@@ -38,6 +38,7 @@ const settingsTabPanel = document.querySelector("#settingsTabPanel");
 
 const addClientButton = document.querySelector("#addClientButton");
 const clientSearchInput = document.querySelector("#clientSearchInput");
+const clientStatusFilter = document.querySelector("#clientStatusFilter");
 const clientsTableBody = document.querySelector("#clientsTableBody");
 const clientsTotalCount = document.querySelector("#clientsTotalCount");
 const clientsMessage = document.querySelector("#clientsMessage");
@@ -59,6 +60,7 @@ const saveClientButton = document.querySelector("#saveClientButton");
 const addProjectButton = document.querySelector("#addProjectButton");
 const projectSearchInput = document.querySelector("#projectSearchInput");
 const projectClientFilter = document.querySelector("#projectClientFilter");
+const projectStatusFilter = document.querySelector("#projectStatusFilter");
 const projectsTableBody = document.querySelector("#projectsTableBody");
 const projectsTotalCount = document.querySelector("#projectsTotalCount");
 const projectsMessage = document.querySelector("#projectsMessage");
@@ -581,12 +583,25 @@ const translations = {
     saveClient: "Guardar cliente",
     clientSearchPlaceholder: "Cliente, email o telefono",
     clientsCount: "clientes",
-    noClients: "No hay clientes activos.",
+    activeCount: "activos",
+    inactiveCount: "inactivos",
+    statusFilter: "Estado",
+    allEntityStatuses: "Todos",
+    activeOnly: "Activos",
+    inactiveOnly: "Inactivos",
+    noClients: "No hay clientes para mostrar.",
     noClientMatches: "No hay clientes que coincidan con la busqueda.",
     loadClientsError: "No se pudieron cargar los clientes.",
     createClientSuccess: "Cliente creado correctamente.",
     updateClientSuccess: "Cliente actualizado correctamente.",
     deleteClientSuccess: "Cliente desactivado correctamente.",
+    activateClient: "Activar",
+    deactivateClient: "Desactivar",
+    activateClientSuccess: "Cliente activado correctamente.",
+    deactivateClientSuccess: "Cliente desactivado correctamente.",
+    activateClientConfirm: "¿Seguro que deseas activar nuevamente este cliente?",
+    deactivateClientConfirm: "¿Seguro que deseas desactivar este cliente? No se eliminarán sus registros históricos.",
+    clientStatusError: "No se pudo actualizar el estado del cliente.",
     clientNameRequired: "El nombre del cliente es obligatorio.",
     clientNotFound: "No se encontro el cliente seleccionado.",
     deleteClientConfirm: "Seguro que deseas desactivar este cliente?",
@@ -601,13 +616,20 @@ const translations = {
     allClients: "Todos los clientes",
     selectClient: "Selecciona cliente",
     projectsCount: "proyectos",
-    noProjects: "No hay proyectos activos.",
+    noProjects: "No hay proyectos para mostrar.",
     noProjectMatches: "No hay proyectos que coincidan con los filtros.",
     loadProjectsError: "No se pudieron cargar los proyectos.",
     loadProjectClientsError: "No se pudieron cargar los clientes para proyectos.",
     createProjectSuccess: "Proyecto creado correctamente.",
     updateProjectSuccess: "Proyecto actualizado correctamente.",
     deleteProjectSuccess: "Proyecto desactivado correctamente.",
+    activateProject: "Activar",
+    deactivateProject: "Desactivar",
+    activateProjectSuccess: "Proyecto activado correctamente.",
+    deactivateProjectSuccess: "Proyecto desactivado correctamente.",
+    activateProjectConfirm: "¿Seguro que deseas activar nuevamente este proyecto?",
+    deactivateProjectConfirm: "¿Seguro que deseas desactivar este proyecto? No se eliminarán sus registros históricos.",
+    projectStatusError: "No se pudo actualizar el estado del proyecto.",
     projectClientRequired: "El cliente es obligatorio.",
     projectNameRequired: "El nombre del proyecto es obligatorio.",
     projectRateRequired: "La configuracion interna del proyecto debe ser numerica.",
@@ -991,12 +1013,25 @@ const translations = {
     saveClient: "Save Client",
     clientSearchPlaceholder: "Client, email, or phone",
     clientsCount: "clients",
-    noClients: "No active clients.",
+    activeCount: "active",
+    inactiveCount: "inactive",
+    statusFilter: "Status",
+    allEntityStatuses: "All",
+    activeOnly: "Active",
+    inactiveOnly: "Inactive",
+    noClients: "No clients to display.",
     noClientMatches: "No clients match the search.",
     loadClientsError: "Clients could not be loaded.",
     createClientSuccess: "Client created successfully.",
     updateClientSuccess: "Client updated successfully.",
     deleteClientSuccess: "Client deactivated successfully.",
+    activateClient: "Activate",
+    deactivateClient: "Deactivate",
+    activateClientSuccess: "Client activated successfully.",
+    deactivateClientSuccess: "Client deactivated successfully.",
+    activateClientConfirm: "Are you sure you want to activate this client again?",
+    deactivateClientConfirm: "Are you sure you want to deactivate this client? Historical records will not be deleted.",
+    clientStatusError: "Could not update the client status.",
     clientNameRequired: "Client name is required.",
     clientNotFound: "The selected client was not found.",
     deleteClientConfirm: "Are you sure you want to deactivate this client?",
@@ -1011,13 +1046,20 @@ const translations = {
     allClients: "All clients",
     selectClient: "Select client",
     projectsCount: "projects",
-    noProjects: "No active projects.",
+    noProjects: "No projects to display.",
     noProjectMatches: "No projects match the filters.",
     loadProjectsError: "Projects could not be loaded.",
     loadProjectClientsError: "Clients for projects could not be loaded.",
     createProjectSuccess: "Project created successfully.",
     updateProjectSuccess: "Project updated successfully.",
     deleteProjectSuccess: "Project deactivated successfully.",
+    activateProject: "Activate",
+    deactivateProject: "Deactivate",
+    activateProjectSuccess: "Project activated successfully.",
+    deactivateProjectSuccess: "Project deactivated successfully.",
+    activateProjectConfirm: "Are you sure you want to activate this project again?",
+    deactivateProjectConfirm: "Are you sure you want to deactivate this project? Historical records will not be deleted.",
+    projectStatusError: "Could not update the project status.",
     projectClientRequired: "Client is required.",
     projectNameRequired: "Project name is required.",
     projectRateRequired: "The internal project setting must be numeric.",
@@ -1578,11 +1620,14 @@ async function loadNotifications() {
 }
 
 async function loadClients() {
+  const params = new URLSearchParams();
   const search = clientSearchInput.value.trim();
-  const params = search ? `?search=${encodeURIComponent(search)}` : "";
+
+  if (search) params.set("search", search);
+  params.set("status", clientStatusFilter?.value || "all");
 
   try {
-    const response = await fetch(`/api/clients${params}`, {
+    const response = await fetch(`/api/clients?${params.toString()}`, {
       cache: "no-store"
     });
     const data = await parseJsonResponse(response);
@@ -1611,8 +1656,14 @@ function renderClients() {
   if (!clientsTableBody) return;
 
   const canManageClients = isAdmin();
+  const selectedStatus = clientStatusFilter?.value || "all";
+  const countLabel = selectedStatus === "active"
+    ? t("activeCount")
+    : selectedStatus === "inactive"
+      ? t("inactiveCount")
+      : t("clientsCount");
   clientsTotalCount.textContent = formatNumber(clients.length, 0);
-  clientsTotalCount.parentElement.lastChild.textContent = ` ${t("clientsCount")}`;
+  clientsTotalCount.parentElement.lastChild.textContent = ` ${countLabel}`;
   addClientButton.classList.toggle("hidden", !canManageClients);
 
   if (clients.length === 0) {
@@ -1629,12 +1680,12 @@ function renderClients() {
       <td>${escapeHTML(client.Phone || "")}</td>
       <td>${escapeHTML(client.BillingName || "")}</td>
       <td>${escapeHTML(client.TaxID || "")}</td>
-        <td><span class="badge ${client.IsActive ? "status-abierto" : "status-cerrado"}">${client.IsActive ? t("active") : t("inactive")}</span></td>
+        <td><span class="badge ${client.IsActive ? "user-status-active" : "user-status-inactive"}">${client.IsActive ? t("active") : t("inactive")}</span></td>
       <td>
         ${canManageClients ? `
           <div class="actions">
             <button type="button" class="action-btn edit-btn" data-client-action="edit" data-id="${client.ClientID}">${t("edit")}</button>
-            <button type="button" class="action-btn delete-btn" data-client-action="delete" data-id="${client.ClientID}">${t("delete")}</button>
+            <button type="button" class="action-btn ${client.IsActive ? "delete-btn" : "close-btn"}" data-client-action="toggle-status" data-next-active="${client.IsActive ? "false" : "true"}" data-id="${client.ClientID}">${client.IsActive ? t("deactivateClient") : t("activateClient")}</button>
           </div>
         ` : `<span class="read-only-note">${t("readOnly")}</span>`}
       </td>
@@ -1674,6 +1725,7 @@ function openClientEditor(mode, selectedClient = null) {
   clientId.value = selectedClient?.ClientID || "";
   clientModalTitle.textContent = mode === "edit" ? t("editClient") : t("addClient");
   clientIsActive.checked = selectedClient?.IsActive ?? true;
+  clientIsActive.disabled = true;
 
   if (selectedClient) {
     clientName.value = selectedClient.ClientName || "";
@@ -1759,34 +1811,38 @@ function handleClientsTableClick(event) {
     openClientEditor("edit", selectedClient);
   }
 
-  if (action === "delete") {
-    deactivateClient(id);
+  if (action === "toggle-status") {
+    toggleClientStatus(id, button.dataset.nextActive === "true");
   }
 }
 
-async function deactivateClient(id) {
+async function toggleClientStatus(id, nextIsActive) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(t("deleteClientConfirm"));
+  const confirmed = confirm(t(nextIsActive ? "activateClientConfirm" : "deactivateClientConfirm"));
 
   if (!confirmed) return;
 
   try {
-    const response = await fetch(`/api/clients/${id}`, {
-      method: "DELETE",
-      cache: "no-store"
+    const response = await fetch(`/api/clients/${id}/status`, {
+      method: "PUT",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ IsActive: nextIsActive })
     });
     const data = await parseJsonResponse(response);
 
     if (!response.ok) {
-      throw new Error(translateServerMessage(data.message) || t("deleteClientError"));
+      throw new Error(translateServerMessage(data.message) || t("clientStatusError"));
     }
 
-    showClientsMessage(t("deleteClientSuccess"), "success");
+    showClientsMessage(t(nextIsActive ? "activateClientSuccess" : "deactivateClientSuccess"), "success");
     await loadClients();
   } catch (error) {
     console.error(error);
-    showClientsMessage(error.message || t("deleteClientError"), "error");
+    showClientsMessage(error.message || t("clientStatusError"), "error");
   }
 }
 
@@ -1818,6 +1874,7 @@ async function loadProjects() {
 
   if (search) params.set("search", search);
   if (selectedClientId) params.set("clientId", selectedClientId);
+  params.set("status", projectStatusFilter?.value || "all");
 
   try {
     const response = await fetch(`/api/projects${params.toString() ? `?${params.toString()}` : ""}`, {
@@ -1878,12 +1935,18 @@ function renderProjects() {
   if (!projectsTableBody) return;
 
   const canManageProjects = isAdmin();
+  const selectedStatus = projectStatusFilter?.value || "all";
+  const countLabel = selectedStatus === "active"
+    ? t("activeCount")
+    : selectedStatus === "inactive"
+      ? t("inactiveCount")
+      : t("projectsCount");
   projectsTotalCount.textContent = formatNumber(projects.length, 0);
-  projectsTotalCount.parentElement.lastChild.textContent = ` ${t("projectsCount")}`;
+  projectsTotalCount.parentElement.lastChild.textContent = ` ${countLabel}`;
   addProjectButton.classList.toggle("hidden", !canManageProjects);
 
   if (projects.length === 0) {
-    const hasFilters = projectSearchInput.value.trim() || projectClientFilter.value;
+    const hasFilters = projectSearchInput.value.trim() || projectClientFilter.value || projectStatusFilter?.value !== "all";
     showProjectsTableMessage(hasFilters ? t("noProjectMatches") : t("noProjects"));
     return;
   }
@@ -1899,12 +1962,12 @@ function renderProjects() {
       <td>${formatProjectHours(project.RemainingHours)}</td>
       <td>${escapeHTML(formatDateOnly(project.ContractEndDate) || "-")}</td>
       <td>${renderContractBadge(project.ContractStatus)}</td>
-      <td><span class="badge ${project.IsActive ? "status-abierto" : "status-cerrado"}">${project.IsActive ? t("active") : t("inactive")}</span></td>
+      <td><span class="badge ${project.IsActive ? "user-status-active" : "user-status-inactive"}">${project.IsActive ? t("active") : t("inactive")}</span></td>
       <td>
         ${canManageProjects ? `
           <div class="actions">
             <button type="button" class="action-btn edit-btn" data-project-action="edit" data-id="${project.ProjectID}">${t("edit")}</button>
-            <button type="button" class="action-btn delete-btn" data-project-action="delete" data-id="${project.ProjectID}">${t("delete")}</button>
+            <button type="button" class="action-btn ${project.IsActive ? "delete-btn" : "close-btn"}" data-project-action="toggle-status" data-next-active="${project.IsActive ? "false" : "true"}" data-id="${project.ProjectID}">${project.IsActive ? t("deactivateProject") : t("activateProject")}</button>
           </div>
         ` : `<span class="read-only-note">${t("readOnly")}</span>`}
       </td>
@@ -1977,11 +2040,21 @@ async function openProjectEditor(mode, selectedProject = null) {
   projectId.value = selectedProject?.ProjectID || "";
   projectModalTitle.textContent = mode === "edit" ? t("editProject") : t("addProject");
   projectIsActive.checked = selectedProject?.IsActive ?? true;
+  projectIsActive.disabled = true;
   projectHourlyRate.value = "0";
   setProjectContractFieldsDisabled(!isAdmin());
   renderProjectContractStatus(selectedProject || {});
 
   if (selectedProject) {
+    const hasSelectedClient = Array.from(projectClientId.options).some((option) => Number(option.value) === Number(selectedProject.ClientID));
+
+    if (!hasSelectedClient) {
+      const option = document.createElement("option");
+      option.value = String(selectedProject.ClientID);
+      option.textContent = `${selectedProject.ClientName || t("clients")} (${t("inactive")})`;
+      projectClientId.append(option);
+    }
+
     projectClientId.value = selectedProject.ClientID || "";
     projectName.value = selectedProject.ProjectName || "";
     projectDescription.value = selectedProject.Description || "";
@@ -2113,34 +2186,38 @@ function handleProjectsTableClick(event) {
     openProjectEditor("edit", selectedProject);
   }
 
-  if (action === "delete") {
-    deactivateProject(id);
+  if (action === "toggle-status") {
+    toggleProjectStatus(id, button.dataset.nextActive === "true");
   }
 }
 
-async function deactivateProject(id) {
+async function toggleProjectStatus(id, nextIsActive) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(t("deleteProjectConfirm"));
+  const confirmed = confirm(t(nextIsActive ? "activateProjectConfirm" : "deactivateProjectConfirm"));
 
   if (!confirmed) return;
 
   try {
-    const response = await fetch(`/api/projects/${id}`, {
-      method: "DELETE",
-      cache: "no-store"
+    const response = await fetch(`/api/projects/${id}/status`, {
+      method: "PUT",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ IsActive: nextIsActive })
     });
     const data = await parseJsonResponse(response);
 
     if (!response.ok) {
-      throw new Error(translateServerMessage(data.message) || t("deleteProjectError"));
+      throw new Error(translateServerMessage(data.message) || t("projectStatusError"));
     }
 
-    showProjectsMessage(t("deleteProjectSuccess"), "success");
+    showProjectsMessage(t(nextIsActive ? "activateProjectSuccess" : "deactivateProjectSuccess"), "success");
     await loadProjects();
   } catch (error) {
     console.error(error);
-    showProjectsMessage(error.message || t("deleteProjectError"), "error");
+    showProjectsMessage(error.message || t("projectStatusError"), "error");
   }
 }
 
@@ -3144,7 +3221,9 @@ async function loadDashboardActiveClients() {
       throw new Error(translateServerMessage(data.message) || t("loadClientsError"));
     }
 
-    dashboardActiveClients = Array.isArray(data) ? data : [];
+    dashboardActiveClients = Array.isArray(data)
+      ? data.filter((client) => client.IsActive !== false)
+      : [];
   } catch (error) {
     console.error(error);
     dashboardActiveClients = [];
@@ -3236,7 +3315,9 @@ async function loadDashboardProjectOptions() {
       throw new Error(translateServerMessage(data.message) || tNested("projectDashboard", "loadError"));
     }
 
-    dashboardProjectOptions = Array.isArray(data) ? data : [];
+    dashboardProjectOptions = Array.isArray(data)
+      ? data.filter(isDashboardProjectActive)
+      : [];
     if (dashboardSelectedProject) {
       dashboardSelectedProject = dashboardProjectOptions.find((project) => Number(project.ProjectID) === Number(dashboardSelectedProject.ProjectID)) || null;
     }
@@ -3370,9 +3451,11 @@ function renderDashboardProjectPanel() {
     return;
   }
 
-  renderDashboardProjectSummary(dashboardProjectServiceRecords);
+  const activeRecords = getDashboardActiveServiceRecords(dashboardProjectServiceRecords);
+
+  renderDashboardProjectSummary(activeRecords);
   renderDashboardProjectInfo(dashboardSelectedProject);
-  renderDashboardProjectRecords(dashboardProjectServiceRecords);
+  renderDashboardProjectRecords(activeRecords);
 }
 
 async function selectDashboardProject(projectId) {
@@ -3489,7 +3572,7 @@ function getDashboardTechnicianProjectValue(record) {
 function getDashboardTechnicianProjectOptions() {
   const projectsByKey = new Map();
 
-  dashboardTechnicianServiceRecords.forEach((record) => {
+  getDashboardActiveServiceRecords(dashboardTechnicianServiceRecords).forEach((record) => {
     const key = getDashboardTechnicianProjectValue(record);
     if (!key || projectsByKey.has(key)) return;
 
@@ -3501,7 +3584,7 @@ function getDashboardTechnicianProjectOptions() {
   });
 
   dashboardProjectOptions
-    .filter((project) => project.IsActive !== false && getDashboardTechnicianProjectPriority(project) < Number.MAX_SAFE_INTEGER)
+    .filter((project) => isDashboardProjectActive(project) && getDashboardTechnicianProjectPriority(project) < Number.MAX_SAFE_INTEGER)
     .forEach((project) => {
       const key = `id:${project.ProjectID}`;
       if (projectsByKey.has(key)) return;
@@ -3553,7 +3636,7 @@ function renderDashboardTechnicianProjectOptions() {
 }
 
 function getDashboardTechnicianFilteredRecords() {
-  let records = dashboardTechnicianServiceRecords.slice();
+  let records = getDashboardActiveServiceRecords(dashboardTechnicianServiceRecords);
 
   if (dashboardSelectedTechnicianProject) {
     records = records.filter((record) => getDashboardTechnicianProjectValue(record) === dashboardSelectedTechnicianProject);
@@ -4066,7 +4149,7 @@ function getDashboardSummaryMetrics() {
   return {
     ...(dashboardSummary || {}),
     TotalClients: dashboardActiveClients.length,
-    TotalProjects: dashboardProjectOptions.filter((project) => project.IsActive !== false).length,
+    TotalProjects: dashboardProjectOptions.filter(isDashboardProjectActive).length,
     TotalServiceRecords: activeRecords.length,
     TotalHours: sumDashboardHours(activeRecords),
     UnbilledHours: sumDashboardHours(activeRecords.filter((record) => record.Status === "Recorded")),
@@ -4083,7 +4166,7 @@ function normalizeDashboardKey(value) {
 }
 
 function getActiveDashboardProjectRefs() {
-  const activeProjects = dashboardProjectOptions.filter((project) => project.IsActive !== false);
+  const activeProjects = dashboardProjectOptions.filter(isDashboardProjectActive);
 
   return {
     ids: new Set(activeProjects.map((project) => Number(project.ProjectID)).filter(Number.isFinite)),
@@ -4096,6 +4179,16 @@ function getActiveDashboardClientRefs() {
     ids: new Set(dashboardActiveClients.map((client) => Number(client.ClientID)).filter(Number.isFinite)),
     names: new Set(dashboardActiveClients.map((client) => normalizeDashboardKey(client.ClientName)))
   };
+}
+
+function isDashboardProjectActive(project) {
+  if (!project || project.IsActive === false) return false;
+
+  const clientRefs = getActiveDashboardClientRefs();
+  const clientId = Number(project.ClientID);
+  const clientName = normalizeDashboardKey(project.ClientName);
+
+  return clientRefs.ids.has(clientId) || clientRefs.names.has(clientName);
 }
 
 function getActiveDashboardTechnicianRefs() {
@@ -4867,7 +4960,7 @@ async function showDashboardDetail(detailType) {
         throw new Error(translateServerMessage(data.message) || t("loadProjectsError"));
       }
 
-      renderDashboardProjectsDetail(Array.isArray(data) ? data : []);
+      renderDashboardProjectsDetail(Array.isArray(data) ? data.filter(isDashboardProjectActive) : []);
       dashboardDetailMessage.textContent = "";
       return;
     }
@@ -5476,7 +5569,13 @@ function applyStaticLanguage() {
   setText("#clients-title", t("clients"));
   setText("#clientsTabPanel .foundation-copy", t("clientsFoundation"));
   setText('label[for="clientSearchInput"]', t("search"));
+  setText('label[for="clientStatusFilter"]', t("statusFilter"));
   setPlaceholder("#clientSearchInput", t("clientSearchPlaceholder"));
+  if (clientStatusFilter) {
+    clientStatusFilter.options[0].textContent = t("allEntityStatuses");
+    clientStatusFilter.options[1].textContent = t("activeOnly");
+    clientStatusFilter.options[2].textContent = t("inactiveOnly");
+  }
   setText("#clientModal .section-title .eyebrow", t("clients"));
   setText('label[for="clientName"]', labelText("Cliente", "Client name"));
   setText('label[for="clientContactName"]', labelText("Contacto", "Contact name"));
@@ -5493,7 +5592,13 @@ function applyStaticLanguage() {
   setText("#projectsTabPanel .foundation-copy", t("projectsFoundation"));
   setText('label[for="projectSearchInput"]', t("search"));
   setText('label[for="projectClientFilter"]', t("clients"));
+  setText('label[for="projectStatusFilter"]', t("statusFilter"));
   setPlaceholder("#projectSearchInput", t("projectSearchPlaceholder"));
+  if (projectStatusFilter) {
+    projectStatusFilter.options[0].textContent = t("allEntityStatuses");
+    projectStatusFilter.options[1].textContent = t("activeOnly");
+    projectStatusFilter.options[2].textContent = t("inactiveOnly");
+  }
   setText("#projectModal .section-title .eyebrow", t("projects"));
   setText('label[for="projectClientId"]', labelText("Cliente", "Client"));
   setText('label[for="projectName"]', labelText("Proyecto", "Project name"));
@@ -6931,9 +7036,9 @@ function updateServiceRecordTotalPreview() {
 }
 
 function getServiceRecordStatusClass(status) {
-  if (status === "Recorded") return "status-abierto";
-  if (status === "Billed") return "status-progreso";
-  return "status-cerrado";
+  if (status === "Recorded") return "service-status-pending";
+  if (status === "Billed") return "service-status-processed";
+  return "service-status-canceled";
 }
 
 function getInvoiceStatusClass(status) {
@@ -7060,6 +7165,7 @@ tabButtons.forEach((button) => {
 });
 addClientButton.addEventListener("click", () => openClientEditor("create"));
 clientSearchInput.addEventListener("input", loadClients);
+clientStatusFilter.addEventListener("change", loadClients);
 clientsTableBody.addEventListener("click", handleClientsTableClick);
 clientForm.addEventListener("submit", saveClient);
 closeClientModal.addEventListener("click", closeClientEditor);
@@ -7071,6 +7177,7 @@ clientModal.addEventListener("click", (event) => {
 addProjectButton.addEventListener("click", () => openProjectEditor("create"));
 projectSearchInput.addEventListener("input", loadProjects);
 projectClientFilter.addEventListener("change", loadProjects);
+projectStatusFilter.addEventListener("change", loadProjects);
 projectsTableBody.addEventListener("click", handleProjectsTableClick);
 projectForm.addEventListener("submit", saveProject);
 closeProjectModal.addEventListener("click", closeProjectEditor);
