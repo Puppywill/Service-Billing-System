@@ -1128,8 +1128,22 @@
 
           <div class="report-actions">
             <button type="submit" id="generateReportButton" class="btn btn-primary">Generar reporte</button>
-            <button type="button" id="exportPdfButton" class="btn session-button" disabled>Exportar PDF</button>
-            <button type="button" id="exportExcelButton" class="btn session-button" disabled>Excel (Próximamente)</button>
+            <button type="button" id="exportPdfButton" class="btn session-button report-export-button report-export-pdf" disabled>
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 2h8l4 4v16H6z"/>
+                <path d="M14 2v5h5"/>
+                <path d="M9 13h6M9 17h6"/>
+              </svg>
+              <span>Exportar PDF</span>
+            </button>
+            <button type="button" id="exportExcelButton" class="btn session-button report-export-button report-export-excel" disabled>
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M8 3v18M3 9h18M3 15h18"/>
+                <path d="m12 11 4 4m0-4-4 4"/>
+              </svg>
+              <span>Exportar Excel</span>
+            </button>
           </div>
         </form>
 

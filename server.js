@@ -2019,6 +2019,264 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
   document.end();
 }
 
+function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Service Hours", {
+    views: [{ state: "frozen", ySplit: 7 }],
+    pageSetup: {
+      orientation: "landscape",
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: {
+        left: 0.25,
+        right: 0.25,
+        top: 0.45,
+        bottom: 0.45,
+        header: 0.2,
+        footer: 0.2
+      }
+    }
+  });
+  const navy = "FF17365D";
+  const blue = "FF2563EB";
+  const lightBlue = "FFEAF1F8";
+  const soft = "FFF6F8FB";
+  const white = "FFFFFFFF";
+  const slate = "FF1F2937";
+  const muted = "FF5B6778";
+  const border = "FFB8C4D2";
+  const totalHours = records.reduce((sum, record) => sum + Number(record.TotalHours || 0), 0);
+  const uniqueValues = (key) => Array.from(new Set(records.map((record) => cleanReportText(record[key])).filter(Boolean)));
+  const scopeLabel = (key, selectedValue, allLabel) => {
+    const values = uniqueValues(key);
+
+    if (selectedValue && values.length) return values.join(", ");
+    if (values.length === 1) return values[0];
+    return allLabel;
+  };
+  const periodLabel = filters.from || filters.to
+    ? `${filters.from || "Inicio"} al ${filters.to || "Actual"}`
+    : "Todos los periodos";
+  const clientLabel = scopeLabel("ClientName", filters.numericFilters?.ClientID, "Todos los clientes");
+  const projectLabel = scopeLabel("ProjectName", filters.numericFilters?.ProjectID, "Todos los proyectos");
+  const technicianLabel = scopeLabel("TechnicianName", filters.numericFilters?.TechnicianUserID, "Todos los tecnicos");
+  const statusLabel = filters.status || "Todos los estados";
+  const generatedLabel = new Intl.DateTimeFormat("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(generatedAt);
+
+  workbook.creator = "Solutions By Design";
+  workbook.company = "Solutions By Design";
+  workbook.subject = "Service hours report";
+  workbook.title = "Desglose de servicios prestados";
+  workbook.created = generatedAt;
+  workbook.modified = generatedAt;
+
+  worksheet.columns = [
+    { key: "id", width: 13 },
+    { key: "date", width: 13 },
+    { key: "order", width: 14 },
+    { key: "technician", width: 24 },
+    { key: "client", width: 27 },
+    { key: "project", width: 32 },
+    { key: "morningStart", width: 14 },
+    { key: "morningEnd", width: 14 },
+    { key: "afternoonStart", width: 14 },
+    { key: "afternoonEnd", width: 14 },
+    { key: "hours", width: 12 },
+    { key: "status", width: 14 },
+    { key: "description", width: 58 }
+  ];
+
+  worksheet.mergeCells("A1:C5");
+  const logoPath = path.join(__dirname, "assets", "logo-horizontal.png");
+
+  if (fs.existsSync(logoPath)) {
+    const logoId = workbook.addImage({ filename: logoPath, extension: "png" });
+    worksheet.addImage(logoId, {
+      tl: { col: 0.12, row: 0.12 },
+      ext: { width: 180, height: 120 },
+      editAs: "oneCell"
+    });
+  } else {
+    worksheet.getCell("A1").value = "Solutions By Design";
+    worksheet.getCell("A1").font = { bold: true, size: 18, color: { argb: navy } };
+    worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "center" };
+  }
+
+  worksheet.mergeCells("D1:M1");
+  worksheet.getCell("D1").value = "DESGLOSE DE SERVICIOS PRESTADOS";
+  worksheet.getCell("D1").font = { bold: true, size: 18, color: { argb: navy } };
+  worksheet.getCell("D1").alignment = { vertical: "middle", horizontal: "left" };
+
+  worksheet.mergeCells("D2:M2");
+  worksheet.getCell("D2").value = "Solutions By Design | Reporte de horas de servicio";
+  worksheet.getCell("D2").font = { size: 10, color: { argb: muted } };
+
+  const metadataRows = [
+    [3, "D", "H", `Periodo: ${periodLabel}`, "I", "M", `Estado: ${statusLabel}`],
+    [4, "D", "H", `Cliente: ${clientLabel}`, "I", "M", `Tecnico: ${technicianLabel}`],
+    [5, "D", "H", `Proyecto: ${projectLabel}`, "I", "M", `Generado: ${generatedLabel}`]
+  ];
+
+  metadataRows.forEach(([rowNumber, leftStart, leftEnd, leftValue, rightStart, rightEnd, rightValue]) => {
+    worksheet.mergeCells(`${leftStart}${rowNumber}:${leftEnd}${rowNumber}`);
+    worksheet.mergeCells(`${rightStart}${rowNumber}:${rightEnd}${rowNumber}`);
+    worksheet.getCell(`${leftStart}${rowNumber}`).value = leftValue;
+    worksheet.getCell(`${rightStart}${rowNumber}`).value = rightValue;
+    worksheet.getCell(`${leftStart}${rowNumber}`).font = { size: 9, color: { argb: slate } };
+    worksheet.getCell(`${rightStart}${rowNumber}`).font = { size: 9, color: { argb: slate } };
+    worksheet.getCell(`${leftStart}${rowNumber}`).alignment = { vertical: "middle", wrapText: true };
+    worksheet.getCell(`${rightStart}${rowNumber}`).alignment = { vertical: "middle", wrapText: true };
+  });
+
+  [1, 2, 3, 4, 5].forEach((rowNumber) => {
+    worksheet.getRow(rowNumber).height = rowNumber === 1 ? 30 : 23;
+  });
+
+  worksheet.mergeCells("A6:J6");
+  worksheet.getCell("A6").value = "RESUMEN";
+  worksheet.getCell("A6").font = { bold: true, size: 10, color: { argb: white } };
+  worksheet.getCell("A6").fill = { type: "pattern", pattern: "solid", fgColor: { argb: navy } };
+  worksheet.getCell("A6").alignment = { vertical: "middle", horizontal: "left" };
+  worksheet.getCell("K6").value = "Total horas";
+  worksheet.getCell("L6").value = totalHours;
+  worksheet.mergeCells("L6:M6");
+  ["K6", "L6"].forEach((address) => {
+    const cell = worksheet.getCell(address);
+    cell.font = { bold: true, size: 10, color: { argb: white } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: navy } };
+    cell.alignment = { vertical: "middle", horizontal: address === "L6" ? "right" : "center" };
+  });
+  worksheet.getCell("L6").numFmt = "#,##0.00";
+  worksheet.getRow(6).height = 24;
+
+  const headers = [
+    "Registro", "Fecha", "Orden", "Tecnico", "Cliente", "Proyecto",
+    "Entrada AM", "Salida AM", "Entrada PM", "Salida PM", "Horas", "Estado", "Descripcion del servicio"
+  ];
+  const headerRowNumber = 7;
+  const headerRow = worksheet.getRow(headerRowNumber);
+  headerRow.values = headers;
+  headerRow.height = 28;
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, size: 9, color: { argb: white } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: blue } };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.border = {
+      top: { style: "thin", color: { argb: navy } },
+      left: { style: "thin", color: { argb: navy } },
+      bottom: { style: "thin", color: { argb: navy } },
+      right: { style: "thin", color: { argb: navy } }
+    };
+  });
+
+  records.forEach((record, index) => {
+    const serviceDate = record.ServiceDate ? new Date(`${record.ServiceDate}T00:00:00`) : null;
+    const row = worksheet.addRow([
+      record.ServiceRecordID,
+      serviceDate && !Number.isNaN(serviceDate.getTime()) ? serviceDate : record.ServiceDate || "",
+      record.LegacyOrderNumber || "",
+      cleanReportText(record.TechnicianName),
+      cleanReportText(record.ClientName),
+      cleanReportText(record.ProjectName),
+      record.MorningStart ? formatReportTime(record.MorningStart) : "-",
+      record.MorningEnd ? formatReportTime(record.MorningEnd) : "-",
+      record.AfternoonStart ? formatReportTime(record.AfternoonStart) : "-",
+      record.AfternoonEnd ? formatReportTime(record.AfternoonEnd) : "-",
+      Number(record.TotalHours || 0),
+      record.Status || "",
+      cleanReportText(record.ServiceDescription)
+    ]);
+    const descriptionLength = cleanReportText(record.ServiceDescription).length;
+
+    row.height = Math.min(84, Math.max(22, 18 + Math.ceil(descriptionLength / 85) * 12));
+    row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+      cell.font = { size: 9, color: { argb: slate } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: index % 2 === 0 ? white : soft }
+      };
+      cell.border = {
+        top: { style: "thin", color: { argb: border } },
+        left: { style: "thin", color: { argb: border } },
+        bottom: { style: "thin", color: { argb: border } },
+        right: { style: "thin", color: { argb: border } }
+      };
+      cell.alignment = {
+        vertical: "top",
+        horizontal: columnNumber === 11
+          ? "right"
+          : [1, 2, 7, 8, 9, 10, 12].includes(columnNumber) ? "center" : "left",
+        wrapText: true
+      };
+    });
+    row.getCell(2).numFmt = "mm/dd/yyyy";
+    row.getCell(11).numFmt = "#,##0.00";
+    const statusCell = row.getCell(12);
+    const statusColors = {
+      Recorded: { fill: "FFFFF3CD", text: "FF7C4A03" },
+      Billed: { fill: "FFDCFCE7", text: "FF166534" },
+      Canceled: { fill: "FFFEE2E2", text: "FF991B1B" }
+    };
+    const statusColor = statusColors[record.Status];
+
+    if (statusColor) {
+      statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: statusColor.fill } };
+      statusCell.font = { bold: true, size: 9, color: { argb: statusColor.text } };
+    }
+  });
+
+  const totalRowNumber = worksheet.lastRow.number + 1;
+  worksheet.mergeCells(`A${totalRowNumber}:J${totalRowNumber}`);
+  worksheet.getCell(`A${totalRowNumber}`).value = "TOTAL DE HORAS";
+  worksheet.getCell(`K${totalRowNumber}`).value = totalHours;
+  worksheet.mergeCells(`L${totalRowNumber}:M${totalRowNumber}`);
+  worksheet.getCell(`L${totalRowNumber}`).value = `${records.length} registros`;
+
+  [worksheet.getCell(`A${totalRowNumber}`), worksheet.getCell(`K${totalRowNumber}`), worksheet.getCell(`L${totalRowNumber}`)].forEach((cell) => {
+    cell.font = { bold: true, size: 10, color: { argb: navy } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: lightBlue } };
+    cell.border = {
+      top: { style: "medium", color: { argb: navy } },
+      bottom: { style: "thin", color: { argb: border } }
+    };
+    cell.alignment = { vertical: "middle", horizontal: "left" };
+  });
+  worksheet.getCell(`K${totalRowNumber}`).alignment = { vertical: "middle", horizontal: "right" };
+  worksheet.getCell(`L${totalRowNumber}`).alignment = { vertical: "middle", horizontal: "right" };
+  worksheet.getCell(`K${totalRowNumber}`).numFmt = "#,##0.00";
+  worksheet.getRow(totalRowNumber).height = 26;
+
+  worksheet.autoFilter = `A${headerRowNumber}:M${headerRowNumber}`;
+  worksheet.pageSetup.printTitlesRow = `${headerRowNumber}:${headerRowNumber}`;
+  worksheet.pageSetup.printArea = `A1:M${totalRowNumber}`;
+  worksheet.headerFooter.oddFooter = "&LSolutions By Design&C&P de &N&RReporte de horas";
+  worksheet.headerFooter.evenFooter = worksheet.headerFooter.oddFooter;
+
+  worksheet.columns.forEach((column, columnIndex) => {
+    const minimumWidth = Number(column.width || 12);
+    const maximumWidth = columnIndex === 12 ? 65 : 36;
+    let contentWidth = minimumWidth;
+
+    column.eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+      if (rowNumber < headerRowNumber) return;
+      const value = cell.value instanceof Date ? "00/00/0000" : String(cell.value ?? "");
+      contentWidth = Math.max(contentWidth, Math.min(value.length + 2, maximumWidth));
+    });
+    column.width = Math.min(Math.max(contentWidth, minimumWidth), maximumWidth);
+  });
+
+  return workbook;
+}
+
 function cleanManualInvoiceValue(value, fallback = "N/A") {
   const text = String(value ?? "").replace(/\r/g, "").trim();
   return text || fallback;
@@ -4507,6 +4765,42 @@ app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, 
     console.error(error);
     if (!res.headersSent) {
       res.status(500).json({ message: "Error al exportar PDF." });
+    } else {
+      res.end();
+    }
+  }
+});
+
+app.get("/api/reports/service-hours/excel", requireAdminOrTechnician, async (req, res) => {
+  const filters = getServiceHoursReportFilters(req);
+
+  if (filters.error) {
+    return res.status(filters.statusCode || 400).json({ message: filters.error });
+  }
+
+  try {
+    const pool = await getPool();
+    const records = await getServiceHoursReportRecords(pool, filters);
+
+    if (records.length === 0) {
+      return res.status(404).json({ message: "No hay registros para generar el Excel." });
+    }
+
+    await createReportNotification(pool, req, "Reporte Excel generado");
+
+    const generatedAt = new Date();
+    const filenameDate = generatedAt.toISOString().slice(0, 10);
+    const workbook = createServiceHoursExcelWorkbook(records, filters, generatedAt);
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=solutions-by-design-service-hours-${filenameDate}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Error al exportar Excel." });
     } else {
       res.end();
     }

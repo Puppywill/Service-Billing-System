@@ -706,6 +706,9 @@ const translations = {
     reportError: "No se pudo generar el reporte.",
     pdfReady: "PDF generado correctamente.",
     pdfNoData: "Genera un reporte con registros antes de exportar PDF.",
+    excelReady: "Excel generado correctamente.",
+    excelNoData: "Genera un reporte con registros antes de exportar Excel.",
+    excelError: "No se pudo exportar el reporte a Excel.",
     exportError: "No se pudo exportar el reporte.",
     invalidApiResponse: "El servidor devolvio una respuesta HTML en lugar de JSON. Verifica que el servidor este reiniciado y que el endpoint API exista.",
     passwordResets: "Solicitudes de recuperacion",
@@ -1113,6 +1116,9 @@ const translations = {
     reportError: "The report could not be generated.",
     pdfReady: "PDF generated successfully.",
     pdfNoData: "Generate a report with records before exporting PDF.",
+    excelReady: "Excel generated successfully.",
+    excelNoData: "Generate a report with records before exporting Excel.",
+    excelError: "The report could not be exported to Excel.",
     exportError: "The report could not be exported.",
     invalidApiResponse: "The server returned HTML instead of JSON. Make sure the server was restarted and the API endpoint exists.",
     passwordResets: "Forgot Password Requests",
@@ -5217,6 +5223,7 @@ function translateServerMessage(message) {
     "Solicitud recibida. Contacta a un administrador para restablecer tu contrasena.": "Request received. Contact an administrator to reset your password.",
     "Formato de fecha invalido. Usa YYYY-MM-DD.": "Invalid date format. Use YYYY-MM-DD.",
     "Error al generar reporte.": "Error generating report.",
+    "No hay registros para generar el Excel.": "There are no records to export to Excel.",
     "Error al exportar Excel.": "Error exporting Excel.",
     "Error al exportar PDF.": "Error exporting PDF."
   };
@@ -5572,8 +5579,8 @@ function applyStaticLanguage() {
   setPlaceholder("#reportInvoiceNumber", "Example: 8878");
   reportsTotalCount.parentElement.lastChild.textContent = currentLanguage === "es" ? " registros" : " records";
   generateReportButton.textContent = t("generateReport");
-  exportPdfButton.textContent = t("exportPdf");
-  exportExcelButton.textContent = currentLanguage === "es" ? "Excel (Proximamente)" : "Excel (Coming soon)";
+  setText("#exportPdfButton span", t("exportPdf"));
+  setText("#exportExcelButton span", t("exportExcel"));
 
   setText("#manualInvoicesTabPanel .section-title .eyebrow", t("manualInvoicesEyebrow"));
   setText("#manualInvoicesTitle", t("manualInvoices"));
@@ -6135,6 +6142,47 @@ async function exportServiceHoursPdf() {
   }
 }
 
+async function exportServiceHoursExcel() {
+  reportsMessage.textContent = "";
+
+  if (!hasGeneratedReport || reportServiceRecords.length === 0) {
+    reportsMessage.textContent = t("excelNoData");
+    return;
+  }
+
+  try {
+    exportExcelButton.disabled = true;
+    const query = getReportQueryString();
+    const response = await fetch(`/api/reports/service-hours/excel${query ? `?${query}` : ""}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") || "";
+      const errorData = contentType.includes("application/json") ? await response.json() : {};
+      throw new Error(translateServerMessage(errorData.message) || t("excelError"));
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `solutions-by-design-service-hours-${today}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    reportsMessage.textContent = t("excelReady");
+  } catch (error) {
+    console.error(error);
+    reportsMessage.textContent = error.message || t("excelError");
+  } finally {
+    updateReportExportActions();
+  }
+}
+
 function formatManualInvoiceCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -6330,6 +6378,10 @@ async function generateManualInvoicePdf(event) {
 function updateReportExportActions() {
   if (exportPdfButton) {
     exportPdfButton.disabled = !hasGeneratedReport || reportServiceRecords.length === 0;
+  }
+
+  if (exportExcelButton) {
+    exportExcelButton.disabled = !hasGeneratedReport || reportServiceRecords.length === 0;
   }
 }
 
@@ -7106,6 +7158,7 @@ usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);
 exportPdfButton.addEventListener("click", exportServiceHoursPdf);
+exportExcelButton.addEventListener("click", exportServiceHoursExcel);
 manualInvoiceForm.addEventListener("submit", generateManualInvoicePdf);
 addManualInvoiceLineButton.addEventListener("click", addManualInvoiceLine);
 manualInvoiceApplyTax.addEventListener("change", updateManualInvoiceSummary);
