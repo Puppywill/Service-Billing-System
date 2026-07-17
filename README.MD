@@ -1399,6 +1399,68 @@ GET /api/dashboard/recent-activity
 
 Next phase: Phase 17D - Service Record contract warnings.
 
+## Phase 34: Project Manager Role And Project Assignments
+
+The application now includes a `Project Manager` role limited to projects assigned by an administrator. The relationship is stored in `dbo.UserProjectAssignments` inside `ServiceBillingDB`; the restored `ServiceSBD_20260629` database remains unchanged.
+
+The persisted and API role identifier is `ProjectManager`; the interface displays the friendly label `Project Manager`. Session validation remains independent from project assignments, so a manager with no assigned projects can sign in and receives an empty scoped workspace instead of being signed out.
+
+### SQL Migration
+
+Run `phase-34-project-manager-assignments.sql` in SSMS before starting this version. The script is idempotent, updates `CK_Users_Role`, creates the junction table, foreign keys and indexes, and retains disabled assignments for audit history.
+
+### Administration And API
+
+- Users supports the `Project Manager` role, role filtering, assignment counts, and full assignment management for Project Manager users.
+- Projects also supports assigning one or more active Project Managers from the Project editor.
+- `GET /api/users/:id/project-assignments` returns active assignments for a user.
+- `POST /api/users` and `PUT /api/users/:id` accept `projectIds` for Project Manager assignment changes.
+- `PUT /api/users/:id/project-assignments` remains available for assignment-only updates.
+- `POST /api/projects` and `PUT /api/projects/:id` accept the complete `projectManagerUserIds` array.
+
+### Permissions And Security
+
+- Admin retains global access and exclusive control of Users, Settings, roles, and assignments.
+- Project Manager only receives Clients, Projects, Service Records, Dashboard, and Reports associated with assigned projects.
+- Date, technician, client, project, and status filters remain available within that scope.
+- PDF and Excel exports use the same backend assignment scope.
+- Direct requests for an unassigned project or service record return `403`.
+- Project Manager cannot create, edit, cancel, or process Service Records and cannot access administrative or manual invoice endpoints.
+- Technician retains the existing own-record scope.
+
+### Test Flow
+
+1. Run `phase-34-project-manager-assignments.sql` against `ServiceBillingDB`.
+2. Sign in as Admin, create a `Project Manager`, then assign that user from two Project editors.
+3. Sign in as that user and confirm Projects, Clients, Dashboard, Service Records, and Reports only show related data.
+4. Export PDF and Excel and confirm they only contain records from assigned projects.
+5. Request `GET /api/projects/{unassigned-id}` and verify a `403` response.
+6. Remove one assignment as Admin and confirm it disappears after the Project Manager session refreshes.
+7. Confirm Admin still sees all data and Technician permissions remain unchanged.
+
+### Phase 34.1: Project Editor And Multi-Project Picker
+
+- The Project editor separates basic information, contract fields, and the contract summary in a responsive two-column layout.
+- Contract summary metrics only appear while editing an existing project; projects without contract data show one `No contract` badge.
+- The Projects table has one localized header per field and summarizes assigned managers as `Name +N`, with the full list available on hover or keyboard focus.
+- The reusable assignment control uses searchable checkboxes, chips, a live counter, and clear selection; Ctrl or Shift is no longer required.
+- Assignment updates are now performed from the Project editor.
+
+### Phase 34.2: Bidirectional Assignment Sync
+
+- Assignments can now be managed from both Users and Projects while using the same `dbo.UserProjectAssignments` source.
+- User create/edit shows the assigned-project picker only when the selected role is `ProjectManager`.
+- The user assignment picker includes searchable checkboxes, selected-project chips, a live count, select visible, and clear selection.
+- The user assignment picker includes an Admin-only status filter for Active, Inactive, and All projects. Inactive historical assignments remain visible and checked, but disabled.
+- Editing a Project Manager loads existing assignments, preserves them while adding new ones, and saves the complete selected project set.
+- Changing a Project Manager to another role asks for confirmation before deactivating active assignments.
+- Project create/update still sends the complete `projectManagerUserIds` array and refreshes Users immediately after saving.
+- The Users table assignment count opens a read-only detail with client, project, project status, and assignment date, plus an Admin-only manage button.
+- The Projects table shows assigned managers as `Name +N`; clicking the summary opens a compact detail modal with the full manager list and an Admin-only manage button.
+- User and Project assignment updates validate Admin role, active users/projects, duplicate IDs, and persist changes in SQL transactions.
+- The backend rejects new assignments to inactive projects while allowing existing active historical relations to remain selected.
+- Removed managers or projects are logically deactivated in `dbo.UserProjectAssignments`; historical data is not deleted.
+
 ## Author
 
 William Rosado Perez

@@ -215,16 +215,25 @@ function mapTicket(record) {
   };
 }
 
+function normalizeRoleValue(role) {
+  return role === "Project Manager" ? "ProjectManager" : role;
+}
+
+function isSupportedRole(role) {
+  return ["Admin", "ProjectManager", "Technician", "User"].includes(normalizeRoleValue(role));
+}
+
 function mapUser(record) {
   return {
     UserID: record.UserID,
     FullName: record.FullName,
     Email: record.Email,
-    Role: record.Role,
+    Role: normalizeRoleValue(record.Role),
     IsActive: record.IsActive === undefined ? true : Boolean(record.IsActive),
     CreatedAt: record.CreatedAt,
     CreatedByUserID: record.CreatedByUserID,
-    CreatedByFullName: record.CreatedByFullName
+    CreatedByFullName: record.CreatedByFullName,
+    AssignedProjectCount: Number(record.AssignedProjectCount || 0)
   };
 }
 
@@ -289,6 +298,12 @@ function mapProject(record) {
     HoursAlertStatus: record.HoursAlertStatus,
     ExpirationAlertStatus: record.ExpirationAlertStatus,
     ContractStatus: record.ContractStatus,
+    ProjectManagerNames: record.ProjectManagerNames || "",
+    ProjectManagerCount: Number(record.ProjectManagerCount || 0),
+    ProjectManagerUserIDs: String(record.ProjectManagerUserIDs || "")
+      .split(",")
+      .map(Number)
+      .filter((userId) => Number.isInteger(userId) && userId > 0),
     IsActive: Boolean(record.IsActive),
     CreatedAt: record.CreatedAt,
     UpdatedAt: record.UpdatedAt
@@ -336,6 +351,10 @@ function getProjectPayload(body) {
   const hasHourlyRate = rawHourlyRate !== undefined && rawHourlyRate !== null && rawHourlyRate !== "";
   const hourlyRate = hasHourlyRate ? Number(rawHourlyRate) : null;
   const contractType = normalizeOptionalText(getValue("contractType", "ContractType"));
+  const hasProjectManagerUserIds = hasValue("projectManagerUserIds", "ProjectManagerUserIDs");
+  const projectManagerUserIds = hasProjectManagerUserIds
+    ? normalizeProjectIds(getValue("projectManagerUserIds", "ProjectManagerUserIDs"))
+    : undefined;
 
   return {
     clientId: Number(rawClientId),
@@ -359,6 +378,8 @@ function getProjectPayload(body) {
     hasLowHoursThreshold: hasValue("lowHoursThreshold", "LowHoursThreshold"),
     expirationAlertDays: normalizeOptionalNumber(getValue("expirationAlertDays", "ExpirationAlertDays")),
     hasExpirationAlertDays: hasValue("expirationAlertDays", "ExpirationAlertDays"),
+    projectManagerUserIds,
+    hasProjectManagerUserIds,
     isActive: rawIsActive === undefined ? null : Boolean(rawIsActive)
   };
 }
@@ -826,11 +847,266 @@ function requireAdminOrTechnician(req, res, next) {
     return res.status(401).json({ message: "Debes iniciar sesion." });
   }
 
-  if (!["Admin", "Technician", "User"].includes(req.session.user.Role)) {
+  if (!isSupportedRole(req.session.user.Role)) {
     return res.status(403).json({ message: "No tienes permisos para acceder a registros de servicio." });
   }
 
   next();
+}
+
+function isProjectManager(user) {
+  return normalizeRoleValue(user?.Role) === "ProjectManager";
+}
+
+function normalizeProjectIds(rawProjectIds) {
+  if (rawProjectIds === undefined || rawProjectIds === null) return [];
+  if (!Array.isArray(rawProjectIds)) return null;
+
+  const projectIds = Array.from(new Set(rawProjectIds.map(Number)));
+  return projectIds.every((projectId) => Number.isInteger(projectId) && projectId > 0)
+    ? projectIds
+    : null;
+}
+
+async function userCanAccessProject(pool, user, projectId) {
+  if (user?.Role === "Admin") return true;
+  if (!isProjectManager(user)) return true;
+
+  const result = await pool.request()
+    .input("ScopeUserID", sql.Int, Number(user.UserID))
+    .input("ScopeProjectID", sql.Int, Number(projectId))
+    .query(`
+      SELECT CASE WHEN EXISTS (
+        SELECT 1
+        FROM dbo.UserProjectAssignments upa
+        INNER JOIN dbo.Projects p ON p.ProjectID = upa.ProjectID
+        WHERE upa.UserID = @ScopeUserID
+          AND upa.ProjectID = @ScopeProjectID
+          AND upa.IsActive = 1
+          AND p.IsActive = 1
+      ) THEN 1 ELSE 0 END AS HasAccess
+    `);
+
+  return Boolean(result.recordset[0]?.HasAccess);
+}
+
+async function userCanAccessClient(pool, user, clientId) {
+  if (user?.Role === "Admin") return true;
+  if (!isProjectManager(user)) return true;
+
+  const result = await pool.request()
+    .input("ScopeUserID", sql.Int, Number(user.UserID))
+    .input("ScopeClientID", sql.Int, Number(clientId))
+    .query(`
+      SELECT CASE WHEN EXISTS (
+        SELECT 1
+        FROM dbo.UserProjectAssignments upa
+        INNER JOIN dbo.Projects p ON p.ProjectID = upa.ProjectID
+        WHERE upa.UserID = @ScopeUserID
+          AND p.ClientID = @ScopeClientID
+          AND upa.IsActive = 1
+          AND p.IsActive = 1
+      ) THEN 1 ELSE 0 END AS HasAccess
+    `);
+
+  return Boolean(result.recordset[0]?.HasAccess);
+}
+
+function addProjectManagerScope(request, whereClauses, user, projectAlias = "sr") {
+  if (!isProjectManager(user)) return;
+
+  request.input("ScopeProjectManagerUserID", sql.Int, Number(user.UserID));
+  whereClauses.push(`EXISTS (
+    SELECT 1
+    FROM dbo.UserProjectAssignments scopeAssignment
+    WHERE scopeAssignment.UserID = @ScopeProjectManagerUserID
+      AND scopeAssignment.ProjectID = ${projectAlias}.ProjectID
+      AND scopeAssignment.IsActive = 1
+  )`);
+}
+
+async function syncUserProjectAssignmentsInTransaction(transaction, userId, projectIds, assignedByUserId) {
+  const normalizedProjectIds = normalizeProjectIds(projectIds);
+
+  if (normalizedProjectIds === null) {
+    const error = new Error("projectIds debe ser una lista de IDs de proyecto validos.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const targetResult = await new sql.Request(transaction)
+    .input("TargetUserID", sql.Int, userId)
+    .query("SELECT UserID, Role FROM dbo.Users WHERE UserID = @TargetUserID");
+  const targetUser = targetResult.recordset[0];
+
+  if (!targetUser) {
+    const error = new Error("Usuario no encontrado.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (normalizeRoleValue(targetUser.Role) !== "ProjectManager" && normalizedProjectIds.length > 0) {
+    const error = new Error("Solo se pueden asignar proyectos a usuarios Project Manager.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (normalizedProjectIds.length > 0) {
+    const validationRequest = new sql.Request(transaction);
+    const placeholders = normalizedProjectIds.map((projectId, index) => {
+      validationRequest.input(`AssignedProjectID${index}`, sql.Int, projectId);
+      return `@AssignedProjectID${index}`;
+    });
+    const validationResult = await validationRequest.query(`
+      SELECT COUNT(*) AS ValidProjectCount
+      FROM dbo.Projects p
+      WHERE p.ProjectID IN (${placeholders.join(", ")})
+        AND (
+          p.IsActive = 1
+          OR EXISTS (
+            SELECT 1
+            FROM dbo.UserProjectAssignments existingAssignment
+            WHERE existingAssignment.UserID = @TargetUserID
+              AND existingAssignment.ProjectID = p.ProjectID
+              AND existingAssignment.IsActive = 1
+          )
+        )
+    `);
+
+    if (Number(validationResult.recordset[0]?.ValidProjectCount) !== normalizedProjectIds.length) {
+      const error = new Error("Uno o mas proyectos no existen, estan inactivos o no tienen una asignacion historica activa.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  const deactivateRequest = new sql.Request(transaction)
+    .input("UserID", sql.Int, userId);
+  let keepSelectedClause = "";
+
+  if (normalizedProjectIds.length > 0) {
+    const keepPlaceholders = normalizedProjectIds.map((projectId, index) => {
+      deactivateRequest.input(`KeepProjectID${index}`, sql.Int, projectId);
+      return `@KeepProjectID${index}`;
+    });
+    keepSelectedClause = `AND ProjectID NOT IN (${keepPlaceholders.join(", ")})`;
+  }
+
+  await deactivateRequest.query(`
+    UPDATE dbo.UserProjectAssignments
+    SET IsActive = 0,
+        UpdatedAt = SYSUTCDATETIME()
+    WHERE UserID = @UserID
+      AND IsActive = 1
+      ${keepSelectedClause}
+  `);
+
+  for (const projectId of normalizedProjectIds) {
+    await new sql.Request(transaction)
+      .input("UserID", sql.Int, userId)
+      .input("ProjectID", sql.Int, projectId)
+      .input("AssignedByUserID", sql.Int, assignedByUserId)
+      .query(`
+        MERGE dbo.UserProjectAssignments AS target
+        USING (SELECT @UserID AS UserID, @ProjectID AS ProjectID) AS source
+        ON target.UserID = source.UserID AND target.ProjectID = source.ProjectID
+        WHEN MATCHED THEN UPDATE SET
+          IsActive = 1,
+          AssignedByUserID = @AssignedByUserID,
+          AssignedAt = CASE WHEN target.IsActive = 0 THEN SYSUTCDATETIME() ELSE target.AssignedAt END,
+          UpdatedAt = SYSUTCDATETIME()
+        WHEN NOT MATCHED THEN
+          INSERT (UserID, ProjectID, AssignedByUserID, IsActive)
+          VALUES (@UserID, @ProjectID, @AssignedByUserID, 1);
+      `);
+  }
+}
+
+async function syncUserProjectAssignments(pool, userId, projectIds, assignedByUserId) {
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+
+  try {
+    await syncUserProjectAssignmentsInTransaction(transaction, userId, projectIds, assignedByUserId);
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
+async function syncProjectManagerAssignments(transaction, projectId, userIds, assignedByUserId) {
+  const normalizedUserIds = normalizeProjectIds(userIds);
+
+  if (normalizedUserIds === null) {
+    const error = new Error("projectManagerUserIds debe ser una lista de UserID validos.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (normalizedUserIds.length > 0) {
+    const validationRequest = new sql.Request(transaction);
+    const placeholders = normalizedUserIds.map((userId, index) => {
+      validationRequest.input(`ProjectManagerUserID${index}`, sql.Int, userId);
+      return `@ProjectManagerUserID${index}`;
+    });
+    const validationResult = await validationRequest.query(`
+      SELECT COUNT(*) AS ValidManagerCount
+      FROM dbo.Users
+      WHERE IsActive = 1
+        AND Role IN (N'ProjectManager', N'Project Manager')
+        AND UserID IN (${placeholders.join(", ")})
+    `);
+
+    if (Number(validationResult.recordset[0]?.ValidManagerCount) !== normalizedUserIds.length) {
+      const error = new Error("Uno o mas Project Managers no existen, estan inactivos o tienen un rol invalido.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  const deactivateRequest = new sql.Request(transaction)
+    .input("AssignmentProjectID", sql.Int, projectId);
+  let keepSelectedClause = "";
+
+  if (normalizedUserIds.length > 0) {
+    const keepPlaceholders = normalizedUserIds.map((userId, index) => {
+      deactivateRequest.input(`KeepProjectManagerUserID${index}`, sql.Int, userId);
+      return `@KeepProjectManagerUserID${index}`;
+    });
+    keepSelectedClause = `AND UserID NOT IN (${keepPlaceholders.join(", ")})`;
+  }
+
+  await deactivateRequest.query(`
+    UPDATE dbo.UserProjectAssignments
+    SET IsActive = 0,
+        UpdatedAt = SYSUTCDATETIME()
+    WHERE ProjectID = @AssignmentProjectID
+      AND IsActive = 1
+      ${keepSelectedClause}
+  `);
+
+  for (const userId of normalizedUserIds) {
+    await new sql.Request(transaction)
+      .input("AssignmentUserID", sql.Int, userId)
+      .input("AssignmentProjectID", sql.Int, projectId)
+      .input("AssignedByUserID", sql.Int, assignedByUserId)
+      .query(`
+        MERGE dbo.UserProjectAssignments AS target
+        USING (
+          SELECT @AssignmentUserID AS UserID, @AssignmentProjectID AS ProjectID
+        ) AS source
+        ON target.UserID = source.UserID AND target.ProjectID = source.ProjectID
+        WHEN MATCHED THEN UPDATE SET
+          IsActive = 1,
+          AssignedByUserID = @AssignedByUserID,
+          AssignedAt = CASE WHEN target.IsActive = 0 THEN SYSUTCDATETIME() ELSE target.AssignedAt END,
+          UpdatedAt = SYSUTCDATETIME()
+        WHEN NOT MATCHED THEN
+          INSERT (UserID, ProjectID, AssignedByUserID, IsActive)
+          VALUES (@AssignmentUserID, @AssignmentProjectID, @AssignedByUserID, 1);
+      `);
+  }
 }
 
 function requireInvoiceReadAccess(req, res, next) {
@@ -850,7 +1126,14 @@ function regenerateSession(req, user) {
       }
 
       req.session.user = user;
-      resolve();
+      req.session.save((saveError) => {
+        if (saveError) {
+          reject(saveError);
+          return;
+        }
+
+        resolve();
+      });
     });
   });
 }
@@ -1080,7 +1363,27 @@ async function getUserById(pool, userId) {
       WHERE u.UserID = @UserID
     `);
 
-  return result.recordset[0] ? mapUser(result.recordset[0]) : null;
+  const userRecord = result.recordset[0];
+  if (!userRecord) return null;
+
+  userRecord.AssignedProjectCount = 0;
+  try {
+    if (await tableExists(pool, "dbo.UserProjectAssignments")) {
+      const assignmentResult = await pool.request()
+        .input("AssignmentUserID", sql.Int, userId)
+        .query(`
+          SELECT COUNT(*) AS AssignedProjectCount
+          FROM dbo.UserProjectAssignments upa
+          WHERE upa.UserID = @AssignmentUserID
+            AND upa.IsActive = 1
+        `);
+      userRecord.AssignedProjectCount = Number(assignmentResult.recordset[0]?.AssignedProjectCount || 0);
+    }
+  } catch (error) {
+    console.warn(`[auth] Assignment count unavailable for user ${userId}; session validation will continue.`, error.message);
+  }
+
+  return mapUser(userRecord);
 }
 
 async function getClientById(pool, clientId, activeOnly = true) {
@@ -1131,12 +1434,27 @@ async function getProjectById(pool, projectId, activeOnly = true) {
         pcs.HoursAlertStatus,
         pcs.ExpirationAlertStatus,
         pcs.ContractStatus,
+        managers.ProjectManagerNames,
+        managers.ProjectManagerCount,
+        managers.ProjectManagerUserIDs,
         p.IsActive,
         p.CreatedAt,
         p.UpdatedAt
       FROM dbo.Projects p
       INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
       LEFT JOIN dbo.vw_ProjectContractStatus pcs ON pcs.ProjectID = p.ProjectID
+      OUTER APPLY (
+        SELECT
+          STRING_AGG(CONVERT(NVARCHAR(MAX), manager.FullName), N', ') AS ProjectManagerNames,
+          COUNT(*) AS ProjectManagerCount,
+          STRING_AGG(CONVERT(NVARCHAR(MAX), manager.UserID), N',') AS ProjectManagerUserIDs
+        FROM dbo.UserProjectAssignments upa
+        INNER JOIN dbo.Users manager ON manager.UserID = upa.UserID
+        WHERE upa.ProjectID = p.ProjectID
+          AND upa.IsActive = 1
+          AND manager.IsActive = 1
+          AND manager.Role IN (N'ProjectManager', N'Project Manager')
+      ) managers
       WHERE p.ProjectID = @ProjectID
         ${activeOnly ? "AND p.IsActive = 1" : ""}
     `);
@@ -1481,6 +1799,14 @@ async function tableColumnExists(pool, tableName, columnName) {
   return Boolean(result.recordset[0]?.ExistsFlag);
 }
 
+async function tableExists(pool, tableName) {
+  const result = await pool.request()
+    .input("TableName", sql.NVarChar(256), tableName)
+    .query("SELECT CASE WHEN OBJECT_ID(@TableName, N'U') IS NULL THEN 0 ELSE 1 END AS ExistsFlag");
+
+  return Boolean(result.recordset[0]?.ExistsFlag);
+}
+
 function getServiceHoursReportFilters(req) {
   const from = String(req.query.from || "").trim();
   const to = String(req.query.to || "").trim();
@@ -1515,7 +1841,7 @@ function getServiceHoursReportFilters(req) {
     numericFilters[name] = value;
   }
 
-  if (req.session.user.Role !== "Admin") {
+  if (["Technician", "User"].includes(req.session.user.Role)) {
     const sessionUserId = Number(req.session.user.UserID);
 
     if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
@@ -1525,7 +1851,13 @@ function getServiceHoursReportFilters(req) {
     numericFilters.TechnicianUserID = sessionUserId;
   }
 
-  return { from, to, status, numericFilters };
+  return {
+    from,
+    to,
+    status,
+    numericFilters,
+    projectManagerUserId: isProjectManager(req.session.user) ? Number(req.session.user.UserID) : null
+  };
 }
 
 async function getServiceHoursReportRecords(pool, filters) {
@@ -1552,6 +1884,16 @@ async function getServiceHoursReportRecords(pool, filters) {
   for (const [name, value] of Object.entries(filters.numericFilters || {})) {
     request.input(name, sql.Int, value);
     whereClauses.push(`sr.${name} = @${name}`);
+  }
+
+  if (filters.projectManagerUserId) {
+    request.input("ScopeProjectManagerUserID", sql.Int, filters.projectManagerUserId);
+    whereClauses.push(`EXISTS (
+      SELECT 1 FROM dbo.UserProjectAssignments scopeAssignment
+      WHERE scopeAssignment.UserID = @ScopeProjectManagerUserID
+        AND scopeAssignment.ProjectID = sr.ProjectID
+        AND scopeAssignment.IsActive = 1
+    )`);
   }
 
   applyReportDemoExclusion(request, whereClauses);
@@ -1609,6 +1951,16 @@ async function getServiceHoursReportTechnicians(pool, filters) {
   for (const [name, value] of Object.entries(filters.numericFilters || {})) {
     request.input(name, sql.Int, value);
     whereClauses.push(`sr.${name} = @${name}`);
+  }
+
+  if (filters.projectManagerUserId) {
+    request.input("ScopeProjectManagerUserID", sql.Int, filters.projectManagerUserId);
+    whereClauses.push(`EXISTS (
+      SELECT 1 FROM dbo.UserProjectAssignments scopeAssignment
+      WHERE scopeAssignment.UserID = @ScopeProjectManagerUserID
+        AND scopeAssignment.ProjectID = sr.ProjectID
+        AND scopeAssignment.IsActive = 1
+    )`);
   }
 
   applyReportDemoExclusion(request, whereClauses);
@@ -2786,6 +3138,7 @@ app.post("/api/login", async (req, res) => {
   }
 
   try {
+    console.info(`[auth] Login request received for ${email.trim().toLowerCase()}.`);
     const pool = await getPool();
     const result = await pool.request()
       .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
@@ -2796,21 +3149,25 @@ app.post("/api/login", async (req, res) => {
       `);
 
     if (result.recordset.length === 0) {
+      console.info("[auth] Login rejected: user not found.");
       return res.status(401).json({ message: "Credenciales invalidas." });
     }
 
     const user = result.recordset[0];
     if (user.IsActive === false || Number(user.IsActive) === 0) {
+      console.info(`[auth] Login rejected for user ${user.UserID}: inactive account.`);
       return res.status(403).json({ message: "Usuario inactivo. Contacta a un administrador." });
     }
 
     const passwordMatches = await bcrypt.compare(password, user.Password);
 
     if (!passwordMatches) {
+      console.info(`[auth] Login rejected for user ${user.UserID}: invalid credentials.`);
       return res.status(401).json({ message: "Credenciales invalidas." });
     }
 
     await regenerateSession(req, mapUser(user));
+    console.info(`[auth] Login successful for user ${user.UserID}; role=${req.session.user.Role}; session created=true.`);
     res.json({ user: req.session.user });
   } catch (error) {
     poolPromise = null;
@@ -2833,23 +3190,27 @@ app.post("/api/logout", requireAuth, (req, res) => {
 
 app.get("/api/me", async (req, res) => {
   if (!req.session.user) {
+    console.info("[auth] /api/me returned no active session.");
     return res.json({ user: null });
   }
 
   try {
+    console.info(`[auth] Validating session for user ${req.session.user.UserID}; role=${normalizeRoleValue(req.session.user.Role)}.`);
     const pool = await getPool();
     const sessionUser = await getUserById(pool, Number(req.session.user.UserID));
 
     if (!sessionUser || sessionUser.IsActive === false) {
+      console.info(`[auth] Session invalidated for user ${req.session.user.UserID}: missing or inactive account.`);
       req.session.destroy(() => {});
       return res.json({ user: null });
     }
 
     req.session.user = sessionUser;
+    console.info(`[auth] Session valid for user ${sessionUser.UserID}; role=${sessionUser.Role}.`);
     res.json({ user: sessionUser });
   } catch (error) {
     poolPromise = null;
-    console.error(error);
+    console.error(`[auth] Session validation failed for user ${req.session.user?.UserID || "unknown"}.`, error);
     res.status(500).json({ message: "Error al verificar sesion." });
   }
 });
@@ -3061,7 +3422,23 @@ app.get("/api/users", requireAdmin, async (req, res) => {
       ORDER BY u.CreatedAt DESC
     `);
 
-    res.json(result.recordset.map(mapUser));
+    const assignmentCounts = new Map();
+    if (await tableExists(pool, "dbo.UserProjectAssignments")) {
+      const assignmentResult = await pool.request().query(`
+        SELECT upa.UserID, COUNT(*) AS AssignedProjectCount
+        FROM dbo.UserProjectAssignments upa
+        WHERE upa.IsActive = 1
+        GROUP BY upa.UserID
+      `);
+      assignmentResult.recordset.forEach((row) => {
+        assignmentCounts.set(Number(row.UserID), Number(row.AssignedProjectCount || 0));
+      });
+    }
+
+    res.json(result.recordset.map((record) => mapUser({
+      ...record,
+      AssignedProjectCount: assignmentCounts.get(Number(record.UserID)) || 0
+    })));
   } catch (error) {
     poolPromise = null;
     console.error(error);
@@ -3070,32 +3447,64 @@ app.get("/api/users", requireAdmin, async (req, res) => {
 });
 
 app.post("/api/users", requireAdmin, async (req, res) => {
-  const { fullName, email, password, role } = req.body;
+  const { fullName, email, password } = req.body;
+  const role = normalizeRoleValue(req.body?.role);
+  const projectIds = normalizeProjectIds(req.body?.projectIds ?? []);
 
   if (!fullName || !email || !password || !role) {
     return res.status(400).json({ message: "Todos los campos son obligatorios." });
   }
 
-  if (!["Admin", "Technician", "User"].includes(role)) {
+  if (!isSupportedRole(role)) {
     return res.status(400).json({ message: "Rol invalido." });
+  }
+
+  if (projectIds === null) {
+    return res.status(400).json({ message: "projectIds debe ser una lista valida." });
+  }
+
+  if (role !== "ProjectManager" && projectIds.length > 0) {
+    return res.status(400).json({ message: "Solo se pueden asignar proyectos a usuarios Project Manager." });
   }
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
     const pool = await getPool();
-    const result = await pool.request()
-      .input("FullName", sql.NVarChar(120), fullName.trim())
-      .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
-      .input("Password", sql.NVarChar(255), passwordHash)
-      .input("Role", sql.NVarChar(20), role)
-      .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
-      .query(`
-        INSERT INTO dbo.Users (FullName, Email, Password, Role, CreatedByUserID)
-        OUTPUT inserted.UserID
-        VALUES (@FullName, @Email, @Password, @Role, @CreatedByUserID)
-      `);
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    let createdUserId;
 
-    const createdUser = await getUserById(pool, result.recordset[0].UserID);
+    try {
+      const result = await new sql.Request(transaction)
+        .input("FullName", sql.NVarChar(120), fullName.trim())
+        .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
+        .input("Password", sql.NVarChar(255), passwordHash)
+        .input("Role", sql.NVarChar(30), role)
+        .input("CreatedByUserID", sql.Int, Number(req.session.user.UserID))
+        .query(`
+          INSERT INTO dbo.Users (FullName, Email, Password, Role, CreatedByUserID)
+          OUTPUT inserted.UserID
+          VALUES (@FullName, @Email, @Password, @Role, @CreatedByUserID)
+        `);
+
+      createdUserId = result.recordset[0].UserID;
+
+      if (role === "ProjectManager") {
+        await syncUserProjectAssignmentsInTransaction(
+          transaction,
+          createdUserId,
+          projectIds,
+          Number(req.session.user.UserID)
+        );
+      }
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+    const createdUser = await getUserById(pool, createdUserId);
     await createNotification(
       pool,
       createdUser.UserID,
@@ -3111,14 +3520,17 @@ app.post("/api/users", requireAdmin, async (req, res) => {
       return res.status(409).json({ message: "Ya existe un usuario con ese email." });
     }
 
-    res.status(500).json({ message: "Error al crear usuario." });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Error al crear usuario." });
   }
 });
 
 app.put("/api/users/:id", requireAdmin, async (req, res) => {
   const userId = Number(req.params.id);
-  const { fullName, email, password, role } = req.body;
+  const { fullName, email, password } = req.body;
+  const role = normalizeRoleValue(req.body?.role);
   const isActive = parseOptionalBoolean(req.body?.isActive ?? req.body?.IsActive);
+  const hasProjectIds = Object.prototype.hasOwnProperty.call(req.body || {}, "projectIds");
+  const projectIds = hasProjectIds ? normalizeProjectIds(req.body?.projectIds) : [];
 
   if (!Number.isInteger(userId)) {
     return res.status(400).json({ message: "ID de usuario invalido." });
@@ -3128,17 +3540,31 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "Nombre, email y rol son obligatorios." });
   }
 
-  if (!["Admin", "Technician", "User"].includes(role)) {
+  if (!isSupportedRole(role)) {
     return res.status(400).json({ message: "Rol invalido." });
+  }
+
+  if (hasProjectIds && projectIds === null) {
+    return res.status(400).json({ message: "projectIds debe ser una lista valida." });
+  }
+
+  if (role !== "ProjectManager" && projectIds.length > 0) {
+    return res.status(400).json({ message: "Solo se pueden asignar proyectos a usuarios Project Manager." });
+  }
+
+  if (Number(req.session.user.UserID) === userId && isActive === false) {
+    return res.status(400).json({ message: "No puedes desactivar tu propio usuario." });
   }
 
   try {
     const pool = await getPool();
-    const request = pool.request()
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const request = new sql.Request(transaction)
       .input("UserID", sql.Int, userId)
       .input("FullName", sql.NVarChar(120), fullName.trim())
       .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
-      .input("Role", sql.NVarChar(20), role)
+      .input("Role", sql.NVarChar(30), role)
       .input("IsActive", sql.Bit, isActive);
 
     let passwordUpdate = "";
@@ -3149,18 +3575,35 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
       passwordUpdate = ", Password = @Password";
     }
 
-    const result = await request.query(`
-      UPDATE dbo.Users
-      SET FullName = @FullName,
-          Email = @Email,
-          Role = @Role,
-          IsActive = COALESCE(@IsActive, IsActive)
-          ${passwordUpdate}
-      WHERE UserID = @UserID
-    `);
+    try {
+      const result = await request.query(`
+        UPDATE dbo.Users
+        SET FullName = @FullName,
+            Email = @Email,
+            Role = @Role,
+            IsActive = COALESCE(@IsActive, IsActive)
+            ${passwordUpdate}
+        WHERE UserID = @UserID
+      `);
 
-    if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({ message: "Usuario no encontrado." });
+      if (result.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return res.status(404).json({ message: "Usuario no encontrado." });
+      }
+
+      if (hasProjectIds) {
+        await syncUserProjectAssignmentsInTransaction(
+          transaction,
+          userId,
+          role === "ProjectManager" ? projectIds : [],
+          Number(req.session.user.UserID)
+        );
+      }
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
 
     const updatedUser = await getUserById(pool, userId);
@@ -3184,7 +3627,71 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
       return res.status(409).json({ message: "Ya existe un usuario con ese email." });
     }
 
-    res.status(500).json({ message: "Error al editar usuario." });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Error al editar usuario." });
+  }
+});
+
+app.get("/api/users/:id/project-assignments", requireAdmin, async (req, res) => {
+  const userId = Number(req.params.id);
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ message: "ID de usuario invalido." });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input("UserID", sql.Int, userId)
+      .query(`
+        SELECT
+          upa.UserProjectAssignmentID,
+          upa.ProjectID,
+          p.ProjectName,
+          p.ClientID,
+          c.ClientName,
+          upa.AssignedByUserID,
+          assignedBy.FullName AS AssignedByName,
+          upa.AssignedAt,
+          upa.IsActive AS AssignmentIsActive,
+          p.IsActive AS ProjectIsActive
+        FROM dbo.UserProjectAssignments upa
+        INNER JOIN dbo.Projects p ON p.ProjectID = upa.ProjectID
+        INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
+        INNER JOIN dbo.Users assignedBy ON assignedBy.UserID = upa.AssignedByUserID
+        WHERE upa.UserID = @UserID
+          AND upa.IsActive = 1
+        ORDER BY c.ClientName, p.ProjectName
+      `);
+
+    res.json(result.recordset);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener asignaciones de proyectos." });
+  }
+});
+
+app.put("/api/users/:id/project-assignments", requireAdmin, async (req, res) => {
+  const userId = Number(req.params.id);
+  const projectIds = normalizeProjectIds(req.body?.projectIds);
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ message: "ID de usuario invalido." });
+  }
+
+  if (projectIds === null) {
+    return res.status(400).json({ message: "projectIds debe ser una lista valida." });
+  }
+
+  try {
+    const pool = await getPool();
+    await syncUserProjectAssignments(pool, userId, projectIds, Number(req.session.user.UserID));
+    const updatedUser = await getUserById(pool, userId);
+    res.json(updatedUser);
+  } catch (error) {
+    poolPromise = null;
+    console.error(error);
+    res.status(error.statusCode || 500).json({ message: error.message || "Error al guardar asignaciones." });
   }
 });
 
@@ -3260,39 +3767,57 @@ app.get("/api/clients", requireAuth, async (req, res) => {
     const statusClause = status === "all"
       ? ""
       : status === "inactive"
-        ? "AND IsActive = 0"
-        : "AND IsActive = 1";
+        ? "AND c.IsActive = 0"
+        : "AND c.IsActive = 1";
     let searchClause = "";
 
     if (search) {
       request.input("Search", sql.NVarChar(400), `%${search}%`);
       searchClause = `
         AND (
-          ClientName LIKE @Search
-          OR Email LIKE @Search
-          OR Phone LIKE @Search
+          c.ClientName LIKE @Search
+          OR c.Email LIKE @Search
+          OR c.Phone LIKE @Search
         )
       `;
     }
 
+    const projectManagerClause = isProjectManager(req.session.user)
+      ? `AND EXISTS (
+          SELECT 1
+          FROM dbo.Projects scopeProject
+          INNER JOIN dbo.UserProjectAssignments scopeAssignment
+            ON scopeAssignment.ProjectID = scopeProject.ProjectID
+          WHERE scopeProject.ClientID = c.ClientID
+            AND scopeProject.IsActive = 1
+            AND scopeAssignment.UserID = @ScopeProjectManagerUserID
+            AND scopeAssignment.IsActive = 1
+        )`
+      : "";
+
+    if (isProjectManager(req.session.user)) {
+      request.input("ScopeProjectManagerUserID", sql.Int, Number(req.session.user.UserID));
+    }
+
     const result = await request.query(`
       SELECT
-        ClientID,
-        ClientName,
-        ContactName,
-        Email,
-        Phone,
-        AddressLine1,
-        BillingName,
-        TaxID,
-        IsActive,
-        CreatedAt,
-        UpdatedAt
-      FROM dbo.Clients
+        c.ClientID,
+        c.ClientName,
+        c.ContactName,
+        c.Email,
+        c.Phone,
+        c.AddressLine1,
+        c.BillingName,
+        c.TaxID,
+        c.IsActive,
+        c.CreatedAt,
+        c.UpdatedAt
+      FROM dbo.Clients c
       WHERE 1 = 1
       ${statusClause}
       ${searchClause}
-      ORDER BY ClientName ASC
+      ${projectManagerClause}
+      ORDER BY c.ClientName ASC
     `);
 
     res.json(result.recordset.map(mapClient));
@@ -3312,6 +3837,9 @@ app.get("/api/clients/:id", requireAuth, async (req, res) => {
 
   try {
     const pool = await getPool();
+    if (!await userCanAccessClient(pool, req.session.user, clientId)) {
+      return res.status(403).json({ message: "No tienes acceso a este cliente." });
+    }
     const client = await getClientById(pool, clientId, false);
 
     if (!client) {
@@ -3548,6 +4076,8 @@ app.get("/api/projects", requireAuth, async (req, res) => {
       whereClauses.push("p.ClientID = @ClientID");
     }
 
+    addProjectManagerScope(request, whereClauses, req.session.user, "p");
+
     const result = await request.query(`
       SELECT
         p.ProjectID,
@@ -3569,12 +4099,27 @@ app.get("/api/projects", requireAuth, async (req, res) => {
         pcs.HoursAlertStatus,
         pcs.ExpirationAlertStatus,
         pcs.ContractStatus,
+        managers.ProjectManagerNames,
+        managers.ProjectManagerCount,
+        managers.ProjectManagerUserIDs,
         p.IsActive,
         p.CreatedAt,
         p.UpdatedAt
       FROM dbo.Projects p
       INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
       LEFT JOIN dbo.vw_ProjectContractStatus pcs ON pcs.ProjectID = p.ProjectID
+      OUTER APPLY (
+        SELECT
+          STRING_AGG(CONVERT(NVARCHAR(MAX), manager.FullName), N', ') AS ProjectManagerNames,
+          COUNT(*) AS ProjectManagerCount,
+          STRING_AGG(CONVERT(NVARCHAR(MAX), manager.UserID), N',') AS ProjectManagerUserIDs
+        FROM dbo.UserProjectAssignments upa
+        INNER JOIN dbo.Users manager ON manager.UserID = upa.UserID
+        WHERE upa.ProjectID = p.ProjectID
+          AND upa.IsActive = 1
+          AND manager.IsActive = 1
+          AND manager.Role IN (N'ProjectManager', N'Project Manager')
+      ) managers
       ${whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : ""}
       ORDER BY c.ClientName ASC, p.ProjectName ASC
     `);
@@ -3596,6 +4141,9 @@ app.get("/api/projects/:id", requireAuth, async (req, res) => {
 
   try {
     const pool = await getPool();
+    if (!await userCanAccessProject(pool, req.session.user, projectId)) {
+      return res.status(403).json({ message: "No tienes acceso a este proyecto." });
+    }
     const project = await getProjectById(pool, projectId, false);
 
     if (!project) {
@@ -3619,6 +4167,9 @@ app.get("/api/projects/:id/contract-status", requireAuth, async (req, res) => {
 
   try {
     const pool = await getPool();
+    if (!await userCanAccessProject(pool, req.session.user, projectId)) {
+      return res.status(403).json({ message: "No tienes acceso a este proyecto." });
+    }
     const result = await pool.request()
       .input("ProjectID", sql.Int, projectId)
       .query(`
@@ -3668,6 +4219,10 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "HourlyRate debe ser un decimal no negativo." });
   }
 
+  if (project.projectManagerUserIds === null) {
+    return res.status(400).json({ message: "projectManagerUserIds debe ser una lista de UserID validos." });
+  }
+
   const contractValidationMessage = getProjectContractValidationMessage(project);
 
   if (contractValidationMessage) {
@@ -3682,7 +4237,13 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
     }
 
-    const result = await pool.request()
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    let createdProjectId;
+
+    try {
+      const result = await new sql.Request(transaction)
       .input("ClientID", sql.Int, project.clientId)
       .input("ProjectName", sql.NVarChar(160), project.projectName)
       .input("Description", sql.NVarChar(500), project.description)
@@ -3733,7 +4294,20 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
         )
       `);
 
-    const createdProject = await getProjectById(pool, result.recordset[0].ProjectID, false);
+      createdProjectId = Number(result.recordset[0].ProjectID);
+      await syncProjectManagerAssignments(
+        transaction,
+        createdProjectId,
+        project.projectManagerUserIds || [],
+        Number(req.session.user.UserID)
+      );
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+    const createdProject = await getProjectById(pool, createdProjectId, false);
     res.status(201).json(createdProject);
   } catch (error) {
     poolPromise = null;
@@ -3743,7 +4317,7 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
       return res.status(409).json({ message: "Ya existe un proyecto con ese nombre para el cliente." });
     }
 
-    res.status(500).json({ message: "Error al crear el proyecto." });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Error al crear el proyecto." });
   }
 });
 
@@ -3814,6 +4388,10 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "HourlyRate debe ser un decimal no negativo." });
   }
 
+  if (project.projectManagerUserIds === null) {
+    return res.status(400).json({ message: "projectManagerUserIds debe ser una lista de UserID validos." });
+  }
+
   const contractValidationMessage = getProjectContractValidationMessage(project);
 
   if (contractValidationMessage) {
@@ -3837,7 +4415,13 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
     }
 
-    const result = await pool.request()
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    let rowsAffected = 0;
+
+    try {
+      const result = await new sql.Request(transaction)
       .input("ProjectID", sql.Int, projectId)
       .input("ClientID", sql.Int, project.clientId)
       .input("ProjectName", sql.NVarChar(160), project.projectName)
@@ -3878,8 +4462,30 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
             UpdatedAt = SYSUTCDATETIME()
         WHERE ProjectID = @ProjectID
       `);
+      rowsAffected = result.rowsAffected[0];
 
-    if (result.rowsAffected[0] === 0) {
+      if (rowsAffected === 0) {
+        const error = new Error("Proyecto no encontrado.");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (project.hasProjectManagerUserIds) {
+        await syncProjectManagerAssignments(
+          transaction,
+          projectId,
+          project.projectManagerUserIds,
+          Number(req.session.user.UserID)
+        );
+      }
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+    if (rowsAffected === 0) {
       return res.status(404).json({ message: "Proyecto no encontrado." });
     }
 
@@ -3893,7 +4499,7 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
       return res.status(409).json({ message: "Ya existe un proyecto con ese nombre para el cliente." });
     }
 
-    res.status(500).json({ message: "Error al editar el proyecto." });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Error al editar el proyecto." });
   }
 });
 
@@ -3948,7 +4554,7 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
     numericFilters[name] = value;
   }
 
-  if (req.session.user.Role !== "Admin") {
+  if (["Technician", "User"].includes(req.session.user.Role)) {
     const sessionUserId = Number(req.session.user.UserID);
 
     if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
@@ -3971,6 +4577,11 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
 
   try {
     const pool = await getPool();
+    if (isProjectManager(req.session.user)
+      && numericFilters.ProjectID
+      && !await userCanAccessProject(pool, req.session.user, numericFilters.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso al proyecto solicitado." });
+    }
     const request = pool.request();
     const whereClauses = [];
 
@@ -4000,6 +4611,8 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
       request.input("Status", sql.NVarChar(20), status);
       whereClauses.push("sr.Status = @Status");
     }
+
+    addProjectManagerScope(request, whereClauses, req.session.user, "sr");
 
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
     const result = await request.query(`
@@ -4053,7 +4666,12 @@ app.get("/api/service-records/:id", requireAdminOrTechnician, async (req, res) =
       return res.status(404).json({ message: "Registro de servicio no encontrado." });
     }
 
-    if (req.session.user.Role !== "Admin"
+    if (isProjectManager(req.session.user)
+      && !await userCanAccessProject(pool, req.session.user, serviceRecord.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso a este registro de servicio." });
+    }
+
+    if (["Technician", "User"].includes(req.session.user.Role)
       && Number(serviceRecord.TechnicianUserID) !== Number(req.session.user.UserID)) {
       return res.status(403).json({ message: "Solo puedes consultar tus propios registros." });
     }
@@ -4067,6 +4685,10 @@ app.get("/api/service-records/:id", requireAdminOrTechnician, async (req, res) =
 });
 
 app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
+  if (isProjectManager(req.session.user)) {
+    return res.status(403).json({ message: "Project Manager solo puede consultar registros de sus proyectos asignados." });
+  }
+
   const serviceRecord = getServiceRecordPayload(req.body || {});
   const validationError = getServiceRecordValidationError(serviceRecord);
 
@@ -4148,6 +4770,10 @@ app.post("/api/service-records", requireAdminOrTechnician, async (req, res) => {
 });
 
 app.put("/api/service-records/:id", requireAdminOrTechnician, async (req, res) => {
+  if (isProjectManager(req.session.user)) {
+    return res.status(403).json({ message: "Project Manager no puede editar registros de servicio." });
+  }
+
   const serviceRecordId = Number(req.params.id);
   const serviceRecord = getServiceRecordPayload(req.body || {});
 
@@ -4870,6 +5496,10 @@ app.get("/api/reports/service-hours", requireAdminOrTechnician, async (req, res)
 
   try {
     const pool = await getPool();
+    if (filters.projectManagerUserId && filters.numericFilters.ProjectID
+      && !await userCanAccessProject(pool, req.session.user, filters.numericFilters.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso al proyecto solicitado." });
+    }
     const records = await getServiceHoursReportRecords(pool, filters);
 
     res.json(records);
@@ -4889,6 +5519,10 @@ app.get("/api/reports/service-hours/technicians", requireAdminOrTechnician, asyn
 
   try {
     const pool = await getPool();
+    if (filters.projectManagerUserId && filters.numericFilters.ProjectID
+      && !await userCanAccessProject(pool, req.session.user, filters.numericFilters.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso al proyecto solicitado." });
+    }
     const technicians = await getServiceHoursReportTechnicians(pool, filters);
 
     res.json(technicians);
@@ -4908,6 +5542,10 @@ app.get("/api/reports/service-hours/pdf", requireAdminOrTechnician, async (req, 
 
   try {
     const pool = await getPool();
+    if (filters.projectManagerUserId && filters.numericFilters.ProjectID
+      && !await userCanAccessProject(pool, req.session.user, filters.numericFilters.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso al proyecto solicitado." });
+    }
     const records = await getServiceHoursReportRecords(pool, filters);
 
     if (records.length === 0) {
@@ -4944,6 +5582,10 @@ app.get("/api/reports/service-hours/excel", requireAdminOrTechnician, async (req
 
   try {
     const pool = await getPool();
+    if (filters.projectManagerUserId && filters.numericFilters.ProjectID
+      && !await userCanAccessProject(pool, req.session.user, filters.numericFilters.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso al proyecto solicitado." });
+    }
     const records = await getServiceHoursReportRecords(pool, filters);
 
     if (records.length === 0) {
@@ -5041,7 +5683,7 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
     numericFilters[name] = value;
   }
 
-  if (req.session.user.Role === "Technician") {
+  if (["Technician", "User"].includes(req.session.user.Role)) {
     const sessionUserId = Number(req.session.user.UserID);
 
     if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
@@ -5053,6 +5695,10 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
 
   try {
     const pool = await getPool();
+    if (isProjectManager(req.session.user) && numericFilters.ProjectID
+      && !await userCanAccessProject(pool, req.session.user, numericFilters.ProjectID)) {
+      return res.status(403).json({ message: "No tienes acceso al proyecto solicitado." });
+    }
     const request = pool.request();
     const whereClauses = [];
 
@@ -5075,6 +5721,8 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
       request.input(name, sql.Int, value);
       whereClauses.push(`sr.${name} = @${name}`);
     }
+
+    addProjectManagerScope(request, whereClauses, req.session.user, "sr");
 
     applyReportDemoExclusion(request, whereClauses);
 
@@ -5342,44 +5990,64 @@ app.get("/api/reports/invoices/summary", requireAuth, requireInvoiceReadAccess, 
 });
 
 app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => {
-  const isTechnician = req.session.user.Role !== "Admin";
-  const technicianUserId = Number(req.session.user.UserID);
+  const isTechnicianUser = ["Technician", "User"].includes(req.session.user.Role);
+  const isProjectManagerUser = isProjectManager(req.session.user);
+  const isLimitedUser = isTechnicianUser || isProjectManagerUser;
+  const sessionUserId = Number(req.session.user.UserID);
 
   try {
     const pool = await getPool();
     const request = pool.request();
-    const serviceRecordWhere = isTechnician ? "WHERE sr.TechnicianUserID = @TechnicianUserID" : "";
-    const invoiceWhere = isTechnician
-      ? `WHERE EXISTS (
+    const serviceRecordCondition = isTechnicianUser
+      ? "sr.TechnicianUserID = @DashboardUserID"
+      : isProjectManagerUser
+        ? `EXISTS (
+            SELECT 1 FROM dbo.UserProjectAssignments upa
+            WHERE upa.UserID = @DashboardUserID
+              AND upa.ProjectID = sr.ProjectID
+              AND upa.IsActive = 1
+          )`
+        : "1 = 1";
+    const invoiceCondition = isLimitedUser
+      ? `EXISTS (
           SELECT 1
           FROM dbo.InvoiceLines il
           INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
           WHERE il.InvoiceID = i.InvoiceID
-            AND sr.TechnicianUserID = @TechnicianUserID
+            AND ${serviceRecordCondition}
         )`
-      : "";
+      : "1 = 1";
 
-    if (isTechnician) {
-      request.input("TechnicianUserID", sql.Int, technicianUserId);
+    if (isLimitedUser) {
+      request.input("DashboardUserID", sql.Int, sessionUserId);
     }
 
     const result = await request.query(`
       SELECT
-        ${isTechnician ? `
-        (SELECT COUNT(DISTINCT sr.ClientID) FROM dbo.ServiceRecords sr WHERE sr.TechnicianUserID = @TechnicianUserID) AS TotalClients,
-        (SELECT COUNT(DISTINCT sr.ProjectID) FROM dbo.ServiceRecords sr WHERE sr.TechnicianUserID = @TechnicianUserID) AS TotalProjects,
+        ${isProjectManagerUser ? `
+        (SELECT COUNT(DISTINCT p.ClientID)
+         FROM dbo.UserProjectAssignments upa
+         INNER JOIN dbo.Projects p ON p.ProjectID = upa.ProjectID
+         WHERE upa.UserID = @DashboardUserID AND upa.IsActive = 1 AND p.IsActive = 1) AS TotalClients,
+        (SELECT COUNT(*)
+         FROM dbo.UserProjectAssignments upa
+         INNER JOIN dbo.Projects p ON p.ProjectID = upa.ProjectID
+         WHERE upa.UserID = @DashboardUserID AND upa.IsActive = 1 AND p.IsActive = 1) AS TotalProjects,
+        ` : isTechnicianUser ? `
+        (SELECT COUNT(DISTINCT sr.ClientID) FROM dbo.ServiceRecords sr WHERE ${serviceRecordCondition}) AS TotalClients,
+        (SELECT COUNT(DISTINCT sr.ProjectID) FROM dbo.ServiceRecords sr WHERE ${serviceRecordCondition}) AS TotalProjects,
         ` : `
         (SELECT COUNT(*) FROM dbo.Clients WHERE IsActive = 1) AS TotalClients,
         (SELECT COUNT(*) FROM dbo.Projects WHERE IsActive = 1) AS TotalProjects,
         `}
-        (SELECT COUNT(*) FROM dbo.ServiceRecords sr ${serviceRecordWhere}) AS TotalServiceRecords,
-        (SELECT COUNT(*) FROM dbo.Invoices i ${invoiceWhere}) AS TotalInvoices,
-        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr ${serviceRecordWhere}) AS TotalHours,
-        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr ${serviceRecordWhere ? `${serviceRecordWhere} AND` : "WHERE"} sr.Status = N'Recorded') AS UnbilledHours,
-        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr ${serviceRecordWhere ? `${serviceRecordWhere} AND` : "WHERE"} sr.Status = N'Billed') AS BilledHours,
-        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i ${invoiceWhere ? `${invoiceWhere} AND` : "WHERE"} i.Status <> N'Canceled') AS TotalBilledAmount,
-        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i ${invoiceWhere ? `${invoiceWhere} AND` : "WHERE"} i.Status IN (N'Draft', N'Issued')) AS PendingInvoiceAmount,
-        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i ${invoiceWhere ? `${invoiceWhere} AND` : "WHERE"} i.Status = N'Paid') AS PaidAmount
+        (SELECT COUNT(*) FROM dbo.ServiceRecords sr WHERE ${serviceRecordCondition}) AS TotalServiceRecords,
+        (SELECT COUNT(*) FROM dbo.Invoices i WHERE ${invoiceCondition}) AS TotalInvoices,
+        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr WHERE ${serviceRecordCondition}) AS TotalHours,
+        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr WHERE ${serviceRecordCondition} AND sr.Status = N'Recorded') AS UnbilledHours,
+        (SELECT COALESCE(SUM(sr.TotalHours), 0) FROM dbo.ServiceRecords sr WHERE ${serviceRecordCondition} AND sr.Status = N'Billed') AS BilledHours,
+        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i WHERE ${invoiceCondition} AND i.Status <> N'Canceled') AS TotalBilledAmount,
+        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i WHERE ${invoiceCondition} AND i.Status IN (N'Draft', N'Issued')) AS PendingInvoiceAmount,
+        (SELECT COALESCE(SUM(i.TotalAmount), 0) FROM dbo.Invoices i WHERE ${invoiceCondition} AND i.Status = N'Paid') AS PaidAmount
     `);
     const summary = result.recordset[0];
 
@@ -5392,7 +6060,7 @@ app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => 
       BilledHours: Number(summary.BilledHours)
     };
 
-    if (!isTechnician) {
+    if (!isLimitedUser) {
       Object.assign(dashboardSummary, {
         TotalInvoices: Number(summary.TotalInvoices),
         TotalBilledAmount: Number(summary.TotalBilledAmount),
@@ -5410,25 +6078,36 @@ app.get("/api/dashboard/summary", requireAdminOrTechnician, async (req, res) => 
 });
 
 app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
-  const isTechnician = req.session.user.Role !== "Admin";
-  const technicianUserId = Number(req.session.user.UserID);
+  const isTechnicianUser = ["Technician", "User"].includes(req.session.user.Role);
+  const isProjectManagerUser = isProjectManager(req.session.user);
+  const isLimitedUser = isTechnicianUser || isProjectManagerUser;
+  const sessionUserId = Number(req.session.user.UserID);
 
   try {
     const pool = await getPool();
     const request = pool.request();
-    const serviceRecordWhere = isTechnician ? "WHERE sr.TechnicianUserID = @TechnicianUserID" : "";
-    const invoiceWhere = isTechnician
-      ? `WHERE EXISTS (
+    const serviceRecordCondition = isTechnicianUser
+      ? "sr.TechnicianUserID = @DashboardUserID"
+      : isProjectManagerUser
+        ? `EXISTS (
+            SELECT 1 FROM dbo.UserProjectAssignments upa
+            WHERE upa.UserID = @DashboardUserID
+              AND upa.ProjectID = sr.ProjectID
+              AND upa.IsActive = 1
+          )`
+        : "1 = 1";
+    const invoiceCondition = isLimitedUser
+      ? `EXISTS (
           SELECT 1
           FROM dbo.InvoiceLines il
           INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
           WHERE il.InvoiceID = i.InvoiceID
-            AND sr.TechnicianUserID = @TechnicianUserID
+            AND ${serviceRecordCondition}
         )`
-      : "";
+      : "1 = 1";
 
-    if (isTechnician) {
-      request.input("TechnicianUserID", sql.Int, technicianUserId);
+    if (isLimitedUser) {
+      request.input("DashboardUserID", sql.Int, sessionUserId);
     }
 
     const result = await request.query(`
@@ -5436,7 +6115,7 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
         CONVERT(CHAR(7), sr.ServiceDate, 120) AS Month,
         COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
       FROM dbo.ServiceRecords sr
-      ${serviceRecordWhere}
+      WHERE ${serviceRecordCondition}
       GROUP BY CONVERT(CHAR(7), sr.ServiceDate, 120)
       ORDER BY Month ASC;
 
@@ -5444,7 +6123,7 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
         CONVERT(CHAR(7), i.InvoiceDate, 120) AS Month,
         COALESCE(SUM(i.TotalAmount), 0) AS TotalAmount
       FROM dbo.Invoices i
-      ${invoiceWhere}
+      WHERE ${invoiceCondition}
       GROUP BY CONVERT(CHAR(7), i.InvoiceDate, 120)
       ORDER BY Month ASC;
 
@@ -5453,7 +6132,7 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
         COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
       FROM dbo.ServiceRecords sr
       INNER JOIN dbo.Clients c ON c.ClientID = sr.ClientID
-      ${serviceRecordWhere}
+      WHERE ${serviceRecordCondition}
       GROUP BY c.ClientName
       ORDER BY TotalHours DESC, c.ClientName ASC;
 
@@ -5462,7 +6141,7 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
         COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
       FROM dbo.ServiceRecords sr
       INNER JOIN dbo.Projects p ON p.ProjectID = sr.ProjectID
-      ${serviceRecordWhere}
+      WHERE ${serviceRecordCondition}
       GROUP BY p.ProjectName
       ORDER BY TotalHours DESC, p.ProjectName ASC;
 
@@ -5471,7 +6150,7 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
         COALESCE(SUM(sr.TotalHours), 0) AS TotalHours
       FROM dbo.ServiceRecords sr
       INNER JOIN dbo.Users u ON u.UserID = sr.TechnicianUserID
-      ${serviceRecordWhere}
+      WHERE ${serviceRecordCondition}
       GROUP BY u.FullName
       ORDER BY TotalHours DESC, u.FullName ASC;
 
@@ -5479,18 +6158,18 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
         i.Status,
         COUNT(*) AS TotalInvoices
       FROM dbo.Invoices i
-      ${invoiceWhere}
+      WHERE ${invoiceCondition}
       GROUP BY i.Status
       ORDER BY i.Status ASC;
     `);
 
     res.json({
       HoursByMonth: result.recordsets[0].map((row) => mapReportGroupRow(row, "Month")),
-      BillingByMonth: isTechnician ? [] : result.recordsets[1].map((row) => mapReportGroupRow(row, "Month", "TotalAmount")),
+      BillingByMonth: isLimitedUser ? [] : result.recordsets[1].map((row) => mapReportGroupRow(row, "Month", "TotalAmount")),
       HoursByClient: result.recordsets[2].map((row) => mapReportGroupRow(row, "ClientName")),
       HoursByProject: result.recordsets[3].map((row) => mapReportGroupRow(row, "ProjectName")),
       HoursByTechnician: result.recordsets[4].map((row) => mapReportGroupRow(row, "TechnicianName")),
-      InvoicesByStatus: isTechnician ? [] : result.recordsets[5].map((row) => mapReportGroupRow(row, "Status", "TotalInvoices"))
+      InvoicesByStatus: isLimitedUser ? [] : result.recordsets[5].map((row) => mapReportGroupRow(row, "Status", "TotalInvoices"))
     });
   } catch (error) {
     poolPromise = null;
@@ -5500,41 +6179,52 @@ app.get("/api/dashboard/charts", requireAdminOrTechnician, async (req, res) => {
 });
 
 app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, res) => {
-  const isTechnician = req.session.user.Role !== "Admin";
-  const technicianUserId = Number(req.session.user.UserID);
+  const isTechnicianUser = ["Technician", "User"].includes(req.session.user.Role);
+  const isProjectManagerUser = isProjectManager(req.session.user);
+  const isLimitedUser = isTechnicianUser || isProjectManagerUser;
+  const sessionUserId = Number(req.session.user.UserID);
 
   try {
     const pool = await getPool();
     const request = pool.request();
-    const serviceRecordWhere = isTechnician ? "WHERE sr.TechnicianUserID = @TechnicianUserID" : "";
-    const invoiceWhere = isTechnician
-      ? `WHERE EXISTS (
+    const serviceRecordCondition = isTechnicianUser
+      ? "sr.TechnicianUserID = @DashboardUserID"
+      : isProjectManagerUser
+        ? `EXISTS (
+            SELECT 1 FROM dbo.UserProjectAssignments upa
+            WHERE upa.UserID = @DashboardUserID
+              AND upa.ProjectID = sr.ProjectID
+              AND upa.IsActive = 1
+          )`
+        : "1 = 1";
+    const invoiceCondition = isLimitedUser
+      ? `EXISTS (
           SELECT 1
           FROM dbo.InvoiceLines il
           INNER JOIN dbo.ServiceRecords sr ON sr.ServiceRecordID = il.ServiceRecordID
           WHERE il.InvoiceID = i.InvoiceID
-            AND sr.TechnicianUserID = @TechnicianUserID
+            AND ${serviceRecordCondition}
         )`
-      : "";
-    const relatedClientWhere = isTechnician
-      ? `WHERE EXISTS (
+      : "1 = 1";
+    const relatedClientCondition = isLimitedUser
+      ? `EXISTS (
           SELECT 1
           FROM dbo.ServiceRecords sr
           WHERE sr.ClientID = c.ClientID
-            AND sr.TechnicianUserID = @TechnicianUserID
+            AND ${serviceRecordCondition}
         )`
-      : "WHERE c.IsActive = 1";
-    const relatedProjectWhere = isTechnician
-      ? `WHERE EXISTS (
+      : "c.IsActive = 1";
+    const relatedProjectCondition = isLimitedUser
+      ? `EXISTS (
           SELECT 1
           FROM dbo.ServiceRecords sr
           WHERE sr.ProjectID = p.ProjectID
-            AND sr.TechnicianUserID = @TechnicianUserID
+            AND ${serviceRecordCondition}
         )`
-      : "WHERE p.IsActive = 1";
+      : "p.IsActive = 1";
 
-    if (isTechnician) {
-      request.input("TechnicianUserID", sql.Int, technicianUserId);
+    if (isLimitedUser) {
+      request.input("DashboardUserID", sql.Int, sessionUserId);
     }
 
     const result = await request.query(`
@@ -5552,7 +6242,7 @@ app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, 
       INNER JOIN dbo.Users u ON u.UserID = sr.TechnicianUserID
       INNER JOIN dbo.Clients c ON c.ClientID = sr.ClientID
       INNER JOIN dbo.Projects p ON p.ProjectID = sr.ProjectID
-      ${serviceRecordWhere}
+      WHERE ${serviceRecordCondition}
       ORDER BY sr.CreatedAt DESC, sr.ServiceRecordID DESC;
 
       SELECT TOP 10
@@ -5577,7 +6267,7 @@ app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, 
       FROM dbo.Invoices i
       INNER JOIN dbo.Clients c ON c.ClientID = i.ClientID
       LEFT JOIN dbo.Users creator ON creator.UserID = i.CreatedByUserID
-      ${invoiceWhere}
+      WHERE ${invoiceCondition}
       ORDER BY i.CreatedAt DESC, i.InvoiceID DESC;
 
       SELECT TOP 10
@@ -5588,7 +6278,7 @@ app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, 
         c.Phone,
         c.CreatedAt
       FROM dbo.Clients c
-      ${relatedClientWhere}
+      WHERE ${relatedClientCondition}
       ORDER BY c.CreatedAt DESC, c.ClientID DESC;
 
       SELECT TOP 10
@@ -5599,13 +6289,13 @@ app.get("/api/dashboard/recent-activity", requireAdminOrTechnician, async (req, 
         p.CreatedAt
       FROM dbo.Projects p
       INNER JOIN dbo.Clients c ON c.ClientID = p.ClientID
-      ${relatedProjectWhere}
+      WHERE ${relatedProjectCondition}
       ORDER BY p.CreatedAt DESC, p.ProjectID DESC;
     `);
 
     res.json({
       ServiceRecords: result.recordsets[0].map(mapDashboardServiceRecord),
-      Invoices: isTechnician ? [] : result.recordsets[1].map((invoice) => mapInvoice(invoice)),
+      Invoices: isLimitedUser ? [] : result.recordsets[1].map((invoice) => mapInvoice(invoice)),
       Clients: result.recordsets[2].map(mapDashboardClient),
       Projects: result.recordsets[3].map(mapDashboardProject)
     });

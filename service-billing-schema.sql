@@ -23,7 +23,7 @@ CREATE TABLE dbo.Users (
   UpdatedAt DATETIME2(0) NULL,
   CreatedByUserID INT NULL,
   CONSTRAINT UQ_Users_Email UNIQUE (Email),
-  CONSTRAINT CK_Users_Role CHECK (Role IN (N'Admin', N'Technician', N'User')),
+  CONSTRAINT CK_Users_Role CHECK (Role IN (N'Admin', N'ProjectManager', N'Technician', N'User')),
   CONSTRAINT FK_Users_CreatedBy FOREIGN KEY (CreatedByUserID) REFERENCES dbo.Users(UserID)
 );
 END

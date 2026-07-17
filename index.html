@@ -576,13 +576,14 @@
                 <th>RemainingHours</th>
                 <th>ContractEndDate</th>
                 <th>ContractStatus</th>
+                <th>Project Managers</th>
                 <th>IsActive</th>
                 <th class="project-admin-actions">Actions</th>
               </tr>
             </thead>
             <tbody id="projectsTableBody">
               <tr>
-                <td colspan="11" class="empty-state">No projects loaded.</td>
+                <td colspan="12" class="empty-state">No projects loaded.</td>
               </tr>
             </tbody>
           </table>
@@ -1003,10 +1004,22 @@
               <select id="userRole" required>
                 <option value="User" selected>User</option>
                 <option value="Technician">Technician</option>
+                <option value="ProjectManager">Project Manager</option>
                 <option value="Admin">Admin</option>
               </select>
             </div>
           </div>
+
+          <section id="userProjectAssignmentsSection" class="project-form-section user-assignment-section hidden" aria-labelledby="user-project-assignments-title">
+            <div class="compact-table-header">
+              <div>
+                <p id="user-project-assignments-eyebrow" class="eyebrow">Project Manager</p>
+                <h3 id="user-project-assignments-title">Proyectos asignados</h3>
+              </div>
+            </div>
+            <div id="userProjectAssignments" class="project-assignment-picker" aria-labelledby="user-project-assignments-title" aria-describedby="userProjectAssignmentsHelp"></div>
+            <span id="userProjectAssignmentsHelp" class="field-help">Selecciona uno o varios proyectos activos.</span>
+          </section>
 
           <p id="userFormMessage" class="form-message" aria-live="polite"></p>
           <button type="submit" class="btn btn-primary">
@@ -1042,17 +1055,28 @@
               <option value="inactive">Inactivos</option>
             </select>
           </div>
+          <div class="filter-field">
+            <label for="userRoleFilter">Rol</label>
+            <select id="userRoleFilter">
+              <option value="all">Todos</option>
+              <option value="Admin">Admin</option>
+              <option value="ProjectManager">Project Manager</option>
+              <option value="Technician">Technician</option>
+              <option value="User">User</option>
+            </select>
+          </div>
           <p class="ticket-total"><span id="usersTotalCount">0</span> usuarios</p>
         </div>
 
         <div class="table-wrapper">
-          <table>
+          <table class="users-table">
             <thead>
               <tr>
                 <th>UserID</th>
                 <th>FullName</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Proyectos asignados</th>
                 <th>Status</th>
                 <th>CreatedAt</th>
                 <th>Creado por</th>
@@ -1061,7 +1085,7 @@
             </thead>
             <tbody id="usersTableBody">
               <tr>
-                <td colspan="8" class="empty-state">No hay usuarios registrados.</td>
+                <td colspan="9" class="empty-state">No hay usuarios registrados.</td>
               </tr>
             </tbody>
           </table>
@@ -1408,7 +1432,7 @@
   </div>
 
   <div id="projectModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
-    <form id="projectForm" class="panel modal-panel">
+    <form id="projectForm" class="panel modal-panel project-modal-panel">
       <div class="table-header">
         <div class="section-title">
           <p class="eyebrow">Project</p>
@@ -1424,42 +1448,50 @@
 
       <input type="hidden" id="projectId">
 
-      <div class="form-group">
-        <label for="projectClientId">ClientID</label>
-        <select id="projectClientId" required>
-          <option value="">Select client</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="projectName">ProjectName</label>
-        <input type="text" id="projectName" required>
-      </div>
-
-      <div class="form-group">
-        <label for="projectDescription">Description</label>
-        <textarea id="projectDescription" rows="4"></textarea>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group hidden" aria-hidden="true" hidden>
-          <label for="projectHourlyRate">HourlyRate</label>
-          <input type="number" id="projectHourlyRate" min="0" step="0.01" value="0" tabindex="-1">
+      <section class="project-form-section" aria-labelledby="project-basic-title">
+        <div class="section-title compact-title">
+          <p id="project-basic-eyebrow" class="eyebrow">Project</p>
+          <h3 id="project-basic-title">Project information</h3>
         </div>
 
-        <label class="checkbox-field">
-          <input type="checkbox" id="projectIsActive" checked>
-          <span>IsActive</span>
-        </label>
-      </div>
+        <div class="project-basic-grid">
+          <div class="form-group">
+            <label for="projectClientId">ClientID</label>
+            <select id="projectClientId" required>
+              <option value="">Select client</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="projectName">ProjectName</label>
+            <input type="text" id="projectName" required>
+          </div>
+
+          <div class="form-group project-description-field">
+            <label for="projectDescription">Description</label>
+            <textarea id="projectDescription" rows="3"></textarea>
+          </div>
+
+          <div class="form-group hidden" aria-hidden="true" hidden>
+            <label for="projectHourlyRate">HourlyRate</label>
+            <input type="number" id="projectHourlyRate" min="0" step="0.01" value="0" tabindex="-1">
+          </div>
+
+          <label class="checkbox-field project-active-field">
+            <input type="checkbox" id="projectIsActive" checked>
+            <span>IsActive</span>
+          </label>
+          <div id="projectCurrentStatusBadge" class="project-current-status hidden" aria-live="polite"></div>
+        </div>
+      </section>
 
       <section class="contract-section" aria-label="Contract Information">
         <div class="section-title compact-title">
-          <p class="eyebrow">Contract</p>
+          <p id="project-contract-eyebrow" class="eyebrow">Contract</p>
           <h3 id="project-contract-title">Contract Information</h3>
         </div>
 
-        <div class="form-grid">
+        <div class="contract-form-grid">
           <div class="form-group">
             <label for="projectContractNumber">ContractNumber</label>
             <input type="text" id="projectContractNumber">
@@ -1474,9 +1506,6 @@
               <option value="Other">Other</option>
             </select>
           </div>
-        </div>
-
-        <div class="form-grid">
           <div class="form-group">
             <label for="projectSignedBy">SignedBy</label>
             <input type="text" id="projectSignedBy">
@@ -1491,9 +1520,6 @@
             <label for="projectContractEndDate">ContractEndDate</label>
             <input type="date" id="projectContractEndDate">
           </div>
-        </div>
-
-        <div class="form-grid">
           <div class="form-group">
             <label for="projectContractedHours">ContractedHours</label>
             <input type="number" id="projectContractedHours" min="0" step="0.01">
@@ -1509,8 +1535,27 @@
             <input type="number" id="projectExpirationAlertDays" min="0" step="1">
           </div>
         </div>
+      </section>
 
-        <div class="contract-status-grid">
+      <section id="projectManagerAssignmentsSection" class="project-form-section project-manager-assignment-section" aria-labelledby="project-manager-assignments-title">
+        <div class="section-title compact-title">
+          <p id="project-manager-assignments-eyebrow" class="eyebrow">Access</p>
+          <h3 id="project-manager-assignments-title">Assigned Project Managers</h3>
+        </div>
+        <div id="projectManagerAssignments" class="project-assignment-picker" aria-labelledby="project-manager-assignments-title" aria-describedby="projectManagerAssignmentsHelp"></div>
+        <span id="projectManagerAssignmentsHelp" class="field-help">Select one or more active Project Managers.</span>
+      </section>
+
+      <section id="projectContractSummary" class="project-contract-summary hidden" aria-labelledby="project-contract-summary-title">
+        <div class="section-title compact-title contract-summary-heading">
+          <div>
+            <p id="project-contract-summary-eyebrow" class="eyebrow">Contract</p>
+            <h3 id="project-contract-summary-title">Contract summary</h3>
+          </div>
+          <div id="projectNoContractDisplay" class="hidden"></div>
+        </div>
+
+        <div id="projectContractStatusGrid" class="contract-status-grid">
           <div>
             <span>UsedHours</span>
             <strong id="projectUsedHoursDisplay">0.00</strong>
@@ -1524,26 +1569,50 @@
             <strong id="projectHoursAlertStatusDisplay">NO_CONTRACT</strong>
           </div>
           <div>
-            <span>ExpirationAlertStatus</span>
-            <strong id="projectExpirationAlertStatusDisplay">NO_CONTRACT</strong>
-          </div>
-          <div>
             <span>ContractStatus</span>
             <strong id="projectContractStatusDisplay">NO_CONTRACT</strong>
+          </div>
+          <div>
+            <span>ContractEndDate</span>
+            <strong id="projectContractEndDateDisplay">-</strong>
           </div>
         </div>
       </section>
 
-      <p id="projectFormMessage" class="form-message" aria-live="polite"></p>
-      <button type="submit" id="saveProjectButton" class="btn btn-primary">
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
-          <path d="M17 21v-8H7v8"/>
-          <path d="M7 3v5h8"/>
-        </svg>
-        Save Project
-      </button>
+      <div class="modal-form-footer">
+        <p id="projectFormMessage" class="form-message" aria-live="polite"></p>
+        <button type="submit" id="saveProjectButton" class="btn btn-primary">
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+            <path d="M17 21v-8H7v8"/>
+            <path d="M7 3v5h8"/>
+          </svg>
+          Save Project
+        </button>
+      </div>
     </form>
+  </div>
+
+  <div id="projectManagersDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="project-managers-detail-title">
+    <section class="panel modal-panel project-managers-detail-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p id="project-managers-detail-eyebrow" class="eyebrow">Project Manager</p>
+          <h2 id="project-managers-detail-title">Project Managers asignados</h2>
+        </div>
+        <button type="button" id="closeProjectManagersDetailModal" class="icon-button" aria-label="Cerrar Project Managers">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+      <p id="projectManagersDetailProject" class="detail-summary"></p>
+      <ul id="projectManagersDetailList" class="project-managers-detail-list"></ul>
+      <div class="modal-footer-actions">
+        <button type="button" id="manageProjectManagersButton" class="btn btn-primary">Administrar asignaciones</button>
+      </div>
+    </section>
   </div>
 
   <div id="serviceRecordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="service-record-modal-title">
@@ -1860,7 +1929,7 @@
   </div>
 
   <div id="editUserModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
-    <form id="editUserForm" class="panel modal-panel">
+    <form id="editUserForm" class="panel modal-panel user-editor-panel">
       <div class="table-header">
         <div class="section-title">
           <p class="eyebrow">Administrador</p>
@@ -1876,57 +1945,118 @@
 
       <input type="hidden" id="editUserId">
 
-      <div class="form-group">
-        <label for="editFullName">Nombre completo</label>
-        <input type="text" id="editFullName" required>
-      </div>
-
-      <div class="form-group">
-        <label for="editEmail">Email</label>
-        <input type="email" id="editEmail" required>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="editPassword">Nueva contrasena</label>
-          <div class="password-field">
-            <input type="password" id="editPassword" placeholder="Dejar vacio para mantener">
-            <button type="button" class="password-toggle" data-password-toggle="editPassword" aria-label="Mostrar contrasena">
-              <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              <svg class="password-icon password-icon-eye-off" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 3l18 18"/>
-                <path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/>
-                <path d="M9.9 5.3A9.2 9.2 0 0 1 12 5c6.5 0 10 7 10 7a17.2 17.2 0 0 1-3.1 4.2"/>
-                <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9 9 0 0 0 4.4-1.1"/>
-              </svg>
-            </button>
+      <div class="user-editor-body">
+        <section class="project-form-section user-editor-section" aria-labelledby="edit-user-info-title">
+          <div class="compact-table-header">
+            <div>
+              <p id="edit-user-info-eyebrow" class="eyebrow">Seguridad</p>
+              <h3 id="edit-user-info-title">Informacion del usuario</h3>
+            </div>
           </div>
-          <button type="button" id="temporaryPasswordButton" class="btn session-button">Asignar contrasena temporal</button>
-        </div>
 
-        <div class="form-group">
-          <label for="editRole">Rol</label>
-          <select id="editRole" required>
-            <option value="User">User</option>
-            <option value="Technician">Technician</option>
-            <option value="Admin">Admin</option>
-          </select>
-        </div>
+          <div class="user-editor-grid">
+            <div class="form-group">
+              <label for="editFullName">Nombre completo</label>
+              <input type="text" id="editFullName" required>
+            </div>
+
+            <div class="form-group">
+              <label for="editEmail">Email</label>
+              <input type="email" id="editEmail" required>
+            </div>
+
+            <div class="form-group">
+              <label for="editPassword">Nueva contrasena</label>
+              <div class="password-field">
+                <input type="password" id="editPassword" placeholder="Dejar vacio para mantener">
+                <button type="button" class="password-toggle" data-password-toggle="editPassword" aria-label="Mostrar contrasena">
+                  <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg class="password-icon password-icon-eye-off" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 3l18 18"/>
+                    <path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/>
+                    <path d="M9.9 5.3A9.2 9.2 0 0 1 12 5c6.5 0 10 7 10 7a17.2 17.2 0 0 1-3.1 4.2"/>
+                    <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9 9 0 0 0 4.4-1.1"/>
+                  </svg>
+                </button>
+              </div>
+              <button type="button" id="temporaryPasswordButton" class="btn session-button compact-button">Asignar contrasena temporal</button>
+            </div>
+
+            <div class="form-group">
+              <label for="editRole">Rol</label>
+              <select id="editRole" required>
+                <option value="User">User</option>
+                <option value="Technician">Technician</option>
+                <option value="ProjectManager">Project Manager</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+
+            <label class="form-check user-active-check">
+              <input type="checkbox" id="editUserIsActive">
+              <span id="editUserIsActiveLabel">Usuario activo</span>
+            </label>
+          </div>
+        </section>
+
+        <section id="editUserProjectAssignmentsSection" class="project-form-section user-assignment-section hidden" aria-labelledby="edit-user-project-assignments-title">
+          <div class="compact-table-header">
+            <div>
+              <p id="edit-user-project-assignments-eyebrow" class="eyebrow">Project Manager</p>
+              <h3 id="edit-user-project-assignments-title">Proyectos asignados</h3>
+            </div>
+          </div>
+          <div id="editUserProjectAssignments" class="project-assignment-picker" aria-labelledby="edit-user-project-assignments-title" aria-describedby="editUserProjectAssignmentsHelp"></div>
+          <span id="editUserProjectAssignmentsHelp" class="field-help">Selecciona uno o varios proyectos activos.</span>
+        </section>
       </div>
 
       <p id="editUserMessage" class="form-message" aria-live="polite"></p>
-      <button type="submit" class="btn btn-primary">
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
-          <path d="M17 21v-8H7v8"/>
-          <path d="M7 3v5h8"/>
-        </svg>
-        Guardar usuario
-      </button>
+      <div class="modal-footer-actions">
+        <button type="submit" class="btn btn-primary">
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+            <path d="M17 21v-8H7v8"/>
+            <path d="M7 3v5h8"/>
+          </svg>
+          Guardar usuario
+        </button>
+      </div>
     </form>
+  </div>
+
+  <div id="userProjectsDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="user-projects-detail-title">
+    <section class="panel modal-panel user-projects-detail-panel">
+      <div class="table-header">
+        <div class="section-title">
+          <p id="user-projects-detail-eyebrow" class="eyebrow">Project Manager</p>
+          <h2 id="user-projects-detail-title">Assigned projects</h2>
+        </div>
+        <button type="button" id="closeUserProjectsDetailModal" class="icon-button" aria-label="Close assigned projects">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <p id="userProjectsDetailSummary" class="detail-summary"></p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th id="user-projects-client-header">Client</th>
+              <th id="user-projects-project-header">Project</th>
+              <th id="user-projects-status-header">Status</th>
+              <th id="user-projects-date-header">Assigned at</th>
+            </tr>
+          </thead>
+          <tbody id="userProjectsDetailBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer-actions">
+        <button type="button" id="manageUserProjectAssignmentsButton" class="btn btn-primary">Administrar asignaciones</button>
+      </div>
+    </section>
   </div>
 
   <script src="app.js"></script>

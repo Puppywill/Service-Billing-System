@@ -818,6 +818,23 @@ button,
   gap: 8px;
 }
 
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.form-check input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  accent-color: var(--primary);
+}
+
 .checkbox-field {
   display: inline-flex;
   align-items: center;
@@ -1297,6 +1314,215 @@ textarea:focus {
   grid-template-columns: minmax(240px, 1fr) minmax(180px, 240px) minmax(150px, 190px) auto;
 }
 
+.user-toolbar {
+  grid-template-columns: minmax(240px, 1fr) minmax(150px, 190px) minmax(170px, 210px) auto;
+}
+
+.project-assignment-field {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.field-label {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.project-assignment-picker {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.assignment-picker-summary,
+.assignment-picker-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assignment-chips {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.assignment-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: min(100%, 360px);
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 13%, var(--surface-panel));
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 750;
+  padding: 3px 4px 3px 10px;
+}
+
+.assignment-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assignment-chip button {
+  display: inline-grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.assignment-chip button:hover,
+.assignment-chip button:focus-visible {
+  background: var(--button-hover-bg);
+  color: var(--text-strong);
+}
+
+.assignment-empty-selection,
+.assignment-list-empty {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.assignment-count {
+  flex: 0 0 auto;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.assignment-search-field {
+  display: grid;
+  flex: 1 1 280px;
+  gap: 6px;
+  min-width: 180px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.assignment-status-field {
+  display: grid;
+  flex: 0 1 180px;
+  gap: 6px;
+  min-width: 150px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.assignment-picker-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.assignment-tool-button {
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.assignment-project-list {
+  display: grid;
+  max-height: 230px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-field);
+  scrollbar-gutter: stable;
+}
+
+.assignment-project-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.84rem;
+}
+
+.assignment-project-option-disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.assignment-project-option-disabled:hover {
+  background: transparent;
+}
+
+.assignment-project-option:last-child {
+  border-bottom: 0;
+}
+
+.assignment-project-option:hover {
+  background: var(--surface-row-hover);
+}
+
+.assignment-project-option:has(input:checked) {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface-field));
+}
+
+.assignment-project-option input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+}
+
+.assignment-project-option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.assignment-history-note {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.assignment-chip-inactive {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-panel));
+}
+
+.assignment-chip .badge {
+  margin-left: 6px;
+  font-size: 0.68rem;
+  padding: 2px 6px;
+}
+
+.assignment-list-empty {
+  margin: 0;
+  padding: 24px 14px;
+  text-align: center;
+}
+
 .service-record-toolbar {
   grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(132px, 1fr)) auto;
   align-items: end;
@@ -1719,6 +1945,11 @@ tbody tr:last-child td {
   color: #bbf7d0;
 }
 
+.role-project-manager {
+  background: rgba(168, 85, 247, 0.17);
+  color: #e9d5ff;
+}
+
 .role-user {
   background: rgba(148, 163, 184, 0.14);
   color: #dbe4ef;
@@ -1819,6 +2050,317 @@ tbody tr:last-child td {
 
 .wide-modal-panel {
   width: min(920px, calc(100% - 28px));
+}
+
+.project-modal-panel {
+  width: min(900px, calc(100% - 28px));
+  gap: 18px;
+}
+
+.user-editor-panel {
+  width: min(1040px, calc(100% - 28px));
+  max-height: min(92vh, 920px);
+  overflow: hidden;
+}
+
+.user-editor-panel > .table-header:first-child,
+.user-editor-panel > .modal-footer-actions {
+  position: sticky;
+  z-index: 2;
+  background: var(--surface-panel);
+}
+
+.user-editor-panel > .table-header:first-child {
+  top: 0;
+  margin: -4px -4px 0;
+  padding: 4px 4px 12px;
+}
+
+.user-editor-panel > .modal-footer-actions {
+  bottom: 0;
+  margin: 0 -4px -4px;
+  padding: 12px 4px 4px;
+  border-top: 1px solid var(--line);
+}
+
+.user-editor-body {
+  display: grid;
+  gap: 14px;
+  max-height: calc(92vh - 190px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.user-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.user-assignment-section .project-assignment-picker {
+  margin-top: 10px;
+}
+
+.user-assignment-section .assignment-project-list {
+  max-height: 260px;
+}
+
+.user-active-check {
+  align-self: end;
+  min-height: 48px;
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.project-form-section,
+.contract-section,
+.project-contract-summary {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.project-manager-assignment-section {
+  gap: 12px;
+}
+
+.project-current-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 9%, var(--surface-soft));
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 750;
+  padding: 9px 11px;
+}
+
+.assignment-count-button {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--accent);
+  padding: 6px 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.assignment-count-button:hover,
+.assignment-count-button:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-strong);
+  outline: none;
+}
+
+.user-projects-detail-panel {
+  width: min(780px, calc(100% - 28px));
+}
+
+.users-table {
+  min-width: 1020px;
+}
+
+.users-table th:first-child,
+.users-table td:first-child {
+  width: 72px;
+}
+
+.users-table th:nth-child(4),
+.users-table td:nth-child(4),
+.users-table th:nth-child(6),
+.users-table td:nth-child(6) {
+  width: 120px;
+}
+
+.users-table th:nth-child(7),
+.users-table td:nth-child(7),
+.users-table th:nth-child(8),
+.users-table td:nth-child(8) {
+  width: 132px;
+}
+
+.users-table th:last-child,
+.users-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  min-width: 190px;
+  background: var(--surface-panel);
+  box-shadow: -12px 0 18px rgba(2, 6, 23, 0.18);
+}
+
+.users-table tbody tr:hover td:last-child {
+  background: var(--surface-row-hover);
+}
+
+.project-form-section,
+.contract-section {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.contract-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.project-basic-grid,
+.contract-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px 16px;
+}
+
+.project-description-field {
+  grid-column: 1 / -1;
+}
+
+.project-description-field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.project-active-field {
+  align-self: end;
+  margin-bottom: 1px;
+}
+
+.contract-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.project-contract-summary .contract-status-grid {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+
+.project-contract-summary .contract-status-grid div {
+  display: grid;
+  align-content: start;
+  min-height: 78px;
+  overflow: hidden;
+}
+
+.project-contract-summary .badge {
+  display: inline-flex;
+  max-width: 100%;
+  width: fit-content;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.modal-form-footer {
+  position: sticky;
+  bottom: -24px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 -24px -24px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-panel);
+}
+
+.modal-form-footer .form-message {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.modal-form-footer .btn {
+  flex: 0 0 auto;
+}
+
+#projectsTabPanel table {
+  min-width: 1460px;
+}
+
+.project-manager-summary,
+.project-manager-unassigned {
+  display: inline-flex;
+  max-width: 190px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.project-manager-summary {
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-manager-summary:hover,
+.project-manager-summary:focus-visible {
+  border-color: var(--primary);
+  color: var(--text-strong);
+}
+
+.project-manager-unassigned {
+  color: var(--muted);
+}
+
+.project-managers-detail-panel {
+  width: min(460px, calc(100% - 28px));
+}
+
+.project-managers-detail-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-managers-detail-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 750;
+  padding: 9px 11px;
+}
+
+.project-manager-check {
+  display: inline-grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success) 18%, var(--surface-panel));
+  color: var(--success);
+  font-weight: 900;
+}
+
+.project-manager-empty {
+  justify-content: center;
+  color: var(--muted) !important;
 }
 
 .time-grid {
@@ -2138,6 +2680,11 @@ tbody tr:hover {
 .role-technician {
   background: rgba(20, 184, 166, 0.15);
   color: #ccfbf1;
+}
+
+.role-project-manager {
+  background: rgba(126, 34, 206, 0.16);
+  color: #e9d5ff;
 }
 
 .action-btn {
@@ -2974,6 +3521,84 @@ tbody tr:hover,
 
   .stat-card strong {
     font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .project-modal-panel,
+  .user-editor-panel {
+    width: 100%;
+  }
+
+  .project-basic-grid,
+  .contract-form-grid,
+  .user-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-editor-body {
+    max-height: calc(92vh - 176px);
+    padding-right: 0;
+  }
+
+  .modal-footer-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-description-field {
+    grid-column: auto;
+  }
+
+  .project-contract-summary .contract-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assignment-picker-summary,
+  .assignment-picker-toolbar,
+  .modal-form-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assignment-count {
+    align-self: flex-start;
+  }
+
+  .assignment-search-field {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .assignment-status-field {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .assignment-picker-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .assignment-tool-button,
+  .modal-form-footer .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .project-contract-summary .contract-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contract-summary-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .assignment-chip {
+    max-width: 100%;
   }
 }
 
@@ -4371,6 +4996,12 @@ td.empty-state {
     border-color: #78bfb5;
     background: #d5f2ed;
     color: #115e59;
+  }
+
+  .role-project-manager {
+    border-color: #c4a7e7;
+    background: #f3e8ff;
+    color: #6b21a8;
   }
 
   .table-wrapper,

@@ -75,6 +75,7 @@ const projectName = document.querySelector("#projectName");
 const projectDescription = document.querySelector("#projectDescription");
 const projectHourlyRate = document.querySelector("#projectHourlyRate");
 const projectIsActive = document.querySelector("#projectIsActive");
+const projectCurrentStatusBadge = document.querySelector("#projectCurrentStatusBadge");
 const projectContractNumber = document.querySelector("#projectContractNumber");
 const projectContractType = document.querySelector("#projectContractType");
 const projectSignedBy = document.querySelector("#projectSignedBy");
@@ -83,13 +84,24 @@ const projectContractEndDate = document.querySelector("#projectContractEndDate")
 const projectContractedHours = document.querySelector("#projectContractedHours");
 const projectLowHoursThreshold = document.querySelector("#projectLowHoursThreshold");
 const projectExpirationAlertDays = document.querySelector("#projectExpirationAlertDays");
+const projectContractSummary = document.querySelector("#projectContractSummary");
+const projectContractStatusGrid = document.querySelector("#projectContractStatusGrid");
+const projectNoContractDisplay = document.querySelector("#projectNoContractDisplay");
 const projectUsedHoursDisplay = document.querySelector("#projectUsedHoursDisplay");
 const projectRemainingHoursDisplay = document.querySelector("#projectRemainingHoursDisplay");
 const projectHoursAlertStatusDisplay = document.querySelector("#projectHoursAlertStatusDisplay");
-const projectExpirationAlertStatusDisplay = document.querySelector("#projectExpirationAlertStatusDisplay");
 const projectContractStatusDisplay = document.querySelector("#projectContractStatusDisplay");
+const projectContractEndDateDisplay = document.querySelector("#projectContractEndDateDisplay");
+const projectManagerAssignmentsSection = document.querySelector("#projectManagerAssignmentsSection");
+const projectManagerAssignments = document.querySelector("#projectManagerAssignments");
 const projectFormMessage = document.querySelector("#projectFormMessage");
 const saveProjectButton = document.querySelector("#saveProjectButton");
+const projectManagersDetailModal = document.querySelector("#projectManagersDetailModal");
+const closeProjectManagersDetailModal = document.querySelector("#closeProjectManagersDetailModal");
+const projectManagersDetailTitle = document.querySelector("#project-managers-detail-title");
+const projectManagersDetailProject = document.querySelector("#projectManagersDetailProject");
+const projectManagersDetailList = document.querySelector("#projectManagersDetailList");
+const manageProjectManagersButton = document.querySelector("#manageProjectManagersButton");
 
 const addServiceRecordButton = document.querySelector("#addServiceRecordButton");
 const serviceRecordSearchInput = document.querySelector("#serviceRecordSearchInput");
@@ -169,9 +181,12 @@ const userFullName = document.querySelector("#userFullName");
 const userEmail = document.querySelector("#userEmail");
 const userPassword = document.querySelector("#userPassword");
 const userRole = document.querySelector("#userRole");
+const userProjectAssignmentsSection = document.querySelector("#userProjectAssignmentsSection");
+const userProjectAssignments = document.querySelector("#userProjectAssignments");
 const userFormMessage = document.querySelector("#userFormMessage");
 const userSearchInput = document.querySelector("#userSearchInput");
 const userStatusFilter = document.querySelector("#userStatusFilter");
+const userRoleFilter = document.querySelector("#userRoleFilter");
 const usersTableBody = document.querySelector("#usersTableBody");
 const usersTotalCount = document.querySelector("#usersTotalCount");
 const passwordResetsTableBody = document.querySelector("#passwordResetsTableBody");
@@ -258,7 +273,16 @@ const editEmail = document.querySelector("#editEmail");
 const editPassword = document.querySelector("#editPassword");
 const temporaryPasswordButton = document.querySelector("#temporaryPasswordButton");
 const editRole = document.querySelector("#editRole");
+const editUserIsActive = document.querySelector("#editUserIsActive");
+const editUserProjectAssignmentsSection = document.querySelector("#editUserProjectAssignmentsSection");
+const editUserProjectAssignments = document.querySelector("#editUserProjectAssignments");
 const editUserMessage = document.querySelector("#editUserMessage");
+const userProjectsDetailModal = document.querySelector("#userProjectsDetailModal");
+const closeUserProjectsDetailModal = document.querySelector("#closeUserProjectsDetailModal");
+const userProjectsDetailTitle = document.querySelector("#user-projects-detail-title");
+const userProjectsDetailSummary = document.querySelector("#userProjectsDetailSummary");
+const userProjectsDetailBody = document.querySelector("#userProjectsDetailBody");
+const manageUserProjectAssignmentsButton = document.querySelector("#manageUserProjectAssignmentsButton");
 
 const openCount = document.querySelector("#openCount");
 const progressCount = document.querySelector("#progressCount");
@@ -331,6 +355,10 @@ let dashboardTechnicianDateFromValue = "";
 let dashboardTechnicianDateToValue = "";
 let dashboardTechnicianDescriptionRecord = null;
 let users = [];
+let assignableProjectManagers = [];
+let assignableProjects = [];
+let activeUserProjectDetailUserId = null;
+const projectAssignmentPickerStates = new WeakMap();
 let notifications = [];
 let passwordResets = [];
 let reportServiceRecords = [];
@@ -410,6 +438,12 @@ function resetClientState({ render = true } = {}) {
   dashboardTechnicianDateToValue = "";
   dashboardTechnicianDescriptionRecord = null;
   users = [];
+  assignableProjectManagers = [];
+  assignableProjects = [];
+  activeUserProjectDetailUserId = null;
+  projectAssignmentPickerStates.delete(projectManagerAssignments);
+  projectAssignmentPickerStates.delete(userProjectAssignments);
+  projectAssignmentPickerStates.delete(editUserProjectAssignments);
   notifications = [];
   passwordResets = [];
   reportServiceRecords = [];
@@ -436,11 +470,21 @@ async function refreshAuthenticatedUser() {
   });
   const data = await parseJsonResponse(response);
 
-  if (!response.ok || !data.user) {
+  console.info(`[auth] Session validation returned ${response.status}.`);
+
+  if (!response.ok) {
+    const error = new Error(translateServerMessage(data.message) || t("sessionValidationError"));
+    error.status = response.status;
+    throw error;
+  }
+
+  if (!data.user) {
+    console.info("[auth] No active session was returned by /api/me.");
     currentUser = null;
     return null;
   }
 
+  console.info(`[auth] Session valid for role ${normalizeClientRole(data.user.Role)}.`);
   setAuthenticatedUser(data.user, { switchToTickets: false });
   return data.user;
 }
@@ -810,6 +854,40 @@ const translations = {
     noUserMatches: "No hay usuarios que coincidan con la busqueda y el estado seleccionado.",
     userSearchPlaceholder: "Nombre, email o rol",
     usersCount: "usuarios",
+    roleFilter: "Rol",
+    allRoles: "Todos los roles",
+    assignedProjects: "Proyectos asignados",
+    assignedProjectsHelp: "Selecciona uno o varios proyectos activos.",
+    assignedProjectCount: "proyectos",
+    assignedProjectCountSingular: "proyecto",
+    assignedProjectManagers: "Project Managers asignados",
+    assignedProjectManagersHelp: "Selecciona uno o varios Project Managers activos.",
+    selectedManagerSingular: "Project Manager asignado",
+    selectedManagerPlural: "Project Managers asignados",
+    managerSearchPlaceholder: "Nombre o email",
+    noAssignableManagers: "No hay Project Managers activos disponibles.",
+    noManagerMatches: "No hay Project Managers que coincidan con la busqueda.",
+    removeManagerAssignment: "Quitar Project Manager",
+    assignedAt: "Asignado el",
+    assignedProjectsDetail: "Proyectos asignados",
+    manageAssignments: "Administrar asignaciones",
+    userInformation: "Informacion del usuario",
+    activeUser: "Usuario activo",
+    changeProjectManagerRoleConfirm: "Este usuario tiene proyectos asignados. Si cambias el rol, sus asignaciones activas se quitaran. Deseas continuar?",
+    projectAssignmentsError: "No se pudieron cargar o guardar las asignaciones de proyectos.",
+    projectAssignmentsLoading: "Cargando proyectos asignados...",
+    assignmentSearch: "Buscar Project Managers",
+    assignmentSearchPlaceholder: "Cliente o proyecto",
+    selectVisibleProjects: "Seleccionar todos los proyectos visibles",
+    clearProjectSelection: "Limpiar seleccion",
+    selectedProjectSingular: "proyecto seleccionado",
+    selectedProjectPlural: "proyectos seleccionados",
+    noAssignableProjects: "No hay proyectos activos disponibles.",
+    noAssignmentMatches: "No hay proyectos que coincidan con la busqueda.",
+    removeProjectAssignment: "Quitar proyecto",
+    inactiveAssignmentsHelp: "Los proyectos inactivos asignados anteriormente se conservan por historial, pero no pueden seleccionarse como nuevas asignaciones.",
+    clearAssignedProjectsConfirm: "Seguro que deseas limpiar las asignaciones activas seleccionadas? Las asignaciones historicas inactivas se conservaran.",
+    unassigned: "Sin asignar",
     registeredUsers: "usuarios registrados",
     administration: "Administracion",
     security: "Seguridad",
@@ -824,6 +902,7 @@ const translations = {
     closeUserEditor: "Cerrar editor de usuario",
     completeTicketFields: "Completa la descripcion del servicio.",
     loginError: "No se pudo iniciar sesion.",
+    sessionValidationError: "No se pudo verificar la sesion. Intenta nuevamente.",
     loadTicketsError: "No se pudieron cargar los registros.",
     serverConnectionError: "No se pudo conectar con el servidor.",
     createTicketError: "No se pudo crear el registro.",
@@ -1243,6 +1322,40 @@ const translations = {
     noUserMatches: "No users match the search and selected status.",
     userSearchPlaceholder: "Name, email, or role",
     usersCount: "users",
+    roleFilter: "Role",
+    allRoles: "All roles",
+    assignedProjects: "Assigned projects",
+    assignedProjectsHelp: "Select one or more active projects.",
+    assignedProjectCount: "projects",
+    assignedProjectCountSingular: "project",
+    assignedProjectManagers: "Assigned Project Managers",
+    assignedProjectManagersHelp: "Select one or more active Project Managers.",
+    selectedManagerSingular: "Project Manager assigned",
+    selectedManagerPlural: "Project Managers assigned",
+    managerSearchPlaceholder: "Name or email",
+    noAssignableManagers: "No active Project Managers are available.",
+    noManagerMatches: "No Project Managers match the search.",
+    removeManagerAssignment: "Remove Project Manager",
+    assignedAt: "Assigned at",
+    assignedProjectsDetail: "Assigned projects",
+    manageAssignments: "Manage assignments",
+    userInformation: "User information",
+    activeUser: "Active user",
+    changeProjectManagerRoleConfirm: "This user has assigned projects. Changing the role will remove active assignments. Do you want to continue?",
+    projectAssignmentsError: "Project assignments could not be loaded or saved.",
+    projectAssignmentsLoading: "Loading assigned projects...",
+    assignmentSearch: "Search Project Managers",
+    assignmentSearchPlaceholder: "Client or project",
+    selectVisibleProjects: "Select all visible projects",
+    clearProjectSelection: "Clear selection",
+    selectedProjectSingular: "project selected",
+    selectedProjectPlural: "projects selected",
+    noAssignableProjects: "No active projects are available.",
+    noAssignmentMatches: "No projects match the search.",
+    removeProjectAssignment: "Remove project",
+    inactiveAssignmentsHelp: "Previously assigned inactive projects are kept for history, but they cannot be selected as new assignments.",
+    clearAssignedProjectsConfirm: "Are you sure you want to clear the selected active assignments? Historical inactive assignments will be preserved.",
+    unassigned: "Unassigned",
     registeredUsers: "registered users",
     administration: "Administration",
     security: "Security",
@@ -1257,6 +1370,7 @@ const translations = {
     closeUserEditor: "Close user editor",
     completeTicketFields: "Complete the service description.",
     loginError: "Could not sign in.",
+    sessionValidationError: "The session could not be verified. Please try again.",
     loadTicketsError: "Service records could not be loaded.",
     serverConnectionError: "Could not connect to the server.",
     createTicketError: "Could not create the record.",
@@ -1342,7 +1456,15 @@ async function checkSession() {
     });
     const data = await parseJsonResponse(response);
 
-    if (response.ok && data.user) {
+    console.info(`[auth] Initial session check returned ${response.status}.`);
+
+    if (!response.ok) {
+      const error = new Error(translateServerMessage(data.message) || t("sessionValidationError"));
+      error.status = response.status;
+      throw error;
+    }
+
+    if (data.user) {
       setAuthenticatedUser(data.user);
       await refreshWorkspace();
       return;
@@ -1351,9 +1473,12 @@ async function checkSession() {
     currentUser = null;
     showLogin();
   } catch (error) {
-    console.error(error);
-    currentUser = null;
-    showLogin();
+    console.error("[auth] Initial session validation failed.", error);
+    if (error.status === 401) {
+      currentUser = null;
+      showLogin();
+    }
+    loginMessage.textContent = error.message || t("sessionValidationError");
   }
 }
 
@@ -1365,6 +1490,7 @@ async function login(event) {
   currentUser = null;
 
   try {
+    console.info("[auth] Sending login request.");
     const response = await fetch("/api/login", {
       method: "POST",
       cache: "no-store",
@@ -1378,17 +1504,23 @@ async function login(event) {
     });
 
     const data = await parseJsonResponse(response);
+    console.info(`[auth] Login returned ${response.status}; user=${Boolean(data.user)}; role=${normalizeClientRole(data.user?.Role) || "none"}.`);
 
-    if (!response.ok) {
+    if (!response.ok || !data.user) {
       throw new Error(translateServerMessage(data.message) || t("loginError"));
     }
 
     loginForm.reset();
     hidePasswordFields();
     setAuthenticatedUser(data.user);
+    console.info("[auth] Session cookie accepted; loading authenticated workspace.");
     await refreshWorkspace();
   } catch (error) {
-    console.error(error);
+    console.error("[auth] Login or workspace initialization failed.", error);
+    if (currentUser) {
+      dashboardMessage.textContent = error.message || t("sessionValidationError");
+      return;
+    }
     loginMessage.textContent = error.message;
   }
 }
@@ -1412,9 +1544,12 @@ async function logout() {
 
 function setAuthenticatedUser(user, options = {}) {
   const { switchToTickets = true } = options;
-  currentUser = user;
+  currentUser = {
+    ...user,
+    Role: normalizeClientRole(user.Role)
+  };
   sessionName.textContent = user.FullName;
-  sessionRole.textContent = user.Role;
+  sessionRole.textContent = getRoleDisplayLabel(currentUser.Role);
   sessionBar.classList.remove("hidden");
   loginView.classList.add("hidden");
   appView.classList.remove("hidden");
@@ -1471,6 +1606,18 @@ function isAdmin() {
 
 function isTechnician() {
   return currentUser?.Role === "Technician";
+}
+
+function isProjectManager() {
+  return currentUser?.Role === "ProjectManager";
+}
+
+function normalizeClientRole(role) {
+  return role === "Project Manager" ? "ProjectManager" : role;
+}
+
+function getRoleDisplayLabel(role) {
+  return normalizeClientRole(role) === "ProjectManager" ? "Project Manager" : role;
 }
 
 function canAccessTab(tabName) {
@@ -1580,6 +1727,10 @@ async function loadUsers() {
     }
 
     users = data;
+    assignableProjectManagers = users
+      .filter((user) => normalizeClientRole(user.Role) === "ProjectManager" && isUserActive(user))
+      .sort((first, second) => String(first.FullName || "").localeCompare(String(second.FullName || ""), undefined, { sensitivity: "base" }));
+    renderProjectManagerAssignmentOptions(projectManagerAssignments);
     renderUsers();
     renderDashboard();
   } catch (error) {
@@ -1588,6 +1739,293 @@ async function loadUsers() {
     showUsersMessage(t("loadUsersError"));
     renderDashboard();
   }
+}
+
+function getProjectAssignmentPickerState(picker) {
+  if (!picker) return null;
+
+  if (!projectAssignmentPickerStates.has(picker)) {
+    projectAssignmentPickerStates.set(picker, {
+      search: "",
+      selectedIds: new Set(),
+      initialSelectedIds: new Set(),
+      lockedIds: new Set(),
+      status: "active"
+    });
+  }
+
+  return projectAssignmentPickerStates.get(picker);
+}
+
+function getProjectManagerAssignmentLabel(user) {
+  return [user.FullName, user.Email].filter(Boolean).join(" - ") || `#${user.UserID}`;
+}
+
+function getAssignableProjectLabel(project) {
+  return [project.ClientName, project.ProjectName].filter(Boolean).join(" - ") || `#${project.ProjectID}`;
+}
+
+function isProjectActive(project) {
+  return project?.IsActive === true || project?.IsActive === 1 || project?.IsActive === "1";
+}
+
+function normalizeAssignmentIds(ids) {
+  if (Array.isArray(ids)) {
+    return ids.map(Number).filter(Number.isInteger);
+  }
+
+  if (typeof ids === "string") {
+    return ids.split(",").map((id) => Number(id.trim())).filter(Number.isInteger);
+  }
+
+  return [];
+}
+
+function escapeHTMLAttribute(value) {
+  return escapeHTML(String(value ?? ""))
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderProjectManagerAssignmentOptions(picker, selectedUserIds) {
+  const state = getProjectAssignmentPickerState(picker);
+  if (!state) return;
+
+  if (selectedUserIds !== undefined) {
+    state.selectedIds = new Set(normalizeAssignmentIds(selectedUserIds));
+  }
+
+  const managerById = new Map(assignableProjectManagers.map((user) => [Number(user.UserID), user]));
+  const searchKey = normalizeSearchKey(state.search);
+  const visibleManagers = assignableProjectManagers.filter((user) => !searchKey
+    || normalizeSearchKey(getProjectManagerAssignmentLabel(user)).includes(searchKey));
+  const selectedManagers = Array.from(state.selectedIds)
+    .map((userId) => managerById.get(Number(userId)))
+    .filter(Boolean);
+  const selectedCount = selectedManagers.length;
+  const selectedLabel = selectedCount === 1 ? t("selectedManagerSingular") : t("selectedManagerPlural");
+  const emptyMessage = assignableProjectManagers.length === 0 ? t("noAssignableManagers") : t("noManagerMatches");
+
+  picker.innerHTML = `
+    <div class="assignment-picker-summary">
+      <div class="assignment-chips" aria-live="polite">
+        ${selectedManagers.map((user) => `
+          <span class="assignment-chip" title="${escapeHTMLAttribute(getProjectManagerAssignmentLabel(user))}">
+            <span>${escapeHTML(getProjectManagerAssignmentLabel(user))}</span>
+            <button type="button" data-assignment-action="remove" data-user-id="${user.UserID}" aria-label="${escapeHTMLAttribute(`${t("removeManagerAssignment")}: ${getProjectManagerAssignmentLabel(user)}`)}">&times;</button>
+          </span>
+        `).join("") || `<span class="assignment-empty-selection">${escapeHTML(t("unassigned"))}</span>`}
+      </div>
+      <strong class="assignment-count">${formatNumber(selectedCount, 0)} ${escapeHTML(selectedLabel)}</strong>
+    </div>
+    <div class="assignment-picker-toolbar">
+      <label class="assignment-search-field">
+        <span>${escapeHTML(t("assignmentSearch"))}</span>
+        <input type="search" data-assignment-search value="${escapeHTMLAttribute(state.search)}" placeholder="${escapeHTMLAttribute(t("managerSearchPlaceholder"))}">
+      </label>
+      <div class="assignment-picker-actions">
+        <button type="button" class="btn session-button assignment-tool-button" data-assignment-action="clear" ${selectedCount === 0 ? "disabled" : ""}>${escapeHTML(t("clearProjectSelection"))}</button>
+      </div>
+    </div>
+    <div class="assignment-project-list" role="group" aria-label="${escapeHTML(t("assignedProjectManagers"))}">
+      ${visibleManagers.map((user) => {
+        const userId = Number(user.UserID);
+        const label = getProjectManagerAssignmentLabel(user);
+        return `
+          <label class="assignment-project-option">
+            <input type="checkbox" value="${userId}" ${state.selectedIds.has(userId) ? "checked" : ""}>
+            <span>${escapeHTML(label)}</span>
+          </label>
+        `;
+      }).join("") || `<p class="assignment-list-empty">${escapeHTML(emptyMessage)}</p>`}
+    </div>
+  `;
+}
+
+function getSelectedProjectManagerUserIds(picker) {
+  const state = getProjectAssignmentPickerState(picker);
+  return state ? Array.from(state.selectedIds).sort((first, second) => first - second) : [];
+}
+
+function renderUserProjectAssignmentOptions(picker, selectedProjectIds) {
+  const state = getProjectAssignmentPickerState(picker);
+  if (!state) return;
+
+  if (selectedProjectIds !== undefined) {
+    const normalizedSelectedIds = normalizeAssignmentIds(selectedProjectIds);
+    state.selectedIds = new Set(normalizedSelectedIds);
+    state.initialSelectedIds = new Set(normalizedSelectedIds);
+  }
+
+  const projectById = new Map(assignableProjects.map((project) => [Number(project.ProjectID), project]));
+  state.lockedIds = new Set(Array.from(state.selectedIds).filter((projectId) => {
+    const project = projectById.get(Number(projectId));
+    return project && !isProjectActive(project);
+  }));
+  const searchKey = normalizeSearchKey(state.search);
+  const selectedStatus = state.status || "active";
+  const visibleProjects = assignableProjects.filter((project) => {
+    const active = isProjectActive(project);
+    const matchesStatus = selectedStatus === "all"
+      || (selectedStatus === "active" && active)
+      || (selectedStatus === "inactive" && !active);
+    const matchesSearch = !searchKey || normalizeSearchKey(getAssignableProjectLabel(project)).includes(searchKey);
+    return matchesStatus && matchesSearch;
+  });
+  const selectedProjects = Array.from(state.selectedIds)
+    .map((projectId) => projectById.get(Number(projectId)))
+    .filter(Boolean);
+  const selectedCount = selectedProjects.length;
+  const selectedActiveCount = selectedProjects.filter(isProjectActive).length;
+  const selectedInactiveCount = selectedProjects.length - selectedActiveCount;
+  const selectedLabel = selectedCount === 1 ? t("selectedProjectSingular") : t("selectedProjectPlural");
+  const emptyMessage = assignableProjects.length === 0 ? t("noAssignableProjects") : t("noAssignmentMatches");
+  const visibleActiveProjects = visibleProjects.filter(isProjectActive);
+
+  picker.innerHTML = `
+    <div class="assignment-picker-summary">
+      <div class="assignment-chips" aria-live="polite">
+        ${selectedProjects.map((project) => {
+          const label = getAssignableProjectLabel(project);
+          const active = isProjectActive(project);
+          return `
+            <span class="assignment-chip ${active ? "" : "assignment-chip-inactive"}" title="${escapeHTMLAttribute(label)}">
+              <span>${escapeHTML(label)}</span>
+              <span class="badge ${active ? "user-status-active" : "user-status-inactive"}">${escapeHTML(active ? t("active") : t("inactive"))}</span>
+              ${active ? `<button type="button" data-assignment-action="remove" data-project-id="${project.ProjectID}" aria-label="${escapeHTMLAttribute(`${t("removeProjectAssignment")}: ${label}`)}">&times;</button>` : ""}
+            </span>
+          `;
+        }).join("") || `<span class="assignment-empty-selection">${escapeHTML(t("unassigned"))}</span>`}
+      </div>
+      <strong class="assignment-count">${formatNumber(selectedCount, 0)} ${escapeHTML(selectedLabel)} · ${formatNumber(selectedActiveCount, 0)} ${escapeHTML(t("activeOnly").toLowerCase())} · ${formatNumber(selectedInactiveCount, 0)} ${escapeHTML(t("inactiveOnly").toLowerCase())}</strong>
+    </div>
+    <div class="assignment-picker-toolbar">
+      <label class="assignment-search-field">
+        <span>${escapeHTML(t("assignmentSearchPlaceholder"))}</span>
+        <input type="search" data-assignment-search value="${escapeHTMLAttribute(state.search)}" placeholder="${escapeHTMLAttribute(t("assignmentSearchPlaceholder"))}">
+      </label>
+      <label class="assignment-status-field">
+        <span>${escapeHTML(t("status"))}</span>
+        <select data-assignment-status>
+          <option value="active" ${selectedStatus === "active" ? "selected" : ""}>${escapeHTML(t("activeOnly"))}</option>
+          <option value="inactive" ${selectedStatus === "inactive" ? "selected" : ""}>${escapeHTML(t("inactiveOnly"))}</option>
+          <option value="all" ${selectedStatus === "all" ? "selected" : ""}>${escapeHTML(t("allEntityStatuses"))}</option>
+        </select>
+      </label>
+      <div class="assignment-picker-actions">
+        <button type="button" class="btn session-button assignment-tool-button" data-assignment-action="select-visible" ${visibleActiveProjects.length === 0 ? "disabled" : ""}>${escapeHTML(t("selectVisibleProjects"))}</button>
+        <button type="button" class="btn session-button assignment-tool-button" data-assignment-action="clear" ${selectedCount === 0 ? "disabled" : ""}>${escapeHTML(t("clearProjectSelection"))}</button>
+      </div>
+    </div>
+    <p class="assignment-history-note">${escapeHTML(t("inactiveAssignmentsHelp"))}</p>
+    <div class="assignment-project-list" role="group" aria-label="${escapeHTML(t("assignedProjects"))}">
+      ${visibleProjects.map((project) => {
+        const projectId = Number(project.ProjectID);
+        const label = getAssignableProjectLabel(project);
+        const active = isProjectActive(project);
+        const selected = state.selectedIds.has(projectId);
+        return `
+          <label class="assignment-project-option ${active ? "" : "assignment-project-option-disabled"}">
+            <input type="checkbox" value="${projectId}" ${selected ? "checked" : ""} ${active ? "" : "disabled"}>
+            <span>${escapeHTML(label)}</span>
+            <span class="badge ${active ? "user-status-active" : "user-status-inactive"}">${escapeHTML(active ? t("active") : t("inactive"))}</span>
+          </label>
+        `;
+      }).join("") || `<p class="assignment-list-empty">${escapeHTML(emptyMessage)}</p>`}
+    </div>
+  `;
+}
+
+function getSelectedProjectIds(picker) {
+  const state = getProjectAssignmentPickerState(picker);
+  return state ? Array.from(state.selectedIds).sort((first, second) => first - second) : [];
+}
+
+function renderAssignmentPicker(picker) {
+  if (!picker) return;
+  if (picker.dataset.assignmentKind === "projects") {
+    renderUserProjectAssignmentOptions(picker);
+    return;
+  }
+  renderProjectManagerAssignmentOptions(picker);
+}
+
+function handleProjectAssignmentPickerInput(event) {
+  const searchInput = event.target.closest("[data-assignment-search]");
+  if (!searchInput) return;
+
+  const picker = event.currentTarget;
+  const state = getProjectAssignmentPickerState(picker);
+  state.search = searchInput.value;
+  renderAssignmentPicker(picker);
+  picker.querySelector("[data-assignment-search]")?.focus();
+}
+
+function handleProjectAssignmentPickerChange(event) {
+  const statusSelect = event.target.closest("[data-assignment-status]");
+  if (statusSelect) {
+    const picker = event.currentTarget;
+    const state = getProjectAssignmentPickerState(picker);
+    state.status = statusSelect.value || "active";
+    renderAssignmentPicker(picker);
+    return;
+  }
+
+  const checkbox = event.target.closest('.assignment-project-option input[type="checkbox"]');
+  if (!checkbox) return;
+
+  const picker = event.currentTarget;
+  const state = getProjectAssignmentPickerState(picker);
+  const selectedId = Number(checkbox.value);
+  if (picker.dataset.assignmentKind === "projects") {
+    const project = assignableProjects.find((item) => Number(item.ProjectID) === selectedId);
+    if (project && !isProjectActive(project)) {
+      renderAssignmentPicker(picker);
+      return;
+    }
+  }
+
+  if (checkbox.checked) state.selectedIds.add(selectedId);
+  else state.selectedIds.delete(selectedId);
+  renderAssignmentPicker(picker);
+}
+
+function handleProjectAssignmentPickerClick(event) {
+  const button = event.target.closest("button[data-assignment-action]");
+  if (!button) return;
+
+  const picker = event.currentTarget;
+  const state = getProjectAssignmentPickerState(picker);
+  const action = button.dataset.assignmentAction;
+
+  if (action === "remove") {
+    state.selectedIds.delete(Number(button.dataset.userId || button.dataset.projectId));
+  } else if (action === "select-visible" && picker.dataset.assignmentKind === "projects") {
+    const searchKey = normalizeSearchKey(state.search);
+    const selectedStatus = state.status || "active";
+    assignableProjects
+      .filter((project) => {
+        const active = isProjectActive(project);
+        const matchesStatus = selectedStatus === "all"
+          || (selectedStatus === "active" && active)
+          || (selectedStatus === "inactive" && !active);
+        const matchesSearch = !searchKey || normalizeSearchKey(getAssignableProjectLabel(project)).includes(searchKey);
+        return active && matchesStatus && matchesSearch;
+      })
+      .forEach((project) => state.selectedIds.add(Number(project.ProjectID)));
+  } else if (action === "clear") {
+    if (picker.dataset.assignmentKind === "projects" && state.initialSelectedIds?.size > 0 && !confirm(t("clearAssignedProjectsConfirm"))) {
+      return;
+    }
+
+    if (picker.dataset.assignmentKind === "projects") {
+      state.selectedIds = new Set(state.lockedIds || []);
+    } else {
+      state.selectedIds.clear();
+    }
+  }
+
+  renderAssignmentPicker(picker);
 }
 
 async function loadPasswordResets() {
@@ -1919,6 +2357,33 @@ async function loadProjects() {
   }
 }
 
+async function loadAssignableProjects() {
+  try {
+    const response = await fetch("/api/projects?status=all", {
+      cache: "no-store"
+    });
+    const data = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(data.message) || t("loadProjectsError"));
+    }
+
+    assignableProjects = data
+      .sort((first, second) => {
+        const firstLabel = getAssignableProjectLabel(first);
+        const secondLabel = getAssignableProjectLabel(second);
+        return firstLabel.localeCompare(secondLabel, undefined, { sensitivity: "base" });
+      });
+    renderUserProjectAssignmentOptions(userProjectAssignments);
+    renderUserProjectAssignmentOptions(editUserProjectAssignments);
+  } catch (error) {
+    console.error(error);
+    assignableProjects = [];
+    renderUserProjectAssignmentOptions(userProjectAssignments);
+    renderUserProjectAssignmentOptions(editUserProjectAssignments);
+  }
+}
+
 function renderProjectClientOptions() {
   if (!projectClientFilter || !projectClientId) return;
 
@@ -1946,6 +2411,21 @@ function renderContractBadge(status) {
   const value = status || "NO_CONTRACT";
 
   return `<span class="badge ${getContractAlertClass(value)}">${escapeHTML(translateContractStatus(value))}</span>`;
+}
+
+function renderProjectManagers(project) {
+  const managerNames = String(project.ProjectManagerNames || "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  const totalManagers = Math.max(Number(project.ProjectManagerCount || 0), managerNames.length);
+
+  if (totalManagers === 0 || managerNames.length === 0) {
+    return `<span class="project-manager-unassigned">${escapeHTML(t("unassigned"))}</span>`;
+  }
+
+  const summary = totalManagers > 1 ? `${managerNames[0]} +${totalManagers - 1}` : managerNames[0];
+  return `<button type="button" class="project-manager-summary" data-project-manager-action="view" data-project-id="${project.ProjectID}" title="${escapeHTMLAttribute(managerNames.join(", "))}">${escapeHTML(summary)}</button>`;
 }
 
 function renderProjects() {
@@ -1979,6 +2459,7 @@ function renderProjects() {
       <td>${formatProjectHours(project.RemainingHours)}</td>
       <td>${escapeHTML(formatDateOnly(project.ContractEndDate) || "-")}</td>
       <td>${renderContractBadge(project.ContractStatus)}</td>
+      <td>${renderProjectManagers(project)}</td>
       <td><span class="badge ${project.IsActive ? "user-status-active" : "user-status-inactive"}">${project.IsActive ? t("active") : t("inactive")}</span></td>
       <td class="project-admin-actions ${canManageProjects ? "" : "hidden"}">
         ${canManageProjects ? `
@@ -1996,7 +2477,7 @@ function showProjectsTableMessage(message) {
   projectsTotalCount.textContent = formatNumber(projects.length, 0);
   projectsTableBody.innerHTML = `
     <tr>
-      <td colspan="11" class="empty-state">${escapeHTML(message)}</td>
+      <td colspan="12" class="empty-state">${escapeHTML(message)}</td>
     </tr>
   `;
 }
@@ -2020,6 +2501,7 @@ function getProjectPayloadFromForm() {
     ContractedHours: projectContractedHours.value === "" ? null : Number(projectContractedHours.value),
     LowHoursThreshold: projectLowHoursThreshold.value === "" ? null : Number(projectLowHoursThreshold.value),
     ExpirationAlertDays: projectExpirationAlertDays.value === "" ? null : Number(projectExpirationAlertDays.value),
+    projectManagerUserIds: getSelectedProjectManagerUserIds(projectManagerAssignments),
     IsActive: projectIsActive.checked
   };
 }
@@ -2039,17 +2521,63 @@ function setProjectContractFieldsDisabled(disabled) {
   });
 }
 
-function renderProjectContractStatus(project = {}) {
+function projectHasContractData(project = {}) {
+  return Boolean(
+    project.ContractNumber
+    || project.ContractType
+    || project.SignedBy
+    || project.ContractStartDate
+    || project.ContractEndDate
+    || (project.ContractedHours !== null && project.ContractedHours !== undefined && project.ContractedHours !== "")
+  );
+}
+
+function renderProjectContractStatus(project = {}, showSummary = false) {
+  projectContractSummary.classList.toggle("hidden", !showSummary);
+  if (!showSummary) return;
+
+  const hasContract = projectHasContractData(project) && project.ContractStatus !== "NO_CONTRACT";
+  projectNoContractDisplay.classList.toggle("hidden", hasContract);
+  projectContractStatusGrid.classList.toggle("hidden", !hasContract);
+
+  if (!hasContract) {
+    projectNoContractDisplay.innerHTML = renderContractBadge("NO_CONTRACT");
+    return;
+  }
+
   projectUsedHoursDisplay.textContent = formatProjectHours(project.UsedHours);
   projectRemainingHoursDisplay.textContent = formatProjectHours(project.RemainingHours);
   projectHoursAlertStatusDisplay.innerHTML = renderContractBadge(project.HoursAlertStatus);
-  projectExpirationAlertStatusDisplay.innerHTML = renderContractBadge(project.ExpirationAlertStatus);
   projectContractStatusDisplay.innerHTML = renderContractBadge(project.ContractStatus);
+  projectContractEndDateDisplay.textContent = formatDateOnly(project.ContractEndDate) || "-";
+}
+
+function renderProjectCurrentStatusBadge(selectedProject = null) {
+  if (!projectCurrentStatusBadge) return;
+
+  const isEditing = Boolean(selectedProject);
+  const isActive = selectedProject?.IsActive !== false && Number(selectedProject?.IsActive) !== 0;
+  projectCurrentStatusBadge.classList.toggle("hidden", !isEditing || isActive);
+
+  if (!isEditing || isActive) {
+    projectCurrentStatusBadge.innerHTML = "";
+    return;
+  }
+
+  projectCurrentStatusBadge.innerHTML = `
+    <span class="badge user-status-inactive">${escapeHTML(t("inactive"))}</span>
+    <span>${escapeHTML(currentLanguage === "es"
+      ? "Este proyecto esta inactivo. Puedes editarlo sin reactivarlo."
+      : "This project is inactive. You can edit it without reactivating it.")}</span>
+  `;
 }
 
 async function openProjectEditor(mode, selectedProject = null) {
   if (projectClients.length === 0) {
     await loadProjectClients();
+  }
+  if (isAdmin() && users.length === 0) {
+    await loadUsers();
   }
 
   projectForm.reset();
@@ -2060,7 +2588,13 @@ async function openProjectEditor(mode, selectedProject = null) {
   projectIsActive.disabled = true;
   projectHourlyRate.value = "0";
   setProjectContractFieldsDisabled(!isAdmin());
-  renderProjectContractStatus(selectedProject || {});
+  renderProjectContractStatus(selectedProject || {}, Boolean(selectedProject));
+  renderProjectCurrentStatusBadge(selectedProject);
+  projectManagerAssignmentsSection.classList.toggle("hidden", !isAdmin());
+  renderProjectManagerAssignmentOptions(
+    projectManagerAssignments,
+    selectedProject?.ProjectManagerUserIDs || []
+  );
 
   if (selectedProject) {
     const hasSelectedClient = Array.from(projectClientId.options).some((option) => Number(option.value) === Number(selectedProject.ClientID));
@@ -2096,6 +2630,9 @@ function closeProjectEditor() {
   projectForm.reset();
   projectFormMessage.textContent = "";
   projectId.value = "";
+  projectContractSummary.classList.add("hidden");
+  renderProjectCurrentStatusBadge(null);
+  renderProjectManagerAssignmentOptions(projectManagerAssignments, []);
 }
 
 async function saveProject(event) {
@@ -2177,7 +2714,11 @@ async function saveProject(event) {
 
     closeProjectEditor();
     showProjectsMessage(isEditing ? t("updateProjectSuccess") : t("createProjectSuccess"), "success");
-    await loadProjects();
+    await Promise.all([
+      loadProjects(),
+      isAdmin() ? loadAssignableProjects() : Promise.resolve(),
+      isAdmin() ? loadUsers() : Promise.resolve()
+    ]);
   } catch (error) {
     console.error(error);
     projectFormMessage.textContent = error.message || (isEditing ? t("updateProjectError") : t("createProjectError"));
@@ -2185,6 +2726,12 @@ async function saveProject(event) {
 }
 
 function handleProjectsTableClick(event) {
+  const managerButton = event.target.closest("button[data-project-manager-action='view']");
+  if (managerButton) {
+    openProjectManagersDetail(Number(managerButton.dataset.projectId));
+    return;
+  }
+
   const button = event.target.closest("button[data-project-action]");
 
   if (!button) return;
@@ -2206,6 +2753,54 @@ function handleProjectsTableClick(event) {
   if (action === "toggle-status") {
     toggleProjectStatus(id, button.dataset.nextActive === "true");
   }
+}
+
+function getProjectManagerNames(project) {
+  return String(project?.ProjectManagerNames || "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function openProjectManagersDetail(projectIdValue) {
+  const selectedProject = projects.find((project) => Number(project.ProjectID) === Number(projectIdValue));
+
+  if (!selectedProject || !projectManagersDetailModal) {
+    return;
+  }
+
+  const managerNames = getProjectManagerNames(selectedProject);
+  projectManagersDetailModal.dataset.projectId = String(selectedProject.ProjectID);
+  projectManagersDetailTitle.textContent = t("assignedProjectManagers");
+  projectManagersDetailProject.textContent = `${selectedProject.ProjectName || t("projects")} - ${selectedProject.ClientName || t("clients")}`;
+  projectManagersDetailList.innerHTML = managerNames.length
+    ? managerNames.map((name) => `
+      <li>
+        <span class="project-manager-check" aria-hidden="true">✓</span>
+        <span>${escapeHTML(name)}</span>
+      </li>
+    `).join("")
+    : `<li class="project-manager-empty">${escapeHTML(t("unassigned"))}</li>`;
+  manageProjectManagersButton?.classList.toggle("hidden", !isAdmin());
+  projectManagersDetailModal.classList.remove("hidden");
+}
+
+function closeProjectManagersDetail() {
+  if (!projectManagersDetailModal) return;
+  projectManagersDetailModal.classList.add("hidden");
+  projectManagersDetailModal.dataset.projectId = "";
+  projectManagersDetailList.innerHTML = "";
+}
+
+async function manageProjectManagersFromDetail() {
+  const projectIdValue = Number(projectManagersDetailModal?.dataset.projectId);
+  const selectedProject = projects.find((project) => Number(project.ProjectID) === projectIdValue);
+
+  if (!selectedProject || !isAdmin()) return;
+
+  closeProjectManagersDetail();
+  await openProjectEditor("edit", selectedProject);
+  projectManagerAssignmentsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function toggleProjectStatus(id, nextIsActive) {
@@ -2231,7 +2826,11 @@ async function toggleProjectStatus(id, nextIsActive) {
     }
 
     showProjectsMessage(t(nextIsActive ? "activateProjectSuccess" : "deactivateProjectSuccess"), "success");
-    await loadProjects();
+    await Promise.all([
+      loadProjects(),
+      loadAssignableProjects(),
+      loadUsers()
+    ]);
   } catch (error) {
     console.error(error);
     showProjectsMessage(error.message || t("projectStatusError"), "error");
@@ -2270,6 +2869,15 @@ async function loadServiceRecordLookups() {
       }
 
       serviceRecordTechnicians = users.filter((user) => user.IsActive !== false && (user.Role === "Technician" || user.Role === "User"));
+    } else if (isProjectManager()) {
+      const techniciansResponse = await fetch("/api/reports/service-hours/technicians", { cache: "no-store" });
+      const techniciansData = await parseJsonResponse(techniciansResponse);
+
+      if (!techniciansResponse.ok) {
+        throw new Error(translateServerMessage(techniciansData.message) || t("loadServiceRecordLookupsError"));
+      }
+
+      serviceRecordTechnicians = techniciansData;
     } else {
       serviceRecordTechnicians = currentUser ? [currentUser] : [];
     }
@@ -2301,8 +2909,9 @@ function renderServiceRecordOptions() {
       <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
     `).join("")}
   `;
-  serviceRecordTechnicianFilter.value = !isAdmin() && currentUser ? String(currentUser.UserID) : technicianFilterValue;
-  serviceRecordTechnicianFilter.disabled = !isAdmin();
+  const canFilterTechnicians = isAdmin() || isProjectManager();
+  serviceRecordTechnicianFilter.value = !canFilterTechnicians && currentUser ? String(currentUser.UserID) : technicianFilterValue;
+  serviceRecordTechnicianFilter.disabled = !canFilterTechnicians;
 
   serviceRecordClientFilter.innerHTML = `
     <option value="">${t("allClients")}</option>
@@ -3709,6 +4318,21 @@ async function loadDashboardTechnicianOptions() {
   if (!dashboardTechnicianSelect) return;
 
   try {
+    if (isProjectManager()) {
+      const response = await fetch("/api/reports/service-hours/technicians", { cache: "no-store" });
+      const data = await parseJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(translateServerMessage(data.message) || tNested("technicianDashboard", "loadError"));
+      }
+
+      dashboardTechnicianOptions = data;
+      dashboardSelectedTechnician = null;
+      renderDashboardTechnicianOptions();
+      renderDashboardTechnicianPanel();
+      return;
+    }
+
     if (!isAdmin()) {
       dashboardTechnicianOptions = currentUser ? [currentUser] : [];
       dashboardSelectedTechnician = currentUser || null;
@@ -5617,10 +6241,15 @@ function applyStaticLanguage() {
     projectStatusFilter.options[2].textContent = t("inactiveOnly");
   }
   setText("#projectModal .section-title .eyebrow", t("projects"));
+  setText("#project-basic-eyebrow", t("projects"));
+  setText("#project-contract-eyebrow", labelText("Contrato", "Contract"));
+  setText("#project-contract-summary-eyebrow", labelText("Contrato", "Contract"));
+  setText("#project-basic-title", labelText("Informacion basica del proyecto", "Project information"));
   setText('label[for="projectClientId"]', labelText("Cliente", "Client"));
   setText('label[for="projectName"]', labelText("Proyecto", "Project name"));
   setText('label[for="projectDescription"]', labelText("Descripcion", "Description"));
   setText("#project-contract-title", labelText("Informacion del contrato", "Contract Information"));
+  setText("#project-contract-summary-title", labelText("Resumen del contrato", "Contract summary"));
   setText('label[for="projectContractNumber"]', labelText("Numero de contrato", "Contract number"));
   setText('label[for="projectContractType"]', labelText("Tipo de contrato", "Contract type"));
   setText('label[for="projectSignedBy"]', labelText("Firmado por", "Signed by"));
@@ -5633,8 +6262,8 @@ function applyStaticLanguage() {
   if (contractStatusLabels[0]) contractStatusLabels[0].textContent = labelText("Horas usadas", "Used hours");
   if (contractStatusLabels[1]) contractStatusLabels[1].textContent = labelText("Horas restantes", "Remaining hours");
   if (contractStatusLabels[2]) contractStatusLabels[2].textContent = labelText("Alerta de horas", "Hours alert");
-  if (contractStatusLabels[3]) contractStatusLabels[3].textContent = labelText("Alerta de vencimiento", "Expiration alert");
-  if (contractStatusLabels[4]) contractStatusLabels[4].textContent = labelText("Estado del contrato", "Contract status");
+  if (contractStatusLabels[3]) contractStatusLabels[3].textContent = labelText("Estado del contrato", "Contract status");
+  if (contractStatusLabels[4]) contractStatusLabels[4].textContent = labelText("Fecha de vencimiento", "End date");
   setText("#invoicesTabPanel .section-title .eyebrow", t("invoicesEyebrow"));
   setText("#invoices-title", t("invoices"));
   setText('label[for="invoiceSearchInput"]', t("search"));
@@ -5679,18 +6308,38 @@ function applyStaticLanguage() {
   setText('label[for="userEmail"]', "Email");
   setText('label[for="userPassword"]', t("password"));
   setText('label[for="userRole"]', t("role"));
+  setText("#user-project-assignments-eyebrow", "Project Manager");
+  setText("#user-project-assignments-title", t("assignedProjects"));
+  setText("#userProjectAssignmentsHelp", t("assignedProjectsHelp"));
   setPlaceholder("#userFullName", t("fullNamePlaceholder"));
   setPlaceholder("#userPassword", t("tempPasswordPlaceholder"));
+  renderUserProjectAssignmentOptions(userProjectAssignments);
 
   setText("#usersTabPanel .table-panel .section-title .eyebrow", t("security"));
   setText("#users-table-title", t("users"));
   setText('label[for="userSearchInput"]', t("search"));
   setText('label[for="userStatusFilter"]', t("statusFilter"));
+  setText('label[for="userRoleFilter"]', t("roleFilter"));
+  setText("#project-manager-assignments-eyebrow", t("admin"));
+  setText("#project-manager-assignments-title", t("assignedProjectManagers"));
+  setText("#projectManagerAssignmentsHelp", t("assignedProjectManagersHelp"));
+  setText("#project-managers-detail-title", t("assignedProjectManagers"));
+  setButtonText(manageProjectManagersButton, t("manageAssignments"));
+  renderProjectManagerAssignmentOptions(projectManagerAssignments);
+  setText("#user-projects-detail-title", t("assignedProjectsDetail"));
+  setText("#user-projects-client-header", t("clients"));
+  setText("#user-projects-project-header", t("projects"));
+  setText("#user-projects-status-header", t("status"));
+  setText("#user-projects-date-header", t("assignedAt"));
+  setButtonText(manageUserProjectAssignmentsButton, t("manageAssignments"));
   setPlaceholder("#userSearchInput", t("userSearchPlaceholder"));
   if (userStatusFilter) {
     userStatusFilter.options[0].textContent = t("allEntityStatuses");
     userStatusFilter.options[1].textContent = t("activeOnly");
     userStatusFilter.options[2].textContent = t("inactiveOnly");
+  }
+  if (userRoleFilter) {
+    userRoleFilter.options[0].textContent = t("allRoles");
   }
   setText(".password-resets-panel .section-title .eyebrow", t("security"));
   setText("#password-resets-title", t("passwordResets"));
@@ -5749,13 +6398,20 @@ function applyStaticLanguage() {
 
   setText("#editUserModal .section-title .eyebrow", t("admin"));
   setText("#edit-user-title", t("editUser"));
+  setText("#edit-user-info-eyebrow", t("security"));
+  setText("#edit-user-info-title", t("userInformation"));
   setText('label[for="editFullName"]', t("fullName"));
   setText('label[for="editEmail"]', "Email");
   setText('label[for="editPassword"]', t("newPassword"));
   setText('label[for="editRole"]', t("role"));
+  setText("#editUserIsActiveLabel", t("activeUser"));
+  setText("#edit-user-project-assignments-eyebrow", "Project Manager");
+  setText("#edit-user-project-assignments-title", t("assignedProjects"));
+  setText("#editUserProjectAssignmentsHelp", t("assignedProjectsHelp"));
   setPlaceholder("#editPassword", t("keepPasswordPlaceholder"));
   temporaryPasswordButton.textContent = t("temporaryPassword");
   setAriaLabel("#closeEditUserModal", t("closeUserEditor"));
+  renderUserProjectAssignmentOptions(editUserProjectAssignments);
 
   setTableHeaders(".service-records-panel table", [
     labelText("Tecnico", "Technician"),
@@ -5773,11 +6429,11 @@ function applyStaticLanguage() {
   ]);
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
   setTableHeaders("#clientsTabPanel table", [labelText("Cliente", "Client"), labelText("Contacto", "Contact"), "Email", labelText("Telefono", "Phone"), labelText("Facturacion", "Billing"), labelText("ID contributivo", "Tax ID"), t("status"), t("actions")]);
-  setTableHeaders("#projectsTabPanel table", [labelText("Proyecto", "Project"), labelText("Cliente", "Client"), labelText("Descripcion", "Description"), labelText("Contrato", "Contract"), labelText("Horas contratadas", "Contracted hours"), labelText("Horas usadas", "Used hours"), labelText("Horas restantes", "Remaining hours"), labelText("Vence", "End date"), labelText("Estado contrato", "Contract status"), t("status"), t("actions")]);
+  setTableHeaders("#projectsTabPanel table", [labelText("Proyecto", "Project"), labelText("Cliente", "Client"), labelText("Descripcion", "Description"), labelText("Contrato", "Contract"), labelText("Horas contratadas", "Contracted hours"), labelText("Horas usadas", "Used hours"), labelText("Horas restantes", "Remaining hours"), labelText("Vence", "End date"), labelText("Estado del contrato", "Contract status"), "Project Manager", t("status"), t("actions")]);
   setTableHeaders("#invoicesTabPanel table", [labelText("Factura", "Invoice"), labelText("Cliente", "Client"), labelText("Fecha", "Date"), labelText("Desde", "From"), labelText("Hasta", "To"), t("status"), t("actions")]);
   setTableHeaders("#invoiceDetailModal table", [t("date"), labelText("Proyecto", "Project"), labelText("Descripcion", "Description"), labelText("Horas", "Hours")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
-  setTableHeaders('[aria-labelledby="users-table-title"] table', ["ID", t("fullName"), "Email", t("role"), t("status"), t("date"), t("createdBy"), t("actions")]);
+  setTableHeaders('[aria-labelledby="users-table-title"] table', ["ID", t("fullName"), "Email", t("role"), t("assignedProjects"), t("status"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
   setTableHeaders("#reportsTabPanel table", ["ID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
 }
@@ -5831,6 +6487,7 @@ function applyLanguage() {
 
 function setRoleControls() {
   const canAdminister = isAdmin();
+  const canReviewAssignedProjects = canAdminister || isProjectManager();
   statusInput.disabled = !canAdminister;
   statusHelp.classList.toggle("hidden", canAdminister);
   addClientButton.classList.toggle("hidden", !canAdminister);
@@ -5843,13 +6500,13 @@ function setRoleControls() {
     element.classList.toggle("hidden", !canAdminister);
   });
   document.querySelector(".report-invoice-field")?.classList.toggle("hidden", !canAdminister);
-  reportTechnician?.closest(".filter-field")?.classList.toggle("hidden", !canAdminister);
-  serviceRecordTechnicianFilter?.closest(".filter-field")?.classList.toggle("hidden", !canAdminister);
+  reportTechnician?.closest(".filter-field")?.classList.toggle("hidden", !canReviewAssignedProjects);
+  serviceRecordTechnicianFilter?.closest(".filter-field")?.classList.toggle("hidden", !canReviewAssignedProjects);
   serviceRecordTechnicianId?.closest(".form-group")?.classList.toggle("hidden", !canAdminister);
   serviceRecordStatus?.closest(".form-group")?.classList.toggle("hidden", !canAdminister);
-  dashboardTechnicianSearchInput?.closest(".search-field")?.classList.toggle("hidden", !canAdminister);
-  dashboardTechnicianSelect?.closest(".filter-field")?.classList.toggle("hidden", !canAdminister);
-  hoursByTechnicianChart?.closest(".chart-panel")?.classList.toggle("hidden", !canAdminister);
+  dashboardTechnicianSearchInput?.closest(".search-field")?.classList.toggle("hidden", !canReviewAssignedProjects);
+  dashboardTechnicianSelect?.closest(".filter-field")?.classList.toggle("hidden", !canReviewAssignedProjects);
+  hoursByTechnicianChart?.closest(".chart-panel")?.classList.toggle("hidden", !canReviewAssignedProjects);
 
   if (!canAdminister) {
     statusInput.value = "Abierto";
@@ -5989,6 +6646,7 @@ function renderUsers() {
 
   const search = normalizeSearchKey(userSearchInput?.value);
   const selectedStatus = userStatusFilter?.value || "all";
+  const selectedRole = userRoleFilter?.value || "all";
   const visibleUsers = users.filter((user) => {
     const isActive = isUserActive(user);
     const matchesStatus = selectedStatus === "all"
@@ -5996,8 +6654,9 @@ function renderUsers() {
       || (selectedStatus === "inactive" && !isActive);
     const matchesSearch = !search || [user.FullName, user.Email, user.Role]
       .some((value) => normalizeSearchKey(value).includes(search));
+    const matchesRole = selectedRole === "all" || user.Role === selectedRole;
 
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch && matchesRole;
   });
 
   updateUsersCount(visibleUsers.length, selectedStatus);
@@ -6005,7 +6664,7 @@ function renderUsers() {
   if (visibleUsers.length === 0) {
     usersTableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="empty-state">${t("noUserMatches")}</td>
+        <td colspan="9" class="empty-state">${t("noUserMatches")}</td>
       </tr>
     `;
     return;
@@ -6020,7 +6679,12 @@ function renderUsers() {
         <td>#${user.UserID}</td>
         <td>${escapeHTML(user.FullName)}</td>
         <td>${escapeHTML(user.Email)}</td>
-        <td><span class="badge ${getUserRoleClass(user.Role)}">${user.Role}</span></td>
+        <td><span class="badge ${getUserRoleClass(user.Role)}">${escapeHTML(getRoleDisplayLabel(user.Role))}</span></td>
+        <td>${normalizeClientRole(user.Role) === "ProjectManager" ? `
+          <button type="button" class="assignment-count-button" data-user-action="view-projects" data-id="${user.UserID}">
+            ${formatNumber(user.AssignedProjectCount || 0, 0)} ${t(Number(user.AssignedProjectCount || 0) === 1 ? "assignedProjectCountSingular" : "assignedProjectCount")}
+          </button>
+        ` : "-"}</td>
         <td><span class="badge ${isActive ? "user-status-active" : "user-status-inactive"}">${isActive ? t("active") : t("inactive")}</span></td>
         <td>${formatDate(user.CreatedAt)}</td>
         <td>${formatPerson(user.CreatedByFullName, user.CreatedByUserID)}</td>
@@ -6060,7 +6724,7 @@ function showUsersMessage(message) {
   updateUsersCount(users.length, "all");
   usersTableBody.innerHTML = `
     <tr>
-      <td colspan="8" class="empty-state">${message}</td>
+      <td colspan="9" class="empty-state">${message}</td>
     </tr>
   `;
 }
@@ -6631,6 +7295,7 @@ function renderReportsSummary() {
 
 function getUserRoleClass(role) {
   if (role === "Technician") return "role-technician";
+  if (normalizeClientRole(role) === "ProjectManager") return "role-project-manager";
   return role === "Admin" ? "role-admin" : "role-user";
 }
 
@@ -6772,6 +7437,8 @@ function closeEditor() {
 async function createUser(event) {
   event.preventDefault();
   userFormMessage.textContent = "";
+  const role = normalizeClientRole(userRole.value);
+  const selectedProjectIds = role === "ProjectManager" ? getSelectedProjectIds(userProjectAssignments) : [];
 
   try {
     const response = await fetch("/api/users", {
@@ -6784,7 +7451,8 @@ async function createUser(event) {
         fullName: userFullName.value.trim(),
         email: userEmail.value.trim(),
         password: userPassword.value,
-        role: userRole.value
+        role,
+        projectIds: selectedProjectIds
       })
     });
 
@@ -6797,6 +7465,8 @@ async function createUser(event) {
     userForm.reset();
     hidePasswordFields();
     userRole.value = "User";
+    updateUserProjectAssignmentVisibility();
+    renderUserProjectAssignmentOptions(userProjectAssignments, []);
     await refreshWorkspace();
   } catch (error) {
     console.error(error);
@@ -6821,9 +7491,80 @@ function handleUsersTableClick(event) {
   if (action === "toggle-active") {
     toggleUserStatus(userId, button.dataset.nextActive === "true");
   }
+
+  if (action === "view-projects") {
+    openUserProjectsDetail(userId);
+  }
 }
 
-function openUserEditor(userId) {
+function updateUserProjectAssignmentVisibility() {
+  const isCreateProjectManager = normalizeClientRole(userRole?.value) === "ProjectManager";
+  const isEditProjectManager = normalizeClientRole(editRole?.value) === "ProjectManager";
+  userProjectAssignmentsSection?.classList.toggle("hidden", !isCreateProjectManager);
+  editUserProjectAssignmentsSection?.classList.toggle("hidden", !isEditProjectManager);
+
+  if (isCreateProjectManager || isEditProjectManager) {
+    loadAssignableProjects();
+  }
+}
+
+async function openUserProjectsDetail(userId) {
+  const user = users.find((item) => Number(item.UserID) === Number(userId));
+  if (!user || normalizeClientRole(user.Role) !== "ProjectManager") return;
+
+  userProjectsDetailTitle.textContent = `${t("assignedProjectsDetail")} - ${user.FullName}`;
+  activeUserProjectDetailUserId = Number(userId);
+  manageUserProjectAssignmentsButton?.classList.toggle("hidden", !isAdmin());
+  userProjectsDetailSummary.textContent = t("projectAssignmentsLoading");
+  userProjectsDetailBody.innerHTML = "";
+  userProjectsDetailModal.classList.remove("hidden");
+
+  try {
+    const response = await fetch(`/api/users/${userId}/project-assignments`, { cache: "no-store" });
+    const assignments = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(translateServerMessage(assignments.message) || t("projectAssignmentsError"));
+    }
+
+    userProjectsDetailSummary.textContent = `${formatNumber(assignments.length, 0)} ${t(assignments.length === 1 ? "assignedProjectCountSingular" : "assignedProjectCount")}`;
+    userProjectsDetailBody.innerHTML = assignments.length ? assignments.map((assignment) => {
+      const active = assignment.ProjectIsActive === true || Number(assignment.ProjectIsActive) === 1;
+      return `
+        <tr>
+          <td>${escapeHTML(assignment.ClientName || "-")}</td>
+          <td>${escapeHTML(assignment.ProjectName || "-")}</td>
+          <td><span class="badge ${active ? "user-status-active" : "user-status-inactive"}">${active ? t("active") : t("inactive")}</span></td>
+          <td>${formatDate(assignment.AssignedAt)}</td>
+        </tr>
+      `;
+    }).join("") : `<tr><td colspan="4" class="empty-state">${escapeHTML(t("unassigned"))}</td></tr>`;
+  } catch (error) {
+    console.error(error);
+    userProjectsDetailSummary.textContent = error.message || t("projectAssignmentsError");
+    userProjectsDetailBody.innerHTML = `<tr><td colspan="4" class="empty-state">${escapeHTML(t("projectAssignmentsError"))}</td></tr>`;
+  }
+}
+
+function closeUserProjectsDetail() {
+  userProjectsDetailModal.classList.add("hidden");
+  userProjectsDetailBody.innerHTML = "";
+  activeUserProjectDetailUserId = null;
+}
+
+function manageUserProjectAssignmentsFromDetail() {
+  const userId = activeUserProjectDetailUserId;
+  if (!userId || !isAdmin()) return;
+
+  closeUserProjectsDetail();
+  openUserEditor(userId).then(() => {
+    editUserProjectAssignmentsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }).catch((error) => {
+    console.error(error);
+  });
+}
+
+async function openUserEditor(userId) {
   const user = users.find((item) => Number(item.UserID) === userId);
 
   if (!user) {
@@ -6835,8 +7576,28 @@ function openUserEditor(userId) {
   editFullName.value = user.FullName;
   editEmail.value = user.Email;
   editPassword.value = "";
-  editRole.value = user.Role;
+  editRole.value = normalizeClientRole(user.Role);
+  editUserIsActive.checked = isUserActive(user);
   editUserMessage.textContent = "";
+  renderUserProjectAssignmentOptions(editUserProjectAssignments, []);
+  updateUserProjectAssignmentVisibility();
+  if (normalizeClientRole(user.Role) === "ProjectManager") {
+    await loadAssignableProjects();
+    try {
+      const response = await fetch(`/api/users/${userId}/project-assignments`, { cache: "no-store" });
+      const assignments = await parseJsonResponse(response);
+      if (!response.ok) {
+        throw new Error(translateServerMessage(assignments.message) || t("projectAssignmentsError"));
+      }
+      renderUserProjectAssignmentOptions(
+        editUserProjectAssignments,
+        assignments.map((assignment) => Number(assignment.ProjectID))
+      );
+    } catch (error) {
+      console.error(error);
+      editUserMessage.textContent = error.message || t("projectAssignmentsError");
+    }
+  }
   editUserModal.classList.remove("hidden");
 }
 
@@ -6845,6 +7606,8 @@ function closeUserEditor() {
   editUserForm.reset();
   editUserMessage.textContent = "";
   hidePasswordFields();
+  renderUserProjectAssignmentOptions(editUserProjectAssignments, []);
+  editUserProjectAssignmentsSection?.classList.add("hidden");
 }
 
 function assignTemporaryPassword() {
@@ -6858,6 +7621,19 @@ async function updateUser(event) {
   editUserMessage.textContent = "";
 
   const userId = Number(editUserId.value);
+  const existingUser = users.find((item) => Number(item.UserID) === userId);
+  const role = normalizeClientRole(editRole.value);
+  const selectedProjectIds = role === "ProjectManager" ? getSelectedProjectIds(editUserProjectAssignments) : [];
+
+  if (
+    existingUser
+    && normalizeClientRole(existingUser.Role) === "ProjectManager"
+    && role !== "ProjectManager"
+    && Number(existingUser.AssignedProjectCount || 0) > 0
+    && !confirm(t("changeProjectManagerRoleConfirm"))
+  ) {
+    return;
+  }
 
   try {
     const response = await fetch(`/api/users/${userId}`, {
@@ -6870,7 +7646,9 @@ async function updateUser(event) {
         fullName: editFullName.value.trim(),
         email: editEmail.value.trim(),
         password: editPassword.value,
-        role: editRole.value
+        role,
+        isActive: editUserIsActive.checked,
+        projectIds: selectedProjectIds
       })
     });
 
@@ -7335,8 +8113,14 @@ ticketForm.addEventListener("submit", createTicket);
 ticketTableBody.addEventListener("click", handleTableClick);
 notificationsTableBody.addEventListener("click", handleNotificationsClick);
 userForm.addEventListener("submit", createUser);
+userRole.addEventListener("change", updateUserProjectAssignmentVisibility);
+userProjectAssignments.dataset.assignmentKind = "projects";
+userProjectAssignments.addEventListener("input", handleProjectAssignmentPickerInput);
+userProjectAssignments.addEventListener("change", handleProjectAssignmentPickerChange);
+userProjectAssignments.addEventListener("click", handleProjectAssignmentPickerClick);
 userSearchInput.addEventListener("input", renderUsers);
 userStatusFilter.addEventListener("change", renderUsers);
+userRoleFilter.addEventListener("change", renderUsers);
 usersTableBody.addEventListener("click", handleUsersTableClick);
 passwordResetsTableBody.addEventListener("click", handlePasswordResetsClick);
 reportsForm.addEventListener("submit", generateReport);
@@ -7389,8 +8173,21 @@ reportStatus.addEventListener("change", refreshReportTechnicianOptions);
 editTicketForm.addEventListener("submit", updateTicket);
 closeEditModal.addEventListener("click", closeEditor);
 editUserForm.addEventListener("submit", updateUser);
+editRole.addEventListener("change", updateUserProjectAssignmentVisibility);
+projectManagerAssignments.dataset.assignmentKind = "managers";
+projectManagerAssignments.addEventListener("input", handleProjectAssignmentPickerInput);
+projectManagerAssignments.addEventListener("change", handleProjectAssignmentPickerChange);
+projectManagerAssignments.addEventListener("click", handleProjectAssignmentPickerClick);
+closeProjectManagersDetailModal.addEventListener("click", closeProjectManagersDetail);
+manageProjectManagersButton.addEventListener("click", manageProjectManagersFromDetail);
+editUserProjectAssignments.dataset.assignmentKind = "projects";
+editUserProjectAssignments.addEventListener("input", handleProjectAssignmentPickerInput);
+editUserProjectAssignments.addEventListener("change", handleProjectAssignmentPickerChange);
+editUserProjectAssignments.addEventListener("click", handleProjectAssignmentPickerClick);
 temporaryPasswordButton.addEventListener("click", assignTemporaryPassword);
 closeEditUserModal.addEventListener("click", closeUserEditor);
+closeUserProjectsDetailModal.addEventListener("click", closeUserProjectsDetail);
+manageUserProjectAssignmentsButton.addEventListener("click", manageUserProjectAssignmentsFromDetail);
 editModal.addEventListener("click", (event) => {
   if (event.target === editModal) {
     closeEditor();
@@ -7399,6 +8196,16 @@ editModal.addEventListener("click", (event) => {
 editUserModal.addEventListener("click", (event) => {
   if (event.target === editUserModal) {
     closeUserEditor();
+  }
+});
+userProjectsDetailModal.addEventListener("click", (event) => {
+  if (event.target === userProjectsDetailModal) {
+    closeUserProjectsDetail();
+  }
+});
+projectManagersDetailModal.addEventListener("click", (event) => {
+  if (event.target === projectManagersDetailModal) {
+    closeProjectManagersDetail();
   }
 });
 searchInput.addEventListener("input", renderTickets);

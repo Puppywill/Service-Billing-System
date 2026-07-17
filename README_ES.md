@@ -1401,6 +1401,68 @@ GET /api/dashboard/recent-activity
 
 Proxima fase: Fase 17D - Advertencias contractuales en Service Records.
 
+## Fase 34: Rol Project Manager Y Asignacion De Proyectos
+
+La aplicacion incorpora el rol `Project Manager` con acceso limitado a proyectos asignados por un administrador. La relacion se almacena en `dbo.UserProjectAssignments` dentro de `ServiceBillingDB`; la base restaurada `ServiceSBD_20260629` permanece sin cambios.
+
+El identificador persistido y utilizado por la API es `ProjectManager`; la interfaz muestra la etiqueta amigable `Project Manager`. La validacion de sesion no depende de las asignaciones, por lo que un manager sin proyectos puede iniciar sesion y recibe un espacio filtrado vacio en lugar de ser desconectado.
+
+### Migracion SQL
+
+Ejecutar `phase-34-project-manager-assignments.sql` en SSMS antes de iniciar esta version. El script es idempotente, actualiza `CK_Users_Role`, crea la tabla puente, sus llaves foraneas e indices, y conserva asignaciones desactivadas para auditoria.
+
+### Administracion Y API
+
+- Users permite seleccionar `Project Manager`, filtrar por rol, ver contadores y administrar asignaciones completas para usuarios Project Manager.
+- Projects tambien permite asignar uno o varios Project Managers activos desde el editor del proyecto.
+- `GET /api/users/:id/project-assignments` consulta las asignaciones activas del usuario.
+- `POST /api/users` y `PUT /api/users/:id` aceptan `projectIds` para cambios de asignacion de Project Manager.
+- `PUT /api/users/:id/project-assignments` sigue disponible para actualizaciones solo de asignaciones.
+- `POST /api/projects` y `PUT /api/projects/:id` aceptan el arreglo completo `projectManagerUserIds`.
+
+### Permisos Y Seguridad
+
+- Admin conserva acceso global y exclusivo a Users, Settings, roles y asignaciones.
+- Project Manager solo recibe Clients, Projects, Service Records, Dashboard y Reports relacionados con sus proyectos asignados.
+- Los filtros por fecha, tecnico, cliente, proyecto y estado se mantienen dentro de ese alcance.
+- PDF y Excel usan el mismo alcance aplicado por el backend.
+- Consultar directamente un proyecto o registro fuera de las asignaciones devuelve `403`.
+- Project Manager no puede crear, editar, cancelar ni procesar Service Records, ni acceder a endpoints administrativos o facturas manuales.
+- Technician conserva su alcance por registros propios.
+
+### Flujo De Prueba
+
+1. Ejecutar `phase-34-project-manager-assignments.sql` en `ServiceBillingDB`.
+2. Iniciar sesion como Admin, crear un usuario `Project Manager` y asignarlo desde el editor de dos proyectos.
+3. Iniciar sesion con ese usuario y confirmar que Projects, Clients, Dashboard, Service Records y Reports solo muestran datos relacionados.
+4. Exportar PDF y Excel y confirmar que contienen exclusivamente registros de los proyectos asignados.
+5. Solicitar `GET /api/projects/{id-no-asignado}` y verificar respuesta `403`.
+6. Quitar una asignacion como Admin y confirmar que desaparece al refrescar la sesion del Project Manager.
+7. Confirmar que Admin continua viendo todo y Technician mantiene sus permisos previos.
+
+### Fase 34.1: Editor De Proyectos Y Selector Multiple
+
+- El editor de Projects separa informacion basica, campos de contrato y resumen contractual en un grid responsive de dos columnas.
+- Las metricas del resumen solo aparecen al editar un proyecto existente; si no hay contrato se muestra un unico badge `Sin contrato`.
+- La tabla de Projects tiene un encabezado localizado por campo y resume managers asignados como `Nombre +N`, con la lista completa disponible mediante hover o foco de teclado.
+- El control reutilizable de asignaciones usa checkboxes con busqueda, chips, contador en vivo y limpieza de seleccion. Ya no requiere Ctrl o Shift.
+- Las asignaciones ahora se actualizan desde el editor de Projects.
+
+### Fase 34.2: Sincronizacion Bidireccional De Asignaciones
+
+- Las asignaciones ahora se administran desde Users y Projects usando la misma fuente `dbo.UserProjectAssignments`.
+- Crear o editar Users muestra el selector de proyectos asignados solo cuando el rol seleccionado es `ProjectManager`.
+- El selector de proyectos incluye checkboxes con busqueda, chips de seleccion, contador en vivo, seleccionar visibles y limpiar seleccion.
+- El selector de proyectos incluye un filtro Admin de estado para Activos, Inactivos y Todos. Las asignaciones historicas inactivas permanecen visibles y marcadas, pero deshabilitadas.
+- Al editar un Project Manager se cargan sus asignaciones existentes, se conservan al agregar nuevas y se guarda el conjunto completo seleccionado.
+- Cambiar un Project Manager a otro rol pide confirmacion antes de desactivar asignaciones activas.
+- Crear o editar Projects sigue enviando el arreglo completo `projectManagerUserIds` y refresca Users inmediatamente despues de guardar.
+- El contador de asignaciones en Users abre un detalle de solo lectura con cliente, proyecto, estado del proyecto y fecha de asignacion, mas un boton Admin para administrar.
+- La tabla de Projects muestra managers asignados como `Nombre +N`; al hacer click abre un modal compacto con la lista completa y un boton Admin para administrar.
+- Las actualizaciones desde Users y Projects validan rol Admin, usuarios/proyectos activos, IDs duplicados y guardan cambios con transacciones SQL.
+- El backend rechaza nuevas asignaciones a proyectos inactivos, pero permite conservar relaciones historicas activas ya existentes.
+- Quitar managers o proyectos desactiva logicamente la relacion en `dbo.UserProjectAssignments`; no se elimina historial.
+
 ## Autor
 
 William Rosado Perez
