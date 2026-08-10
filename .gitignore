@@ -1,3 +1,5 @@
 node_modules/
 .env
 .vscode/
+tools/launcher/logs/*.log
+tools/launcher/logs/*.pid
