@@ -8,6 +8,7 @@ const loginForm = document.querySelector("#loginForm");
 const loginEmail = document.querySelector("#loginEmail");
 const loginPassword = document.querySelector("#loginPassword");
 const loginMessage = document.querySelector("#loginMessage");
+const toastContainer = document.querySelector("#toastContainer");
 const sessionBar = document.querySelector("#sessionBar");
 const sessionName = document.querySelector("#sessionName");
 const sessionRole = document.querySelector("#sessionRole");
@@ -534,6 +535,12 @@ const translations = {
     manualInvoiceError: "No se pudo generar la factura PDF.",
     manualInvoiceLineRequired: "Agrega al menos una linea valida antes de generar la factura.",
     manualInvoiceLineInvalid: "Cada linea debe tener cantidad mayor que 0, descripcion y rate valido.",
+    loading: "Cargando...",
+    saving: "Guardando...",
+    updating: "Actualizando...",
+    processing: "Procesando...",
+    exportingExcel: "Exportando Excel...",
+    unsavedChangesConfirm: "Los cambios no guardados se perderan. Deseas continuar?",
     settings: "Configuracion",
     dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el resumen.",
@@ -770,6 +777,7 @@ const translations = {
     exportExcel: "Exportar Excel",
     analytics: "Analitica",
     reportReady: "Reporte generado correctamente.",
+    reportNoResultsToast: "No se encontraron registros con los filtros seleccionados.",
     reportInitial: "Genera un reporte para ver resultados.",
     noReportTickets: "No hay registros para los filtros seleccionados.",
     reportError: "No se pudo generar el reporte.",
@@ -789,6 +797,7 @@ const translations = {
     deleteNotificationConfirm: "Seguro que deseas borrar esta notificacion?",
     deleteNotificationSuccess: "Notificacion borrada correctamente.",
     deleteNotificationError: "No se pudo borrar la notificacion.",
+    notificationMarkedReadSuccess: "Notificacion marcada como leida.",
     temporaryPassword: "Asignar contrasena temporal",
     showPassword: "Mostrar contrasena",
     hidePassword: "Ocultar contrasena",
@@ -796,6 +805,7 @@ const translations = {
     resolved: "Resuelto",
     forgotSaved: "Solicitud recibida. Contacta a un administrador para restablecer tu contrasena.",
     forgotError: "No se pudo enviar la solicitud.",
+    passwordResetResolvedSuccess: "Solicitud de recuperacion marcada como resuelta.",
     name: "Nombre",
     userName: "Nombre del usuario",
     userNamePlaceholder: "Ej. Ana Gomez",
@@ -887,6 +897,7 @@ const translations = {
     removeProjectAssignment: "Quitar proyecto",
     inactiveAssignmentsHelp: "Los proyectos inactivos asignados anteriormente se conservan por historial, pero no pueden seleccionarse como nuevas asignaciones.",
     clearAssignedProjectsConfirm: "Seguro que deseas limpiar las asignaciones activas seleccionadas? Las asignaciones historicas inactivas se conservaran.",
+    projectManagerAssignmentsUpdatedSuccess: "Asignaciones actualizadas correctamente.",
     unassigned: "Sin asignar",
     registeredUsers: "usuarios registrados",
     administration: "Administracion",
@@ -901,16 +912,34 @@ const translations = {
     closeEditor: "Cerrar editor",
     closeUserEditor: "Cerrar editor de usuario",
     completeTicketFields: "Completa la descripcion del servicio.",
+    toastSuccessTitle: "Listo",
+    toastErrorTitle: "Error",
+    toastWarningTitle: "Atencion",
+    toastInfoTitle: "Informacion",
+    loginSuccessToast: "Inicio de sesion exitoso.",
+    loginWelcomeToast: "Bienvenido, {name}.",
+    loginInvalidToast: "Correo electronico o contrasena incorrectos.",
+    loginInactiveToast: "Tu cuenta esta inactiva. Contacta al administrador.",
+    loginConnectionToast: "No se pudo conectar con el servidor. Intentalo nuevamente.",
+    logoutSuccessToast: "Sesion cerrada correctamente.",
     loginError: "No se pudo iniciar sesion.",
     sessionValidationError: "No se pudo verificar la sesion. Intenta nuevamente.",
     loadTicketsError: "No se pudieron cargar los registros.",
     serverConnectionError: "No se pudo conectar con el servidor.",
     createTicketError: "No se pudo crear el registro.",
     createTicketAlertError: "Ocurrio un error al crear el registro.",
+    createTicketSuccess: "Registro guardado correctamente.",
     ticketNotFound: "No se encontro el registro seleccionado.",
     userNotFound: "No se encontro el usuario seleccionado.",
     createUserError: "No se pudo crear el usuario.",
     editUserError: "No se pudo editar el usuario.",
+    createUserSuccess: "Usuario creado correctamente.",
+    editUserSuccess: "Usuario actualizado correctamente.",
+    activateUserSuccess: "Usuario activado correctamente.",
+    deactivateUserSuccess: "Usuario desactivado correctamente.",
+    userRoleUpdatedSuccess: "Rol actualizado correctamente.",
+    projectManagerProjectsAssignedSuccess: "Proyectos asignados correctamente.",
+    temporaryPasswordSuccess: "Contrasena temporal asignada correctamente.",
     deleteUserError: "No se pudo actualizar el estado del usuario.",
     deleteUserConfirm: "Seguro que deseas cambiar el estado de este usuario?",
     activateUser: "Activar",
@@ -923,10 +952,13 @@ const translations = {
     closeDashboardDetail: "Cerrar detalle del resumen",
     updateTicketError: "No se pudo editar el registro.",
     updateTicketAlertError: "Ocurrio un error al editar el registro.",
+    updateTicketSuccess: "Registro actualizado correctamente.",
     closeTicketError: "No se pudo cerrar el registro.",
     closeTicketAlertError: "Ocurrio un error al cerrar el registro.",
+    closeTicketSuccess: "Registro procesado correctamente.",
     deleteTicketError: "No se pudo eliminar el registro.",
     deleteTicketAlertError: "Ocurrio un error al eliminar el registro.",
+    deleteTicketSuccess: "Registro eliminado correctamente.",
     deleteTicketConfirm: "Seguro que deseas eliminar este registro?",
     userNumber: "Usuario",
     notificationTypes: {
@@ -1002,6 +1034,12 @@ const translations = {
     manualInvoiceError: "Invoice PDF could not be generated.",
     manualInvoiceLineRequired: "Add at least one valid line before generating the invoice.",
     manualInvoiceLineInvalid: "Each line must include quantity greater than 0, description, and a valid rate.",
+    loading: "Loading...",
+    saving: "Saving...",
+    updating: "Updating...",
+    processing: "Processing...",
+    exportingExcel: "Exporting Excel...",
+    unsavedChangesConfirm: "Unsaved changes will be lost. Do you want to continue?",
     settings: "Settings",
     dashboardTitle: "Summary",
     dashboardLoadError: "Dashboard could not be loaded.",
@@ -1238,6 +1276,7 @@ const translations = {
     exportExcel: "Export Excel",
     analytics: "Analytics",
     reportReady: "Report generated successfully.",
+    reportNoResultsToast: "No records were found with the selected filters.",
     reportInitial: "Generate a report to view results.",
     noReportTickets: "No records found for the selected filters.",
     reportError: "The report could not be generated.",
@@ -1257,6 +1296,7 @@ const translations = {
     deleteNotificationConfirm: "Are you sure you want to delete this notification?",
     deleteNotificationSuccess: "Notification deleted successfully.",
     deleteNotificationError: "The notification could not be deleted.",
+    notificationMarkedReadSuccess: "Notification marked as read.",
     temporaryPassword: "Assign temporary password",
     showPassword: "Show password",
     hidePassword: "Hide password",
@@ -1264,6 +1304,7 @@ const translations = {
     resolved: "Resolved",
     forgotSaved: "Request received. Contact an administrator to reset your password.",
     forgotError: "The request could not be sent.",
+    passwordResetResolvedSuccess: "Password recovery request marked as resolved.",
     name: "Name",
     userName: "User name",
     userNamePlaceholder: "Ex. Ana Gomez",
@@ -1355,6 +1396,7 @@ const translations = {
     removeProjectAssignment: "Remove project",
     inactiveAssignmentsHelp: "Previously assigned inactive projects are kept for history, but they cannot be selected as new assignments.",
     clearAssignedProjectsConfirm: "Are you sure you want to clear the selected active assignments? Historical inactive assignments will be preserved.",
+    projectManagerAssignmentsUpdatedSuccess: "Assignments updated successfully.",
     unassigned: "Unassigned",
     registeredUsers: "registered users",
     administration: "Administration",
@@ -1369,16 +1411,34 @@ const translations = {
     closeEditor: "Close editor",
     closeUserEditor: "Close user editor",
     completeTicketFields: "Complete the service description.",
+    toastSuccessTitle: "Success",
+    toastErrorTitle: "Error",
+    toastWarningTitle: "Warning",
+    toastInfoTitle: "Information",
+    loginSuccessToast: "Signed in successfully.",
+    loginWelcomeToast: "Welcome, {name}.",
+    loginInvalidToast: "Incorrect email or password.",
+    loginInactiveToast: "Your account is inactive. Contact the administrator.",
+    loginConnectionToast: "Could not connect to the server. Please try again.",
+    logoutSuccessToast: "Signed out successfully.",
     loginError: "Could not sign in.",
     sessionValidationError: "The session could not be verified. Please try again.",
     loadTicketsError: "Service records could not be loaded.",
     serverConnectionError: "Could not connect to the server.",
     createTicketError: "Could not create the record.",
     createTicketAlertError: "An error occurred while creating the record.",
+    createTicketSuccess: "Record saved successfully.",
     ticketNotFound: "The selected record was not found.",
     userNotFound: "The selected user was not found.",
     createUserError: "Could not create the user.",
     editUserError: "Could not edit the user.",
+    createUserSuccess: "User created successfully.",
+    editUserSuccess: "User updated successfully.",
+    activateUserSuccess: "User activated successfully.",
+    deactivateUserSuccess: "User deactivated successfully.",
+    userRoleUpdatedSuccess: "Role updated successfully.",
+    projectManagerProjectsAssignedSuccess: "Projects assigned successfully.",
+    temporaryPasswordSuccess: "Temporary password assigned successfully.",
     deleteUserError: "Could not update the user status.",
     deleteUserConfirm: "Are you sure you want to change this user's status?",
     activateUser: "Activate",
@@ -1391,10 +1451,13 @@ const translations = {
     closeDashboardDetail: "Close dashboard detail",
     updateTicketError: "Could not edit the record.",
     updateTicketAlertError: "An error occurred while editing the record.",
+    updateTicketSuccess: "Record updated successfully.",
     closeTicketError: "Could not close the record.",
     closeTicketAlertError: "An error occurred while closing the record.",
+    closeTicketSuccess: "Record processed successfully.",
     deleteTicketError: "Could not delete the record.",
     deleteTicketAlertError: "An error occurred while deleting the record.",
+    deleteTicketSuccess: "Record deleted successfully.",
     deleteTicketConfirm: "Are you sure you want to delete this record?",
     userNumber: "User",
     notificationTypes: {
@@ -1507,12 +1570,23 @@ async function login(event) {
     console.info(`[auth] Login returned ${response.status}; user=${Boolean(data.user)}; role=${normalizeClientRole(data.user?.Role) || "none"}.`);
 
     if (!response.ok || !data.user) {
-      throw new Error(translateServerMessage(data.message) || t("loginError"));
+      let loginErrorMessage = t("loginError");
+
+      if (response.status === 401) {
+        loginErrorMessage = t("loginInvalidToast");
+      } else if (response.status === 403 && String(data.message || "").toLowerCase().includes("inactivo")) {
+        loginErrorMessage = t("loginInactiveToast");
+      }
+
+      const loginError = new Error(loginErrorMessage);
+      loginError.isSafeLoginMessage = true;
+      throw loginError;
     }
 
     loginForm.reset();
     hidePasswordFields();
     setAuthenticatedUser(data.user);
+    showToast("success", `${t("loginSuccessToast")} ${t("loginWelcomeToast").replace("{name}", data.user.FullName || data.user.Email || "")}`.trim());
     console.info("[auth] Session cookie accepted; loading authenticated workspace.");
     await refreshWorkspace();
   } catch (error) {
@@ -1521,16 +1595,27 @@ async function login(event) {
       dashboardMessage.textContent = error.message || t("sessionValidationError");
       return;
     }
-    loginMessage.textContent = error.message;
+
+    const message = error instanceof TypeError
+      ? t("loginConnectionToast")
+      : error.isSafeLoginMessage
+        ? error.message
+        : t("loginConnectionToast");
+
+    loginMessage.textContent = message;
+    showToast("error", message);
   }
 }
 
 async function logout() {
+  let logoutCompleted = false;
+
   try {
-    await fetch("/api/logout", {
+    const response = await fetch("/api/logout", {
       method: "POST",
       cache: "no-store"
     });
+    logoutCompleted = response.ok;
   } catch (error) {
     console.error(error);
   }
@@ -1540,6 +1625,9 @@ async function logout() {
   hidePasswordFields();
   currentUser = null;
   showLogin();
+  if (logoutCompleted) {
+    showToast("info", t("logoutSuccessToast"));
+  }
 }
 
 function setAuthenticatedUser(user, options = {}) {
@@ -1614,6 +1702,47 @@ function isProjectManager() {
 
 function normalizeClientRole(role) {
   return role === "Project Manager" ? "ProjectManager" : role;
+}
+
+function getUserOptionLabel(user) {
+  return user?.FullName || user?.Email || `#${user?.UserID || user?.TechnicianUserID || ""}`;
+}
+
+function getTechnicianOptionId(user) {
+  const rawId = user?.UserID ?? user?.TechnicianUserID;
+  const id = Number(rawId);
+
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function isEligibleServiceTechnician(user) {
+  if (!user || user.IsActive === false) return false;
+  if (!getTechnicianOptionId(user)) return false;
+
+  const role = normalizeClientRole(user.Role);
+  const hasIdentity = Boolean(String(user.FullName || user.Email || "").trim());
+
+  return hasIdentity
+    && (user.IsTechnician || ["Admin", "ProjectManager", "Technician", "User"].includes(role));
+}
+
+function normalizeTechnicianOptions(sourceUsers) {
+  const uniqueUsers = new Map();
+
+  (Array.isArray(sourceUsers) ? sourceUsers : []).forEach((user) => {
+    if (!isEligibleServiceTechnician(user)) return;
+    const userId = getTechnicianOptionId(user);
+
+    uniqueUsers.set(userId, {
+      ...user,
+      UserID: userId,
+      Role: normalizeClientRole(user.Role)
+    });
+  });
+
+  return Array.from(uniqueUsers.values()).sort((first, second) => (
+    getUserOptionLabel(first).localeCompare(getUserOptionLabel(second), undefined, { sensitivity: "base" })
+  ));
 }
 
 function getRoleDisplayLabel(role) {
@@ -1792,7 +1921,9 @@ function renderProjectManagerAssignmentOptions(picker, selectedUserIds) {
   if (!state) return;
 
   if (selectedUserIds !== undefined) {
-    state.selectedIds = new Set(normalizeAssignmentIds(selectedUserIds));
+    const normalizedSelectedIds = normalizeAssignmentIds(selectedUserIds);
+    state.selectedIds = new Set(normalizedSelectedIds);
+    state.initialSelectedIds = new Set(normalizedSelectedIds);
   }
 
   const managerById = new Map(assignableProjectManagers.map((user) => [Number(user.UserID), user]));
@@ -1939,6 +2070,17 @@ function renderUserProjectAssignmentOptions(picker, selectedProjectIds) {
 function getSelectedProjectIds(picker) {
   const state = getProjectAssignmentPickerState(picker);
   return state ? Array.from(state.selectedIds).sort((first, second) => first - second) : [];
+}
+
+function assignmentSelectionChanged(picker) {
+  const state = getProjectAssignmentPickerState(picker);
+  if (!state) return false;
+
+  const selectedIds = Array.from(state.selectedIds).sort((first, second) => first - second);
+  const initialIds = Array.from(state.initialSelectedIds || []).sort((first, second) => first - second);
+
+  return selectedIds.length !== initialIds.length
+    || selectedIds.some((projectId, index) => projectId !== initialIds[index]);
 }
 
 function renderAssignmentPicker(picker) {
@@ -2160,6 +2302,9 @@ function showClientsTableMessage(message) {
 function showClientsMessage(message, type = "info") {
   clientsMessage.textContent = message;
   clientsMessage.classList.toggle("success", type === "success");
+  if (["success", "error", "warning"].includes(type) && message) {
+    showToast(type, message);
+  }
 }
 
 function getClientPayloadFromForm() {
@@ -2192,15 +2337,19 @@ function openClientEditor(mode, selectedClient = null) {
   }
 
   clientModal.classList.remove("hidden");
+  markFormPristine(clientForm);
   clientName.focus();
 }
 
 function closeClientEditor() {
   if (!clientModal) return;
+  if (!clientModal.classList.contains("hidden") && !confirmDiscardFormChanges(clientForm)) return false;
   clientModal.classList.add("hidden");
   clientForm.reset();
   clientFormMessage.textContent = "";
   clientId.value = "";
+  markFormPristine(clientForm);
+  return true;
 }
 
 async function saveClient(event) {
@@ -2224,6 +2373,7 @@ async function saveClient(event) {
   const isEditing = Number.isInteger(id) && id > 0;
 
   try {
+    setButtonLoading(saveClientButton, true, t("saving"));
     const response = await fetch(isEditing ? `/api/clients/${id}` : "/api/clients", {
       method: isEditing ? "PUT" : "POST",
       cache: "no-store",
@@ -2238,12 +2388,16 @@ async function saveClient(event) {
       throw new Error(translateServerMessage(data.message) || (isEditing ? t("updateClientError") : t("createClientError")));
     }
 
+    markFormPristine(clientForm);
     closeClientEditor();
     showClientsMessage(isEditing ? t("updateClientSuccess") : t("createClientSuccess"), "success");
     await loadClients();
   } catch (error) {
     console.error(error);
     clientFormMessage.textContent = error.message || (isEditing ? t("updateClientError") : t("createClientError"));
+    showToast("error", clientFormMessage.textContent);
+  } finally {
+    setButtonLoading(saveClientButton, false);
   }
 }
 
@@ -2259,7 +2413,7 @@ function handleClientsTableClick(event) {
     const selectedClient = clients.find((client) => Number(client.ClientID) === id);
 
     if (!selectedClient) {
-      alert(t("clientNotFound"));
+      showToast("error", t("clientNotFound"));
       return;
     }
 
@@ -2485,6 +2639,9 @@ function showProjectsTableMessage(message) {
 function showProjectsMessage(message, type = "info") {
   projectsMessage.textContent = message;
   projectsMessage.classList.toggle("success", type === "success");
+  if (["success", "error", "warning"].includes(type) && message) {
+    showToast(type, message);
+  }
 }
 
 function getProjectPayloadFromForm() {
@@ -2621,11 +2778,13 @@ async function openProjectEditor(mode, selectedProject = null) {
   }
 
   projectModal.classList.remove("hidden");
+  markFormPristine(projectForm);
   projectClientId.focus();
 }
 
 function closeProjectEditor() {
   if (!projectModal) return;
+  if (!projectModal.classList.contains("hidden") && !confirmDiscardFormChanges(projectForm)) return false;
   projectModal.classList.add("hidden");
   projectForm.reset();
   projectFormMessage.textContent = "";
@@ -2633,6 +2792,8 @@ function closeProjectEditor() {
   projectContractSummary.classList.add("hidden");
   renderProjectCurrentStatusBadge(null);
   renderProjectManagerAssignmentOptions(projectManagerAssignments, []);
+  markFormPristine(projectForm);
+  return true;
 }
 
 async function saveProject(event) {
@@ -2696,8 +2857,10 @@ async function saveProject(event) {
 
   const id = Number(projectId.value);
   const isEditing = Number.isInteger(id) && id > 0;
+  const projectManagerAssignmentsChanged = isEditing && assignmentSelectionChanged(projectManagerAssignments);
 
   try {
+    setButtonLoading(saveProjectButton, true, t("saving"));
     const response = await fetch(isEditing ? `/api/projects/${id}` : "/api/projects", {
       method: isEditing ? "PUT" : "POST",
       cache: "no-store",
@@ -2712,8 +2875,12 @@ async function saveProject(event) {
       throw new Error(translateServerMessage(data.message) || (isEditing ? t("updateProjectError") : t("createProjectError")));
     }
 
+    markFormPristine(projectForm);
     closeProjectEditor();
-    showProjectsMessage(isEditing ? t("updateProjectSuccess") : t("createProjectSuccess"), "success");
+    showProjectsMessage(
+      projectManagerAssignmentsChanged ? t("projectManagerAssignmentsUpdatedSuccess") : isEditing ? t("updateProjectSuccess") : t("createProjectSuccess"),
+      "success"
+    );
     await Promise.all([
       loadProjects(),
       isAdmin() ? loadAssignableProjects() : Promise.resolve(),
@@ -2722,6 +2889,9 @@ async function saveProject(event) {
   } catch (error) {
     console.error(error);
     projectFormMessage.textContent = error.message || (isEditing ? t("updateProjectError") : t("createProjectError"));
+    showToast("error", projectFormMessage.textContent);
+  } finally {
+    setButtonLoading(saveProjectButton, false);
   }
 }
 
@@ -2743,7 +2913,7 @@ function handleProjectsTableClick(event) {
     const selectedProject = projects.find((project) => Number(project.ProjectID) === id);
 
     if (!selectedProject) {
-      alert(t("projectNotFound"));
+      showToast("error", t("projectNotFound"));
       return;
     }
 
@@ -2868,7 +3038,7 @@ async function loadServiceRecordLookups() {
         await loadUsers();
       }
 
-      serviceRecordTechnicians = users.filter((user) => user.IsActive !== false && (user.Role === "Technician" || user.Role === "User"));
+      serviceRecordTechnicians = normalizeTechnicianOptions(users);
     } else if (isProjectManager()) {
       const techniciansResponse = await fetch("/api/reports/service-hours/technicians", { cache: "no-store" });
       const techniciansData = await parseJsonResponse(techniciansResponse);
@@ -2877,9 +3047,9 @@ async function loadServiceRecordLookups() {
         throw new Error(translateServerMessage(techniciansData.message) || t("loadServiceRecordLookupsError"));
       }
 
-      serviceRecordTechnicians = techniciansData;
+      serviceRecordTechnicians = normalizeTechnicianOptions(techniciansData);
     } else {
-      serviceRecordTechnicians = currentUser ? [currentUser] : [];
+      serviceRecordTechnicians = normalizeTechnicianOptions(currentUser ? [currentUser] : []);
     }
 
     renderServiceRecordOptions();
@@ -2887,7 +3057,7 @@ async function loadServiceRecordLookups() {
     console.error(error);
     serviceRecordClients = [];
     serviceRecordProjects = [];
-    serviceRecordTechnicians = currentUser ? [currentUser] : [];
+    serviceRecordTechnicians = normalizeTechnicianOptions(currentUser ? [currentUser] : []);
     showServiceRecordsMessage(error.message || t("loadServiceRecordLookupsError"), "error");
     renderServiceRecordOptions();
   }
@@ -2906,7 +3076,7 @@ function renderServiceRecordOptions() {
   serviceRecordTechnicianFilter.innerHTML = `
     <option value="">${t("allTechnicians")}</option>
     ${serviceRecordTechnicians.map((user) => `
-      <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
+      <option value="${user.UserID}">${escapeHTML(getUserOptionLabel(user))}</option>
     `).join("")}
   `;
   const canFilterTechnicians = isAdmin() || isProjectManager();
@@ -2937,7 +3107,7 @@ function renderServiceRecordOptions() {
   serviceRecordTechnicianId.innerHTML = `
     <option value="">${t("allTechnicians")}</option>
     ${serviceRecordTechnicians.map((user) => `
-      <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
+      <option value="${user.UserID}">${escapeHTML(getUserOptionLabel(user))}</option>
     `).join("")}
   `;
   serviceRecordTechnicianId.value = modalTechnicianValue || (!isAdmin() && currentUser ? String(currentUser.UserID) : "");
@@ -3063,6 +3233,9 @@ function showServiceRecordsTableMessage(message) {
 function showServiceRecordsMessage(message, type = "info") {
   serviceRecordsMessage.textContent = message;
   serviceRecordsMessage.classList.toggle("success", type === "success");
+  if (["success", "error", "warning"].includes(type) && message) {
+    showToast(type, message);
+  }
 }
 
 function getServiceRecordPayloadFromForm() {
@@ -3110,16 +3283,20 @@ async function openServiceRecordEditor(mode, selectedRecord = null) {
   renderServiceRecordOptions();
   updateServiceRecordTotalPreview();
   serviceRecordModal.classList.remove("hidden");
+  markFormPristine(serviceRecordForm);
   (isAdmin() ? serviceRecordTechnicianId : serviceRecordDate).focus();
 }
 
 function closeServiceRecordEditor() {
   if (!serviceRecordModal) return;
+  if (!serviceRecordModal.classList.contains("hidden") && !confirmDiscardFormChanges(serviceRecordForm)) return false;
   serviceRecordModal.classList.add("hidden");
   serviceRecordForm.reset();
   serviceRecordFormMessage.textContent = "";
   serviceRecordId.value = "";
   updateServiceRecordTotalPreview();
+  markFormPristine(serviceRecordForm);
+  return true;
 }
 
 async function saveServiceRecord(event) {
@@ -3131,6 +3308,7 @@ async function saveServiceRecord(event) {
 
   if (validationMessage) {
     serviceRecordFormMessage.textContent = validationMessage;
+    showToast("warning", validationMessage);
     return;
   }
 
@@ -3139,6 +3317,7 @@ async function saveServiceRecord(event) {
   const url = editingId ? `/api/service-records/${editingId}` : "/api/service-records";
 
   try {
+    setButtonLoading(saveServiceRecordButton, true, t("saving"));
     const response = await fetch(url, {
       method,
       cache: "no-store",
@@ -3153,12 +3332,16 @@ async function saveServiceRecord(event) {
       throw new Error(translateServerMessage(data.message) || (editingId ? t("updateServiceRecordError") : t("createServiceRecordError")));
     }
 
+    markFormPristine(serviceRecordForm);
     closeServiceRecordEditor();
     showServiceRecordsMessage(editingId ? t("updateServiceRecordSuccess") : t("createServiceRecordSuccess"), "success");
     await loadServiceRecords();
   } catch (error) {
     console.error(error);
     serviceRecordFormMessage.textContent = error.message || (editingId ? t("updateServiceRecordError") : t("createServiceRecordError"));
+    showToast("error", serviceRecordFormMessage.textContent);
+  } finally {
+    setButtonLoading(saveServiceRecordButton, false);
   }
 }
 
@@ -3189,7 +3372,7 @@ function handleServiceRecordsTableClick(event) {
     const selectedRecord = serviceRecords.find((record) => Number(record.ServiceRecordID) === id);
 
     if (!selectedRecord) {
-      alert(t("serviceRecordNotFound"));
+      showToast("error", t("serviceRecordNotFound"));
       return;
     }
 
@@ -3358,6 +3541,9 @@ function showInvoicesTableMessage(message) {
 function showInvoicesMessage(message, type = "info") {
   invoicesMessage.textContent = message;
   invoicesMessage.classList.toggle("success", type === "success");
+  if (["success", "error", "warning"].includes(type) && message) {
+    showToast(type, message);
+  }
 }
 
 function openInvoiceGenerateModal() {
@@ -3368,13 +3554,17 @@ function openInvoiceGenerateModal() {
   invoiceGenerateTaxRate.value = "0";
   renderInvoiceClientOptions();
   invoiceGenerateModal.classList.remove("hidden");
+  markFormPristine(invoiceGenerateForm);
   invoiceGenerateClientId.focus();
 }
 
 function closeInvoiceGenerateEditor() {
+  if (!invoiceGenerateModal.classList.contains("hidden") && !confirmDiscardFormChanges(invoiceGenerateForm)) return false;
   invoiceGenerateModal.classList.add("hidden");
   invoiceGenerateForm.reset();
   invoiceGenerateMessage.textContent = "";
+  markFormPristine(invoiceGenerateForm);
+  return true;
 }
 
 function getInvoiceGeneratePayload() {
@@ -3415,6 +3605,7 @@ async function generateInvoice(event) {
   }
 
   try {
+    setButtonLoading(saveGeneratedInvoiceButton, true, t("processing"));
     const response = await fetch("/api/invoices/generate", {
       method: "POST",
       cache: "no-store",
@@ -3429,12 +3620,16 @@ async function generateInvoice(event) {
       throw new Error(translateServerMessage(data.message) || t("generateInvoiceError"));
     }
 
+    markFormPristine(invoiceGenerateForm);
     closeInvoiceGenerateEditor();
     showInvoicesMessage(t("invoiceGeneratedSuccess"), "success");
     await loadInvoices();
   } catch (error) {
     console.error(error);
     invoiceGenerateMessage.textContent = error.message || t("generateInvoiceError");
+    showToast("error", invoiceGenerateMessage.textContent);
+  } finally {
+    setButtonLoading(saveGeneratedInvoiceButton, false);
   }
 }
 
@@ -3447,14 +3642,18 @@ function openInvoiceStatusEditor(invoice) {
   invoiceStatusValue.value = invoice.Status || "Draft";
   invoiceStatusNotes.value = invoice.Notes || "";
   invoiceStatusModal.classList.remove("hidden");
+  markFormPristine(invoiceStatusForm);
   invoiceStatusValue.focus();
 }
 
 function closeInvoiceStatusEditor() {
+  if (!invoiceStatusModal.classList.contains("hidden") && !confirmDiscardFormChanges(invoiceStatusForm)) return false;
   invoiceStatusModal.classList.add("hidden");
   invoiceStatusForm.reset();
   invoiceStatusMessage.textContent = "";
   invoiceStatusId.value = "";
+  markFormPristine(invoiceStatusForm);
+  return true;
 }
 
 async function saveInvoiceStatus(event) {
@@ -3488,6 +3687,7 @@ async function saveInvoiceStatus(event) {
   }
 
   try {
+    setButtonLoading(saveInvoiceStatusButton, true, t("saving"));
     const response = await fetch(`/api/invoices/${invoiceId}`, {
       method: "PUT",
       cache: "no-store",
@@ -3502,12 +3702,16 @@ async function saveInvoiceStatus(event) {
       throw new Error(translateServerMessage(data.message) || t("updateInvoiceError"));
     }
 
+    markFormPristine(invoiceStatusForm);
     closeInvoiceStatusEditor();
     showInvoicesMessage(t("invoiceStatusUpdatedSuccess"), "success");
     await loadInvoices();
   } catch (error) {
     console.error(error);
     invoiceStatusMessage.textContent = error.message || t("updateInvoiceError");
+    showToast("error", invoiceStatusMessage.textContent);
+  } finally {
+    setButtonLoading(saveInvoiceStatusButton, false);
   }
 }
 
@@ -3587,7 +3791,7 @@ function handleInvoicesTableClick(event) {
     const invoice = invoices.find((item) => Number(item.InvoiceID) === id);
 
     if (!invoice) {
-      alert(t("invoiceNotFound"));
+      showToast("error", t("invoiceNotFound"));
       return;
     }
 
@@ -3736,9 +3940,10 @@ async function resolvePasswordResetNotification(notificationId) {
     }
 
     await refreshWorkspace();
+    showToast("info", t("notificationMarkedReadSuccess"));
   } catch (error) {
     console.error(error);
-    alert(error.message || t("forgotError"));
+    showToast("error", error.message || t("forgotError"));
   }
 }
 
@@ -3759,10 +3964,10 @@ async function deleteNotification(notificationId) {
     }
 
     await loadNotifications();
-    alert(t("deleteNotificationSuccess"));
+    showToast("success", t("deleteNotificationSuccess"));
   } catch (error) {
     console.error(error);
-    alert(error.message || t("deleteNotificationError"));
+    showToast("error", error.message || t("deleteNotificationError"));
   }
 }
 
@@ -3861,6 +4066,9 @@ function showDashboardProjectMessage(message, type = "info") {
 
   dashboardProjectMessage.textContent = message;
   dashboardProjectMessage.classList.toggle("success", type === "success");
+  if (["success", "error", "warning"].includes(type) && message) {
+    showToast(type, message);
+  }
 }
 
 function getDashboardProjectPlaceholder() {
@@ -4124,6 +4332,9 @@ function showDashboardTechnicianMessage(message, type = "info") {
 
   dashboardTechnicianMessage.textContent = message;
   dashboardTechnicianMessage.classList.toggle("success", type === "success");
+  if (["success", "error", "warning"].includes(type) && message) {
+    showToast(type, message);
+  }
 }
 
 function getDashboardTechnicianPlaceholder() {
@@ -4299,7 +4510,7 @@ function renderDashboardTechnicianOptions() {
   dashboardTechnicianSelect.innerHTML = `
     <option value="">${escapeHTML(tNested("technicianDashboard", "selectTechnician"))}</option>
     ${filteredTechnicians.map((technician) => `
-      <option value="${technician.UserID}">${escapeHTML(technician.FullName || technician.Email || `#${technician.UserID}`)}</option>
+      <option value="${technician.UserID}">${escapeHTML(getUserOptionLabel(technician))}</option>
     `).join("")}
   `;
 
@@ -4326,7 +4537,7 @@ async function loadDashboardTechnicianOptions() {
         throw new Error(translateServerMessage(data.message) || tNested("technicianDashboard", "loadError"));
       }
 
-      dashboardTechnicianOptions = data;
+      dashboardTechnicianOptions = normalizeTechnicianOptions(data);
       dashboardSelectedTechnician = null;
       renderDashboardTechnicianOptions();
       renderDashboardTechnicianPanel();
@@ -4334,7 +4545,7 @@ async function loadDashboardTechnicianOptions() {
     }
 
     if (!isAdmin()) {
-      dashboardTechnicianOptions = currentUser ? [currentUser] : [];
+      dashboardTechnicianOptions = normalizeTechnicianOptions(currentUser ? [currentUser] : []);
       dashboardSelectedTechnician = currentUser || null;
       renderDashboardTechnicianOptions();
       renderDashboardTechnicianPanel();
@@ -4349,9 +4560,7 @@ async function loadDashboardTechnicianOptions() {
       await loadUsers();
     }
 
-    dashboardTechnicianOptions = users
-      .filter((user) => user.IsActive !== false && (user.Role === "Admin" || user.Role === "Technician" || user.IsTechnician))
-      .sort((a, b) => String(a.FullName || "").localeCompare(String(b.FullName || "")));
+    dashboardTechnicianOptions = normalizeTechnicianOptions(users);
 
     if (dashboardSelectedTechnician) {
       dashboardSelectedTechnician = dashboardTechnicianOptions.find((technician) => Number(technician.UserID) === Number(dashboardSelectedTechnician.UserID)) || null;
@@ -4758,6 +4967,7 @@ async function saveDashboardTechnicianDescription(event) {
   } catch (error) {
     console.error(error);
     dashboardTechnicianDescriptionMessage.textContent = error.message || t("updateServiceRecordError");
+    showToast("error", dashboardTechnicianDescriptionMessage.textContent);
   }
 }
 
@@ -5630,6 +5840,7 @@ async function showDashboardDetail(detailType) {
   } catch (error) {
     console.error(error);
     dashboardDetailMessage.textContent = error.message || t("dashboardLoadError");
+    showToast("error", dashboardDetailMessage.textContent);
     renderDashboardDetailTable([], [], "");
   }
 }
@@ -5796,11 +6007,96 @@ function tNested(group, key) {
   return translations[currentLanguage][group]?.[key] || translations.es[group]?.[key] || key;
 }
 
+function getToastDefaultTitle(type) {
+  const titles = {
+    success: t("toastSuccessTitle"),
+    error: t("toastErrorTitle"),
+    warning: t("toastWarningTitle"),
+    info: t("toastInfoTitle")
+  };
+
+  return titles[type] || titles.info;
+}
+
+function getToastIcon(type) {
+  const icons = {
+    success: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+    error: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 4.3 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg>',
+    warning: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 4.3 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg>',
+    info: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16v-4"/><path d="M12 8h.01"/><circle cx="12" cy="12" r="10"/></svg>'
+  };
+
+  return icons[type] || icons.info;
+}
+
+function showToast(type = "info", message = "", options = {}) {
+  if (!toastContainer || !message) return null;
+
+  const toastType = ["success", "error", "warning", "info"].includes(type) ? type : "info";
+  const toast = document.createElement("article");
+  const duration = Number(options.duration ?? 4500);
+  let remaining = Number.isFinite(duration) ? duration : 4500;
+  let startedAt = Date.now();
+  let timeoutId = null;
+
+  toast.className = `toast toast-${toastType}`;
+  toast.setAttribute("role", toastType === "error" ? "alert" : "status");
+  toast.innerHTML = `
+    <div class="toast-icon">${getToastIcon(toastType)}</div>
+    <div class="toast-body">
+      ${options.title === false ? "" : `<strong class="toast-title"></strong>`}
+      <p class="toast-message"></p>
+    </div>
+    <button type="button" class="toast-close" aria-label="${escapeHTMLAttribute(currentLanguage === "es" ? "Cerrar notificacion" : "Close notification")}">&times;</button>
+  `;
+
+  const titleElement = toast.querySelector(".toast-title");
+  const messageElement = toast.querySelector(".toast-message");
+  const closeButton = toast.querySelector(".toast-close");
+
+  if (titleElement) {
+    titleElement.textContent = options.title || getToastDefaultTitle(toastType);
+  }
+
+  messageElement.textContent = message;
+  closeButton.addEventListener("click", () => dismissToast(toast));
+
+  function startTimer() {
+    if (remaining <= 0) return;
+    startedAt = Date.now();
+    timeoutId = window.setTimeout(() => dismissToast(toast), remaining);
+  }
+
+  function pauseTimer() {
+    if (!timeoutId) return;
+    window.clearTimeout(timeoutId);
+    timeoutId = null;
+    remaining -= Date.now() - startedAt;
+  }
+
+  toast.addEventListener("mouseenter", pauseTimer);
+  toast.addEventListener("mouseleave", startTimer);
+  toast.addEventListener("focusin", pauseTimer);
+  toast.addEventListener("focusout", startTimer);
+
+  toastContainer.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("toast-visible"));
+  startTimer();
+  return toast;
+}
+
+function dismissToast(toast) {
+  if (!toast || toast.classList.contains("toast-exiting")) return;
+  toast.classList.add("toast-exiting");
+  window.setTimeout(() => toast.remove(), 220);
+}
+
 function labelText(esText, enText) {
   return currentLanguage === "es" ? esText : enText;
 }
 
 function setButtonText(button, text) {
+  if (!button) return;
   const icon = button.querySelector("svg");
   button.textContent = "";
 
@@ -5809,6 +6105,53 @@ function setButtonText(button, text) {
   }
 
   button.append(` ${text}`);
+}
+
+function setButtonLoading(button, isLoading, loadingText = t("processing")) {
+  if (!button) return;
+
+  if (isLoading) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+    }
+    button.disabled = true;
+    button.classList.add("is-loading");
+    button.textContent = loadingText;
+    return;
+  }
+
+  button.disabled = false;
+  button.classList.remove("is-loading");
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+    delete button.dataset.originalHtml;
+  }
+}
+
+function serializeFormState(form) {
+  if (!form) return "";
+  const fields = Array.from(form.elements || [])
+    .filter((field) => field.name || field.id)
+    .filter((field) => !["button", "submit", "reset"].includes(field.type));
+
+  return JSON.stringify(fields.map((field) => {
+    const key = field.name || field.id;
+    const value = field.type === "checkbox" || field.type === "radio" ? field.checked : field.value;
+    return [key, value];
+  }));
+}
+
+function markFormPristine(form) {
+  if (!form) return;
+  form.dataset.initialState = serializeFormState(form);
+}
+
+function isFormDirty(form) {
+  return Boolean(form && form.dataset.initialState && form.dataset.initialState !== serializeFormState(form));
+}
+
+function confirmDiscardFormChanges(form) {
+  return !isFormDirty(form) || confirm(t("unsavedChangesConfirm"));
 }
 
 function setText(selector, text) {
@@ -6562,7 +6905,7 @@ async function createTicket(event) {
   const status = isAdmin() ? statusInput.value : "Abierto";
 
   if (!description) {
-    alert(t("completeTicketFields"));
+    showToast("warning", t("completeTicketFields"));
     return;
   }
 
@@ -6589,9 +6932,10 @@ async function createTicket(event) {
     statusInput.value = "Abierto";
     setRoleControls();
     await refreshWorkspace();
+    showToast("success", t("createTicketSuccess"));
   } catch (error) {
     console.error(error);
-    alert(t("createTicketAlertError"));
+    showToast("error", t("createTicketAlertError"));
   }
 }
 
@@ -6808,9 +7152,10 @@ async function resolvePasswordReset(requestId) {
     }
 
     await refreshWorkspace();
+    showToast("success", t("passwordResetResolvedSuccess"));
   } catch (error) {
     console.error(error);
-    alert(error.message || t("forgotError"));
+    showToast("error", error.message || t("forgotError"));
   }
 }
 
@@ -6856,7 +7201,7 @@ async function loadReportTechnicianOptions() {
     throw new Error(translateServerMessage(data.message) || t("reportError"));
   }
 
-  reportTechnicians = Array.isArray(data) ? data : [];
+  reportTechnicians = normalizeTechnicianOptions(data);
 }
 
 function renderReportLookupOptions() {
@@ -6866,7 +7211,7 @@ function renderReportLookupOptions() {
   const selectedClient = reportClient.value;
   const selectedProject = reportProject.value;
   const technicianOptions = reportTechnicians.map((user) => `
-    <option value="${user.UserID}">${escapeHTML(user.FullName || user.Email || `#${user.UserID}`)}</option>
+    <option value="${user.UserID}">${escapeHTML(getUserOptionLabel(user))}</option>
   `).join("");
   const clientOptions = serviceRecordClients.map((client) => `
     <option value="${client.ClientID}">${escapeHTML(client.ClientName || `#${client.ClientID}`)}</option>
@@ -6903,6 +7248,7 @@ async function generateReport(event) {
   reportsMessage.textContent = "";
 
   try {
+    setButtonLoading(generateReportButton, true, t("loading"));
     const query = getReportQueryString();
     const [recordsResponse, summaryResponse] = await Promise.all([
       fetch(`/api/reports/service-hours${query ? `?${query}` : ""}`, { cache: "no-store" }),
@@ -6928,11 +7274,20 @@ async function generateReport(event) {
     hasGeneratedReport = true;
     renderServiceHoursReport();
     updateReportExportActions();
-    reportsMessage.textContent = t("reportReady");
+    if (reportServiceRecords.length > 0) {
+      reportsMessage.textContent = t("reportReady");
+      showToast("success", t("reportReady"));
+    } else {
+      reportsMessage.textContent = t("noReportTickets");
+      showToast("warning", t("reportNoResultsToast"));
+    }
   } catch (error) {
     console.error(error);
     updateReportExportActions();
     reportsMessage.textContent = error.message || t("reportError");
+    showToast("error", reportsMessage.textContent);
+  } finally {
+    setButtonLoading(generateReportButton, false);
   }
 }
 
@@ -6941,6 +7296,7 @@ async function exportServiceHoursPdf() {
 
   if (!hasGeneratedReport || reportServiceRecords.length === 0) {
     reportsMessage.textContent = t("pdfNoData");
+    showToast("warning", t("pdfNoData"));
     return;
   }
 
@@ -6953,7 +7309,7 @@ async function exportServiceHoursPdf() {
   }
 
   try {
-    exportPdfButton.disabled = true;
+    setButtonLoading(exportPdfButton, true, currentLanguage === "es" ? "Generando PDF..." : "Generating PDF...");
     const pdfQuery = pdfParams.toString();
     const response = await fetch(`/api/reports/service-hours/pdf${pdfQuery ? `?${pdfQuery}` : ""}`, {
       cache: "no-store"
@@ -6977,10 +7333,13 @@ async function exportServiceHoursPdf() {
     link.remove();
     URL.revokeObjectURL(url);
     reportsMessage.textContent = t("pdfReady");
+    showToast("success", t("pdfReady"));
   } catch (error) {
     console.error(error);
     reportsMessage.textContent = error.message || t("exportError");
+    showToast("error", reportsMessage.textContent);
   } finally {
+    setButtonLoading(exportPdfButton, false);
     updateReportExportActions();
   }
 }
@@ -6990,11 +7349,12 @@ async function exportServiceHoursExcel() {
 
   if (!hasGeneratedReport || reportServiceRecords.length === 0) {
     reportsMessage.textContent = t("excelNoData");
+    showToast("warning", t("excelNoData"));
     return;
   }
 
   try {
-    exportExcelButton.disabled = true;
+    setButtonLoading(exportExcelButton, true, t("exportingExcel"));
     const query = getReportQueryString();
     const response = await fetch(`/api/reports/service-hours/excel${query ? `?${query}` : ""}`, {
       cache: "no-store"
@@ -7018,10 +7378,13 @@ async function exportServiceHoursExcel() {
     link.remove();
     URL.revokeObjectURL(url);
     reportsMessage.textContent = t("excelReady");
+    showToast("success", t("excelReady"));
   } catch (error) {
     console.error(error);
     reportsMessage.textContent = error.message || t("excelError");
+    showToast("error", reportsMessage.textContent);
   } finally {
+    setButtonLoading(exportExcelButton, false);
     updateReportExportActions();
   }
 }
@@ -7145,6 +7508,7 @@ async function generateManualInvoicePdf(event) {
 
   if (validationMessage) {
     manualInvoiceMessage.textContent = validationMessage;
+    showToast("warning", validationMessage);
     return;
   }
 
@@ -7206,11 +7570,13 @@ async function generateManualInvoicePdf(event) {
     link.remove();
     URL.revokeObjectURL(url);
     manualInvoiceMessage.textContent = t("manualInvoiceReady");
+    showToast("success", t("manualInvoiceReady"));
   } catch (error) {
     console.error(error);
     manualInvoiceMessage.textContent = error.name === "AbortError"
       ? t("manualInvoiceError")
       : error.message || t("manualInvoiceError");
+    showToast("error", manualInvoiceMessage.textContent);
   } finally {
     window.clearTimeout(timeoutId);
     generateManualInvoicePdfButton.disabled = false;
@@ -7418,7 +7784,7 @@ function openEditor(ticketId) {
   const ticket = tickets.find((item) => Number(item.TicketID) === ticketId);
 
   if (!ticket) {
-    alert(t("ticketNotFound"));
+    showToast("error", t("ticketNotFound"));
     return;
   }
 
@@ -7439,8 +7805,10 @@ async function createUser(event) {
   userFormMessage.textContent = "";
   const role = normalizeClientRole(userRole.value);
   const selectedProjectIds = role === "ProjectManager" ? getSelectedProjectIds(userProjectAssignments) : [];
+  const submitButton = userForm.querySelector(".btn-primary");
 
   try {
+    setButtonLoading(submitButton, true, t("saving"));
     const response = await fetch("/api/users", {
       method: "POST",
       cache: "no-store",
@@ -7468,9 +7836,13 @@ async function createUser(event) {
     updateUserProjectAssignmentVisibility();
     renderUserProjectAssignmentOptions(userProjectAssignments, []);
     await refreshWorkspace();
+    showToast("success", t("createUserSuccess"));
   } catch (error) {
     console.error(error);
     userFormMessage.textContent = error.message;
+    showToast("error", error.message || t("createUserError"));
+  } finally {
+    setButtonLoading(submitButton, false);
   }
 }
 
@@ -7568,7 +7940,7 @@ async function openUserEditor(userId) {
   const user = users.find((item) => Number(item.UserID) === userId);
 
   if (!user) {
-    alert(t("userNotFound"));
+    showToast("error", t("userNotFound"));
     return;
   }
 
@@ -7599,21 +7971,26 @@ async function openUserEditor(userId) {
     }
   }
   editUserModal.classList.remove("hidden");
+  markFormPristine(editUserForm);
 }
 
 function closeUserEditor() {
+  if (!editUserModal.classList.contains("hidden") && !confirmDiscardFormChanges(editUserForm)) return false;
   editUserModal.classList.add("hidden");
   editUserForm.reset();
   editUserMessage.textContent = "";
   hidePasswordFields();
   renderUserProjectAssignmentOptions(editUserProjectAssignments, []);
   editUserProjectAssignmentsSection?.classList.add("hidden");
+  markFormPristine(editUserForm);
+  return true;
 }
 
 function assignTemporaryPassword() {
   const suffix = Math.floor(1000 + Math.random() * 9000);
   editPassword.value = `Temp${suffix}!`;
   editPassword.focus();
+  showToast("success", t("temporaryPasswordSuccess"));
 }
 
 async function updateUser(event) {
@@ -7624,6 +8001,9 @@ async function updateUser(event) {
   const existingUser = users.find((item) => Number(item.UserID) === userId);
   const role = normalizeClientRole(editRole.value);
   const selectedProjectIds = role === "ProjectManager" ? getSelectedProjectIds(editUserProjectAssignments) : [];
+  const submitButton = editUserForm.querySelector(".btn-primary");
+  const roleChanged = existingUser && normalizeClientRole(existingUser.Role) !== role;
+  const projectAssignmentsChanged = role === "ProjectManager" && assignmentSelectionChanged(editUserProjectAssignments);
 
   if (
     existingUser
@@ -7636,6 +8016,7 @@ async function updateUser(event) {
   }
 
   try {
+    setButtonLoading(submitButton, true, t("saving"));
     const response = await fetch(`/api/users/${userId}`, {
       method: "PUT",
       cache: "no-store",
@@ -7662,11 +8043,19 @@ async function updateUser(event) {
       setAuthenticatedUser(data, { switchToTickets: false });
     }
 
+    markFormPristine(editUserForm);
     closeUserEditor();
     await refreshWorkspace();
+    showToast(
+      "success",
+      roleChanged ? t("userRoleUpdatedSuccess") : projectAssignmentsChanged ? t("projectManagerProjectsAssignedSuccess") : t("editUserSuccess")
+    );
   } catch (error) {
     console.error(error);
     editUserMessage.textContent = error.message;
+    showToast("error", error.message || t("editUserError"));
+  } finally {
+    setButtonLoading(submitButton, false);
   }
 }
 
@@ -7694,9 +8083,10 @@ async function toggleUserStatus(userId, nextIsActive) {
     }
 
     await refreshWorkspace();
+    showToast("success", t(nextIsActive ? "activateUserSuccess" : "deactivateUserSuccess"));
   } catch (error) {
     console.error(error);
-    alert(error.message);
+    showToast("error", error.message || t("deleteUserError"));
   }
 }
 
@@ -7725,9 +8115,10 @@ async function updateTicket(event) {
 
     closeEditor();
     await refreshWorkspace();
+    showToast("success", t("updateTicketSuccess"));
   } catch (error) {
     console.error(error);
-    alert(t("updateTicketAlertError"));
+    showToast("error", t("updateTicketAlertError"));
   }
 }
 
@@ -7743,9 +8134,10 @@ async function closeTicket(ticketId) {
     }
 
     await refreshWorkspace();
+    showToast("success", t("closeTicketSuccess"));
   } catch (error) {
     console.error(error);
-    alert(t("closeTicketAlertError"));
+    showToast("error", t("closeTicketAlertError"));
   }
 }
 
@@ -7767,9 +8159,10 @@ async function deleteTicket(ticketId) {
     }
 
     await refreshWorkspace();
+    showToast("success", t("deleteTicketSuccess"));
   } catch (error) {
     console.error(error);
-    alert(t("deleteTicketAlertError"));
+    showToast("error", t("deleteTicketAlertError"));
   }
 }
 
@@ -7800,11 +8193,13 @@ async function requestPasswordReset() {
     forgotPasswordMessage.textContent = translateServerMessage(data.message) || t("forgotSaved");
     forgotPasswordMessage.classList.add("success");
     forgotPasswordMessage.classList.remove("hidden");
+    showToast("success", forgotPasswordMessage.textContent);
   } catch (error) {
     console.error(error);
     forgotPasswordMessage.textContent = error.message || t("forgotError");
     forgotPasswordMessage.classList.remove("success");
     forgotPasswordMessage.classList.remove("hidden");
+    showToast("error", forgotPasswordMessage.textContent);
   }
 }
 
@@ -8211,6 +8606,57 @@ projectManagersDetailModal.addEventListener("click", (event) => {
 searchInput.addEventListener("input", renderTickets);
 statusFilter.addEventListener("change", renderTickets);
 priorityFilter.addEventListener("change", renderTickets);
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+
+  if (!clientModal.classList.contains("hidden")) {
+    closeClientEditor();
+    return;
+  }
+
+  if (!projectModal.classList.contains("hidden")) {
+    closeProjectEditor();
+    return;
+  }
+
+  if (!serviceRecordModal.classList.contains("hidden")) {
+    closeServiceRecordEditor();
+    return;
+  }
+
+  if (!invoiceGenerateModal.classList.contains("hidden")) {
+    closeInvoiceGenerateEditor();
+    return;
+  }
+
+  if (!invoiceStatusModal.classList.contains("hidden")) {
+    closeInvoiceStatusEditor();
+    return;
+  }
+
+  if (!editUserModal.classList.contains("hidden")) {
+    closeUserEditor();
+    return;
+  }
+
+  if (!projectManagersDetailModal.classList.contains("hidden")) {
+    closeProjectManagersDetail();
+    return;
+  }
+
+  if (!userProjectsDetailModal.classList.contains("hidden")) {
+    closeUserProjectsDetail();
+  }
+});
+window.addEventListener("beforeunload", (event) => {
+  const hasDirtyForm = [clientForm, projectForm, serviceRecordForm, editUserForm, invoiceGenerateForm, invoiceStatusForm]
+    .some((form) => isFormDirty(form));
+
+  if (hasDirtyForm) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
 
 applyLanguage();
 checkSession();

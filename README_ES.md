@@ -1463,6 +1463,20 @@ Ejecutar `phase-34-project-manager-assignments.sql` en SSMS antes de iniciar est
 - El backend rechaza nuevas asignaciones a proyectos inactivos, pero permite conservar relaciones historicas activas ya existentes.
 - Quitar managers o proyectos desactiva logicamente la relacion en `dbo.UserProjectAssignments`; no se elimina historial.
 
+## Fase 35: Pulido De Produccion Y Confiabilidad
+
+- La gestion de cache de archivos estaticos quedo preparada para demo/local: HTML y respuestas API usan no-cache/no-store, mientras `app.js`, `style.css` y assets versionados pueden cachearse de forma segura.
+- `index.html` recibe una version automatica de assets calculada desde las fechas de modificacion del frontend, con opcion de sobrescribirla mediante `APP_ASSET_VERSION`.
+- Los formularios principales advierten antes de descartar cambios sin guardar en Clients, Projects, Service Records, Users y dialogos de facturas.
+- Las acciones largas muestran estados de carga consistentes y siempre restauran los botones tras exito o error.
+- Se agrego un sistema reutilizable de Toast notifications en la esquina superior derecha para mensajes de exito, error, advertencia e informacion, con iconos, boton de cierre, cierre automatico, pausa al pasar el mouse y estilos para modo claro/oscuro.
+- El Login ahora usa Toasts seguros para acceso correcto, credenciales incorrectas, cuentas inactivas y errores de conexion.
+- La cobertura de Toasts incluye login/logout, crear/editar/activar/desactivar clientes y proyectos, cambios de asignaciones de Project Manager, crear/editar/cambiar estado de usuarios, contrasenas temporales, guardar/editar/cancelar registros de servicio, reportes sin resultados/PDF/Excel, PDF de factura manual, recuperacion de contrasena y resolver/borrar notificaciones.
+- Los modales pueden cerrarse con `Escape`, respetando la confirmacion si hay cambios pendientes.
+- Los botones de exportacion de Reports mantienen el estilo visual PDF/Excel y usan el comportamiento compartido de carga.
+- Las respuestas API se marcan explicitamente como `no-store` para reducir datos obsoletos de sesion o permisos durante demos.
+- Las tablas responsive, encabezados sticky, enfoque visible, botones deshabilitados y variables de tema claro/oscuro quedan alineados con el pase de pulido de produccion.
+
 ## Autor
 
 William Rosado Perez

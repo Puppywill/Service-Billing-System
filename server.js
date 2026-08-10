@@ -10,6 +10,21 @@ const PDFDocument = require("pdfkit");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const hasSqlCredentials = Boolean(process.env.DB_USER && process.env.DB_PASSWORD);
+const indexPath = path.join(__dirname, "index.html");
+
+function getStaticAssetVersion() {
+  if (process.env.APP_ASSET_VERSION) return process.env.APP_ASSET_VERSION;
+
+  try {
+    const appMtime = fs.statSync(path.join(__dirname, "app.js")).mtimeMs;
+    const styleMtime = fs.statSync(path.join(__dirname, "style.css")).mtimeMs;
+    return String(Math.max(appMtime, styleMtime).toFixed(0));
+  } catch (error) {
+    return "dev";
+  }
+}
+
+const staticAssetVersion = getStaticAssetVersion();
 
 const dbConfig = {
   server: process.env.DB_SERVER || "localhost",
@@ -40,6 +55,11 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 8
   }
 }));
+
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 
 app.get("/api/reports/tickets", logReportEndpoint, requireAdmin, async (req, res) => {
   try {
@@ -173,13 +193,36 @@ app.put("/api/password-resets/:id/resolve", requireAdmin, async (req, res) => {
   }
 });
 
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  etag: true,
+  index: false,
+  setHeaders: (res, filePath) => {
+    const extension = path.extname(filePath).toLowerCase();
+
+    if (extension === ".html") {
+      res.setHeader("Cache-Control", "no-cache");
+      return;
+    }
+
+    if ([".js", ".css"].includes(extension)) {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      return;
+    }
+
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      res.setHeader("Cache-Control", "public, max-age=604800");
+    }
+  }
+}));
 
 let poolPromise;
 
 function getPool() {
   if (!poolPromise) {
-    poolPromise = sql.connect(dbConfig);
+    poolPromise = sql.connect(dbConfig).catch((error) => {
+      poolPromise = null;
+      throw error;
+    });
   }
 
   return poolPromise;
@@ -223,12 +266,24 @@ function isSupportedRole(role) {
   return ["Admin", "ProjectManager", "Technician", "User"].includes(normalizeRoleValue(role));
 }
 
+function getEligibleServiceTechnicianSql(alias = "technician") {
+  return `
+    ${alias}.IsActive = 1
+    AND NULLIF(LTRIM(RTRIM(${alias}.FullName)), N'') IS NOT NULL
+    AND (
+      ${alias}.IsTechnician = 1
+      OR ${alias}.Role IN (N'Admin', N'ProjectManager', N'Project Manager', N'Technician', N'User')
+    )
+  `;
+}
+
 function mapUser(record) {
   return {
     UserID: record.UserID,
     FullName: record.FullName,
     Email: record.Email,
     Role: normalizeRoleValue(record.Role),
+    IsTechnician: Boolean(record.IsTechnician),
     IsActive: record.IsActive === undefined ? true : Boolean(record.IsActive),
     CreatedAt: record.CreatedAt,
     CreatedByUserID: record.CreatedByUserID,
@@ -387,20 +442,6 @@ function getProjectPayload(body) {
 const SERVICE_RECORD_STATUSES = new Set(["Recorded", "Billed", "Canceled"]);
 const INVOICE_STATUSES = new Set(["Draft", "Issued", "Paid", "Canceled"]);
 const CONTRACT_TYPES = new Set(["Direct", "Signed", "Other"]);
-const REPORT_EXCLUDED_DEMO_TECHNICIAN_EMAILS = [
-  "william@servicebilling.local",
-  "carlos@servicebilling.local"
-];
-
-function applyReportDemoExclusion(request, whereClauses, technicianAlias = "technician") {
-  const placeholders = REPORT_EXCLUDED_DEMO_TECHNICIAN_EMAILS.map((email, index) => {
-    const inputName = `ExcludedDemoTechnicianEmail${index}`;
-    request.input(inputName, sql.NVarChar(180), email);
-    return `@${inputName}`;
-  });
-
-  whereClauses.push(`LOWER(${technicianAlias}.Email) NOT IN (${placeholders.join(", ")})`);
-}
 
 function getProjectContractValidationMessage(project) {
   if (project.contractType && !CONTRACT_TYPES.has(project.contractType)) {
@@ -1354,6 +1395,7 @@ async function getUserById(pool, userId) {
         u.FullName,
         u.Email,
         u.Role,
+        u.IsTechnician,
         u.IsActive,
         u.CreatedAt,
         u.CreatedByUserID,
@@ -1623,9 +1665,13 @@ async function validateServiceRecordReferences(pool, serviceRecord) {
         CASE WHEN EXISTS (
           SELECT 1
           FROM dbo.Users
-          WHERE UserID = @TechnicianUserID
+            WHERE UserID = @TechnicianUserID
             AND IsActive = 1
-            AND (IsTechnician = 1 OR Role = N'Technician')
+            AND NULLIF(LTRIM(RTRIM(FullName)), N'') IS NOT NULL
+            AND (
+              IsTechnician = 1
+              OR Role IN (N'Admin', N'ProjectManager', N'Project Manager', N'Technician', N'User')
+            )
         ) THEN 1 ELSE 0 END AS TechnicianExists,
         CASE WHEN EXISTS (
           SELECT 1
@@ -1896,8 +1942,6 @@ async function getServiceHoursReportRecords(pool, filters) {
     )`);
   }
 
-  applyReportDemoExclusion(request, whereClauses);
-
   const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
   const result = await request.query(`
     SELECT
@@ -1931,7 +1975,7 @@ async function getServiceHoursReportRecords(pool, filters) {
 
 async function getServiceHoursReportTechnicians(pool, filters) {
   const request = pool.request();
-  const whereClauses = ["COALESCE(technician.IsActive, 1) = 1"];
+  const whereClauses = [getEligibleServiceTechnicianSql("technician")];
 
   if (filters.from) {
     request.input("FromDate", sql.Date, filters.from);
@@ -1963,8 +2007,6 @@ async function getServiceHoursReportTechnicians(pool, filters) {
     )`);
   }
 
-  applyReportDemoExclusion(request, whereClauses);
-
   const whereSql = `WHERE ${whereClauses.join(" AND ")}`;
   const result = await request.query(`
     SELECT DISTINCT
@@ -1972,6 +2014,7 @@ async function getServiceHoursReportTechnicians(pool, filters) {
       technician.FullName,
       technician.Email,
       technician.Role,
+      technician.IsTechnician,
       technician.IsActive
     FROM dbo.ServiceRecords sr
     INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
@@ -3143,7 +3186,7 @@ app.post("/api/login", async (req, res) => {
     const result = await pool.request()
       .input("Email", sql.NVarChar(180), email.trim().toLowerCase())
       .query(`
-        SELECT UserID, FullName, Email, Password, Role, IsActive
+        SELECT UserID, FullName, Email, Password, Role, IsTechnician, IsActive
         FROM dbo.Users
         WHERE Email = @Email
       `);
@@ -3413,6 +3456,7 @@ app.get("/api/users", requireAdmin, async (req, res) => {
         u.FullName,
         u.Email,
         u.Role,
+        u.IsTechnician,
         u.IsActive,
         u.CreatedAt,
         u.CreatedByUserID,
@@ -5724,8 +5768,6 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
 
     addProjectManagerScope(request, whereClauses, req.session.user, "sr");
 
-    applyReportDemoExclusion(request, whereClauses);
-
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
     const summaryResult = await request.query(`
       SELECT
@@ -7042,8 +7084,21 @@ app.use("/api", (req, res) => {
   });
 });
 
+function sendVersionedIndex(res) {
+  fs.readFile(indexPath, "utf8", (error, html) => {
+    if (error) {
+      console.error(error);
+      res.status(500).send("No se pudo cargar la aplicacion.");
+      return;
+    }
+
+    res.set("Cache-Control", "no-cache");
+    res.type("html").send(html.replace(/__ASSET_VERSION__/g, staticAssetVersion));
+  });
+}
+
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  sendVersionedIndex(res);
 });
 
 app.listen(PORT, async () => {

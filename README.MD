@@ -1461,6 +1461,20 @@ Run `phase-34-project-manager-assignments.sql` in SSMS before starting this vers
 - The backend rejects new assignments to inactive projects while allowing existing active historical relations to remain selected.
 - Removed managers or projects are logically deactivated in `dbo.UserProjectAssignments`; historical data is not deleted.
 
+## Phase 35: Production Polish And Reliability
+
+- Static asset cache management was hardened for local/demo use: HTML and API responses are served with no-cache/no-store behavior, while versioned `app.js`, `style.css`, and favicon/logo assets can be cached safely.
+- `index.html` now receives an automatic asset version generated from the current frontend file timestamps, with optional override through `APP_ASSET_VERSION`.
+- Main forms now warn before discarding unsaved changes in Clients, Projects, Service Records, Users, and invoice status/generation dialogs.
+- Long-running actions now show consistent loading states and always restore buttons after success or failure.
+- A reusable Toast notification system now appears at the top-right of the app for success, error, warning, and info feedback, with icons, dismiss buttons, auto-close, hover pause, and light/dark styling.
+- Login feedback now uses safe Toast messages for successful access, invalid credentials, inactive accounts, and connection errors.
+- Toast coverage now includes login/logout, client and project create/update/activate/deactivate, Project Manager assignment changes, user create/update/status changes, temporary passwords, service record save/update/cancel, report generation/no-results/PDF/Excel, manual invoice PDF generation, password recovery, and notification resolve/delete actions.
+- Modals can be dismissed with `Escape`, while dirty forms still ask for confirmation.
+- Reports export buttons keep their visual PDF/Excel styles while using the shared loading-state behavior.
+- API responses are explicitly marked `no-store` to reduce stale session or permission data during demos.
+- Existing responsive tables, sticky headers, focus-visible outlines, disabled button states, and light/dark theme variables remain aligned with the production polish pass.
+
 ## Author
 
 William Rosado Perez
