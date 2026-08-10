@@ -218,6 +218,14 @@
         </svg>
         Settings
       </button>
+      <button type="button" id="aboutTabButton" class="tab-button" data-tab="about">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 10v6"/>
+          <path d="M12 7h.01"/>
+        </svg>
+        Acerca de
+      </button>
     </nav>
 
     <section id="dashboardTabPanel" class="tab-panel hidden">
@@ -1359,6 +1367,59 @@
         </form>
 
         <p id="manualInvoiceMessage" class="form-message" aria-live="polite"></p>
+      </section>
+    </section>
+
+    <section id="aboutTabPanel" class="tab-panel hidden" aria-labelledby="about-title">
+      <section class="panel table-panel about-panel">
+        <div class="section-title">
+          <p id="aboutEyebrow" class="eyebrow">Orientacion</p>
+          <h2 id="about-title">Acerca de</h2>
+          <p id="aboutIntro" class="foundation-copy">
+            El Programa de Registro de Horas y Facturacion de Servicios ayuda a registrar, consultar y revisar los servicios por hora de Solutions By Design.
+          </p>
+        </div>
+
+        <div class="about-hero">
+          <div>
+            <p id="aboutPurposeEyebrow" class="eyebrow">Proposito</p>
+            <h3 id="aboutPurposeTitle">Una herramienta para el trabajo diario</h3>
+            <p id="aboutPurposeText">
+              El sistema centraliza clientes, proyectos, horas trabajadas, reportes y documentos de apoyo para que el equipo pueda administrar el trabajo con informacion clara y actualizada.
+            </p>
+          </div>
+          <div class="about-logo-wrap">
+            <img class="about-logo" src="assets/logo-about.jpeg" alt="Solutions By Design">
+          </div>
+        </div>
+
+        <div class="foundation-grid about-module-grid">
+          <article class="foundation-card">
+            <h3 id="aboutModuleDashboardTitle">Resumen</h3>
+            <p id="aboutModuleDashboardText">Muestra indicadores, horas y actividad reciente para revisar rapidamente el estado del trabajo.</p>
+          </article>
+          <article class="foundation-card">
+            <h3 id="aboutModuleClientsProjectsTitle">Clientes y proyectos</h3>
+            <p id="aboutModuleClientsProjectsText">Organiza clientes, proyectos, contratos y asignaciones de Project Managers.</p>
+          </article>
+          <article class="foundation-card">
+            <h3 id="aboutModuleServiceRecordsTitle">Registros de servicio</h3>
+            <p id="aboutModuleServiceRecordsText">Permite registrar, editar y consultar horas trabajadas por tecnico, cliente, proyecto, fecha y estado.</p>
+          </article>
+          <article class="foundation-card">
+            <h3 id="aboutModuleReportsTitle">Reportes y documentos</h3>
+            <p id="aboutModuleReportsText">Genera reportes, PDF, Excel y facturas manuales para revision administrativa.</p>
+          </article>
+        </div>
+
+        <div class="about-note">
+          <h3 id="aboutPermissionsTitle">Acceso segun rol</h3>
+          <p id="aboutPermissionsText">
+            Las opciones disponibles pueden cambiar segun el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la informacion y mantener un flujo de trabajo ordenado.
+          </p>
+        </div>
+
+        <p id="aboutFooter" class="about-footer">Desarrollado para Solutions By Design.</p>
       </section>
     </section>
   </main>

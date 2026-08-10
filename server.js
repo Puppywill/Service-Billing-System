@@ -7105,6 +7105,11 @@ app.listen(PORT, async () => {
   console.log(`Service Billing System disponible en http://localhost:${PORT}`);
   console.log(`Base de datos configurada: ${dbConfig.database}`);
 
+  if (process.env.AUTO_ENSURE_USERS !== "true") {
+    console.log("Verificacion automatica de Users omitida. Usa AUTO_ENSURE_USERS=true para ejecutarla al iniciar.");
+    return;
+  }
+
   try {
     await ensureUsersTable();
     console.log("Tabla Users verificada. Usuarios iniciales disponibles si la tabla estaba vacia.");

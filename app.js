@@ -37,6 +37,8 @@ const manualInvoicesTabButton = document.querySelector("#manualInvoicesTabButton
 const manualInvoicesTabPanel = document.querySelector("#manualInvoicesTabPanel");
 const settingsTabButton = document.querySelector("#settingsTabButton");
 const settingsTabPanel = document.querySelector("#settingsTabPanel");
+const aboutTabButton = document.querySelector("#aboutTabButton");
+const aboutTabPanel = document.querySelector("#aboutTabPanel");
 
 const addClientButton = document.querySelector("#addClientButton");
 const clientSearchInput = document.querySelector("#clientSearchInput");
@@ -542,6 +544,24 @@ const translations = {
     exportingExcel: "Exportando Excel...",
     unsavedChangesConfirm: "Los cambios no guardados se perderan. Deseas continuar?",
     settings: "Configuracion",
+    about: "Acerca de",
+    aboutEyebrow: "Orientacion",
+    aboutTitle: "Acerca de",
+    aboutIntro: "El Programa de Registro de Horas y Facturacion de Servicios ayuda a registrar, consultar y revisar los servicios por hora de Solutions By Design.",
+    aboutPurposeEyebrow: "Proposito",
+    aboutPurposeTitle: "Una herramienta para el trabajo diario",
+    aboutPurposeText: "El sistema centraliza clientes, proyectos, horas trabajadas, reportes y documentos de apoyo para que el equipo pueda administrar el trabajo con informacion clara y actualizada.",
+    aboutModuleDashboardTitle: "Resumen",
+    aboutModuleDashboardText: "Muestra indicadores, horas y actividad reciente para revisar rapidamente el estado del trabajo.",
+    aboutModuleClientsProjectsTitle: "Clientes y proyectos",
+    aboutModuleClientsProjectsText: "Organiza clientes, proyectos, contratos y asignaciones de Project Managers.",
+    aboutModuleServiceRecordsTitle: "Registros de servicio",
+    aboutModuleServiceRecordsText: "Permite registrar, editar y consultar horas trabajadas por tecnico, cliente, proyecto, fecha y estado.",
+    aboutModuleReportsTitle: "Reportes y documentos",
+    aboutModuleReportsText: "Genera reportes, PDF, Excel y facturas manuales para revision administrativa.",
+    aboutPermissionsTitle: "Acceso segun rol",
+    aboutPermissionsText: "Las opciones disponibles pueden cambiar segun el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la informacion y mantener un flujo de trabajo ordenado.",
+    aboutFooter: "Desarrollado para Solutions By Design.",
     dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el resumen.",
     noDashboardData: "No hay datos para mostrar.",
@@ -1041,6 +1061,24 @@ const translations = {
     exportingExcel: "Exporting Excel...",
     unsavedChangesConfirm: "Unsaved changes will be lost. Do you want to continue?",
     settings: "Settings",
+    about: "About",
+    aboutEyebrow: "Orientation",
+    aboutTitle: "About",
+    aboutIntro: "The Service Hours and Billing Registration Program helps Solutions By Design record, review, and manage hourly service work.",
+    aboutPurposeEyebrow: "Purpose",
+    aboutPurposeTitle: "A tool for daily work",
+    aboutPurposeText: "The system centralizes clients, projects, worked hours, reports, and supporting documents so the team can manage work with clear and current information.",
+    aboutModuleDashboardTitle: "Summary",
+    aboutModuleDashboardText: "Shows indicators, hours, and recent activity so the team can quickly review work status.",
+    aboutModuleClientsProjectsTitle: "Clients and projects",
+    aboutModuleClientsProjectsText: "Organizes clients, projects, contracts, and Project Manager assignments.",
+    aboutModuleServiceRecordsTitle: "Service records",
+    aboutModuleServiceRecordsText: "Supports creating, editing, and reviewing worked hours by technician, client, project, date, and status.",
+    aboutModuleReportsTitle: "Reports and documents",
+    aboutModuleReportsText: "Generates reports, PDF, Excel, and manual invoices for administrative review.",
+    aboutPermissionsTitle: "Role-based access",
+    aboutPermissionsText: "Available options may change according to each user's role and permissions. Admin, Project Manager, and Technician/User accounts see different tools to protect information and keep work organized.",
+    aboutFooter: "Developed for Solutions By Design.",
     dashboardTitle: "Summary",
     dashboardLoadError: "Dashboard could not be loaded.",
     noDashboardData: "No data to display.",
@@ -1674,6 +1712,7 @@ function showLogin() {
   usersTabPanel.classList.add("hidden");
   reportsTabPanel.classList.add("hidden");
   settingsTabPanel.classList.add("hidden");
+  aboutTabPanel.classList.add("hidden");
   tabButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === "tickets");
   });
@@ -1801,6 +1840,7 @@ async function switchTab(tabName) {
   reportsTabPanel.classList.toggle("hidden", activeTab !== "reports");
   manualInvoicesTabPanel.classList.toggle("hidden", activeTab !== "manual-invoices");
   settingsTabPanel.classList.toggle("hidden", activeTab !== "settings");
+  aboutTabPanel.classList.toggle("hidden", activeTab !== "about");
 
   tabButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === activeTab);
@@ -6731,6 +6771,24 @@ function applyStaticLanguage() {
   generateManualInvoicePdfButton.textContent = t("manualInvoicePdfButton");
   renderManualInvoiceLines();
 
+  setText("#aboutEyebrow", t("aboutEyebrow"));
+  setText("#about-title", t("aboutTitle"));
+  setText("#aboutIntro", t("aboutIntro"));
+  setText("#aboutPurposeEyebrow", t("aboutPurposeEyebrow"));
+  setText("#aboutPurposeTitle", t("aboutPurposeTitle"));
+  setText("#aboutPurposeText", t("aboutPurposeText"));
+  setText("#aboutModuleDashboardTitle", t("aboutModuleDashboardTitle"));
+  setText("#aboutModuleDashboardText", t("aboutModuleDashboardText"));
+  setText("#aboutModuleClientsProjectsTitle", t("aboutModuleClientsProjectsTitle"));
+  setText("#aboutModuleClientsProjectsText", t("aboutModuleClientsProjectsText"));
+  setText("#aboutModuleServiceRecordsTitle", t("aboutModuleServiceRecordsTitle"));
+  setText("#aboutModuleServiceRecordsText", t("aboutModuleServiceRecordsText"));
+  setText("#aboutModuleReportsTitle", t("aboutModuleReportsTitle"));
+  setText("#aboutModuleReportsText", t("aboutModuleReportsText"));
+  setText("#aboutPermissionsTitle", t("aboutPermissionsTitle"));
+  setText("#aboutPermissionsText", t("aboutPermissionsText"));
+  setText("#aboutFooter", t("aboutFooter"));
+
   setText("#editModal .section-title .eyebrow", t("admin"));
   setText("#edit-title", t("editTicket"));
   setText('label[for="editDescription"]', t("issueDescription"));
@@ -6795,6 +6853,7 @@ function applyLanguage() {
   setButtonText(usersTabButton, t("users"));
   setButtonText(reportsTabButton, t("reports"));
   setButtonText(document.querySelector('[data-tab="settings"]'), t("settings"));
+  setButtonText(aboutTabButton, t("about"));
   setButtonText(addClientButton, t("addClient"));
   setButtonText(saveClientButton, t("saveClient"));
   setButtonText(addProjectButton, t("addProject"));
