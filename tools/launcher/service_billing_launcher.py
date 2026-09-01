@@ -170,7 +170,7 @@ def check_sql_server() -> tuple[bool | None, str]:
 class ServiceBillingLauncher(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Solutions By Design - Launcher")
+        self.title("Solutions By Design, Inc. - Launcher")
         self.geometry("460x290")
         self.minsize(420, 270)
         self.server_process: subprocess.Popen[str] | None = None
@@ -191,7 +191,7 @@ class ServiceBillingLauncher(tk.Tk):
 
         title = tk.Label(
             container,
-            text="Solutions By Design",
+            text="Solutions By Design, Inc.",
             bg="#0f172a",
             fg="#f8fafc",
             font=("Segoe UI", 18, "bold"),

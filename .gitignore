@@ -3,3 +3,7 @@ node_modules/
 .vscode/
 tools/launcher/logs/*.log
 tools/launcher/logs/*.pid
+
+# QA / local scratch output (screenshots, ad-hoc test artifacts, dev server logs)
+logs/
+tmp/

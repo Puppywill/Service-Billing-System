@@ -3,10 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solutions By Design - Service Billing System</title>
-  <link rel="icon" type="image/png" sizes="1024x1024" href="assets/favicon.png?v=__ASSET_VERSION__">
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=__ASSET_VERSION__">
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=__ASSET_VERSION__">
+  <title>Solutions By Design, Inc. - SBD Service</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png?v=__ASSET_VERSION__">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png?v=__ASSET_VERSION__">
+  <link rel="shortcut icon" type="image/x-icon" href="assets/favicon.ico?v=__ASSET_VERSION__">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=__ASSET_VERSION__">
+  <script>
+    // Resolve the active theme before first paint to avoid a flash.
+    // "system" (default) follows prefers-color-scheme; "light"/"dark" are manual overrides.
+    (function () {
+      try {
+        var stored = window.localStorage.getItem("sbd-theme");
+        var manual = stored === "light" || stored === "dark";
+        var resolved = manual
+          ? stored
+          : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        var root = document.documentElement;
+        root.setAttribute("data-resolved-theme", resolved);
+        if (manual) root.setAttribute("data-theme", stored);
+      } catch (e) {
+        document.documentElement.setAttribute("data-resolved-theme", "dark");
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="style.css?v=__ASSET_VERSION__">
 </head>
 <body>
@@ -15,13 +34,20 @@
   <header class="app-header">
     <div class="header-content">
       <div class="brand-lockup">
-        <img class="brand-logo brand-logo-horizontal" src="assets/logo-horizontal.png" alt="Solutions By Design">
+        <img class="brand-logo brand-logo-horizontal" src="assets/logo-horizontal-web.png" alt="Solutions By Design, Inc.">
         <div class="brand-copy">
-          <p class="eyebrow">Registro de horas y facturacion de servicios</p>
-          <p>Solutions By Design ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.</p>
+          <p class="eyebrow">Registro de horas y facturación de servicios</p>
+          <p>Solutions By Design, Inc. ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.</p>
         </div>
       </div>
       <div class="header-tools">
+        <button type="button" id="themeToggle" class="tool-button theme-toggle" aria-label="Tema">
+          <svg class="button-icon theme-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.5"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+          </svg>
+          <span class="theme-toggle-label" id="themeToggleLabel">Sistema</span>
+        </button>
         <button type="button" id="languageToggle" class="tool-button">English</button>
         <button type="button" id="notificationBell" class="tool-button notification-bell hidden" aria-label="Notificaciones">
           <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -42,20 +68,50 @@
             <path d="M15 12H3"/>
             <path d="M21 19V5a2 2 0 0 0-2-2h-5"/>
           </svg>
-          Cerrar sesion
+          Cerrar sesión
         </button>
       </div>
     </div>
   </header>
 
   <section id="loginView" class="login-view">
+    <div class="login-split">
+      <aside class="login-aside">
+        <div class="login-aside-decor" aria-hidden="true"></div>
+        <div class="login-aside-inner">
+          <img class="login-aside-logo" src="assets/logo-horizontal-web.png" alt="Solutions By Design, Inc.">
+          <h1 class="login-aside-title" id="loginAsideTitle">SBD Service</h1>
+          <p class="login-aside-desc" id="loginAsideDesc">Plataforma profesional para la gestión de servicios, horas, facturación y reportes.</p>
+          <ul class="login-benefits">
+            <li>
+              <span class="login-benefit-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.4-3 8.3-7 9.5C8 22.3 5 18.4 5 14V6l7-3z"/><path d="M9.5 12.5l1.8 1.8 3.5-3.6"/></svg>
+              </span>
+              <span class="login-benefit-text"><strong id="loginBenefit1Title">Seguro</strong><span id="loginBenefit1Sub">Datos protegidos</span></span>
+            </li>
+            <li>
+              <span class="login-benefit-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16V10"/><path d="M13 16V7"/><path d="M18 16v-4"/></svg>
+              </span>
+              <span class="login-benefit-text"><strong id="loginBenefit2Title">Eficiente</strong><span id="loginBenefit2Sub">Optimiza tu tiempo</span></span>
+            </li>
+            <li>
+              <span class="login-benefit-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+              </span>
+              <span class="login-benefit-text"><strong id="loginBenefit3Title">Confiable</strong><span id="loginBenefit3Sub">Información precisa</span></span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+      <div class="login-main">
     <form id="loginForm" class="panel login-panel">
       <div class="login-brand">
-        <img class="login-logo login-logo-horizontal" src="assets/logo-horizontal.png" alt="Solutions By Design">
+        <img class="login-logo login-logo-horizontal" src="assets/logo-horizontal-web.png" alt="Solutions By Design, Inc.">
       </div>
       <div class="section-title">
         <p class="eyebrow">Acceso seguro</p>
-        <h2>Iniciar sesion</h2>
+        <h2>Iniciar sesión</h2>
       </div>
 
       <div class="form-group">
@@ -70,16 +126,16 @@
       </div>
 
       <div class="form-group">
-        <label for="loginPassword">Contrasena</label>
+        <label for="loginPassword">Contraseña</label>
         <div class="password-field">
           <input
             type="password"
             id="loginPassword"
-            placeholder="Tu contrasena"
+            placeholder="Tu contraseña"
             autocomplete="current-password"
             required
           >
-          <button type="button" class="password-toggle" data-password-toggle="loginPassword" aria-label="Mostrar contrasena">
+          <button type="button" class="password-toggle" data-password-toggle="loginPassword" aria-label="Mostrar contraseña">
             <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
               <circle cx="12" cy="12" r="3"/>
@@ -95,7 +151,7 @@
       </div>
 
       <p id="loginMessage" class="form-message" aria-live="polite"></p>
-      <button type="button" id="forgotPasswordLink" class="link-button">Olvidaste tu contrasena?</button>
+      <button type="button" id="forgotPasswordLink" class="link-button">¿Olvidaste tu contraseña?</button>
       <button type="submit" class="btn btn-primary">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -105,16 +161,19 @@
         Entrar al sistema
       </button>
     </form>
+        <p class="login-legal" id="loginLegal">&copy; 2026 Solutions By Design, Inc. Todos los derechos reservados.</p>
+      </div>
+    </div>
   </section>
 
   <section id="forgotPasswordView" class="login-view hidden">
     <form id="forgotPasswordForm" class="panel login-panel">
       <div class="login-brand">
-        <img class="login-logo login-logo-horizontal" src="assets/logo-horizontal.png" alt="Solutions By Design">
+        <img class="login-logo login-logo-horizontal" src="assets/logo-horizontal-web.png" alt="Solutions By Design, Inc.">
       </div>
       <div class="section-title">
         <p class="eyebrow">Acceso seguro</p>
-        <h2 id="forgotPasswordTitle">Recuperar contrasena</h2>
+        <h2 id="forgotPasswordTitle">Recuperar contraseña</h2>
       </div>
 
       <div class="form-group">
@@ -129,7 +188,7 @@
   </section>
 
   <main id="appView" class="app-shell hidden">
-    <nav class="tabs-nav" aria-label="Navegacion principal">
+    <nav class="tabs-nav" aria-label="Navegación principal">
       <button type="button" class="tab-button" data-tab="dashboard">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 19V5"/>
@@ -298,7 +357,7 @@
         <div class="table-header compact-table-header">
           <div class="section-title">
             <p class="eyebrow">REGISTROS DE SERVICIO</p>
-            <h3 id="dashboardProjectRecordsTitle">Ultimos registros de servicio</h3>
+            <h3 id="dashboardProjectRecordsTitle">Últimos registros de servicio</h3>
           </div>
           <p class="ticket-total"><span id="dashboardProjectRecordsCount">0</span> records</p>
         </div>
@@ -393,7 +452,7 @@
         <div class="table-header compact-table-header">
           <div class="section-title">
             <p class="eyebrow">REGISTROS DE SERVICIO</p>
-            <h3 id="dashboardTechnicianRecordsTitle">Ultimos registros de servicio</h3>
+            <h3 id="dashboardTechnicianRecordsTitle">Últimos registros de servicio</h3>
           </div>
           <p class="ticket-total"><span id="dashboardTechnicianRecordsCount">0</span> records</p>
         </div>
@@ -444,7 +503,7 @@
         <article class="panel chart-panel">
           <div class="section-title">
             <p class="eyebrow">TECNICOS</p>
-            <h3 id="hoursByTechnicianTitle">Horas de servicio por tecnico</h3>
+            <h3 id="hoursByTechnicianTitle">Horas de servicio por técnico</h3>
           </div>
           <div id="hoursByTechnicianChart" class="bar-chart"></div>
         </article>
@@ -683,6 +742,12 @@
             </tbody>
           </table>
         </div>
+
+        <div id="serviceRecordsPagination" class="table-pagination" hidden>
+          <button type="button" id="serviceRecordsPrevPage" class="btn session-button compact-button">&lsaquo; Previous</button>
+          <span id="serviceRecordsPageStatus" class="table-pagination-status" aria-live="polite">Page 1 of 1</span>
+          <button type="button" id="serviceRecordsNextPage" class="btn session-button compact-button">Next &rsaquo;</button>
+        </div>
       </section>
 
       <div id="legacyTicketsWorkspace" class="hidden app-layout">
@@ -699,12 +764,12 @@
           </div>
 
           <div class="form-group">
-            <label for="description">Descripcion del servicio</label>
+            <label for="description">Descripción del servicio</label>
             <textarea
               id="description"
               name="description"
               rows="5"
-              placeholder="Ej. Servicio tecnico realizado al cliente."
+              placeholder="Ej. Servicio técnico realizado al cliente."
               required
             ></textarea>
           </div>
@@ -794,7 +859,7 @@
             <input
               type="search"
               id="searchInput"
-              placeholder="Nombre de usuario o descripcion"
+              placeholder="Nombre de usuario o descripción"
             >
           </div>
 
@@ -974,7 +1039,7 @@
     <section id="usersTabPanel" class="tab-panel admin-users hidden">
       <section class="panel form-panel" aria-labelledby="users-form-title">
         <div class="section-title">
-          <p class="eyebrow">Administracion</p>
+          <p class="eyebrow">Administración</p>
           <h2 id="users-form-title">Agregar usuario</h2>
         </div>
 
@@ -993,8 +1058,8 @@
             <div class="form-group">
               <label for="userPassword">Password</label>
               <div class="password-field">
-                <input type="password" id="userPassword" placeholder="Contrasena temporal" required>
-                <button type="button" class="password-toggle" data-password-toggle="userPassword" aria-label="Mostrar contrasena">
+                <input type="password" id="userPassword" placeholder="Contraseña temporal" required>
+                <button type="button" class="password-toggle" data-password-toggle="userPassword" aria-label="Mostrar contraseña">
                   <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
                     <circle cx="12" cy="12" r="3"/>
@@ -1137,7 +1202,7 @@
       <section class="panel table-panel reports-panel">
         <div class="table-header">
           <div class="section-title">
-            <p class="eyebrow">Analitica</p>
+            <p class="eyebrow">Analítica</p>
             <h2 id="reportsTitle">Reports</h2>
           </div>
           <p class="ticket-total"><span id="reportsTotalCount">0</span> registros</p>
@@ -1155,7 +1220,7 @@
           </div>
 
           <div class="filter-field">
-            <label for="reportTechnician">Tecnico</label>
+            <label for="reportTechnician">Técnico</label>
             <select id="reportTechnician">
               <option value="">Todos</option>
             </select>
@@ -1219,13 +1284,13 @@
             <thead>
               <tr>
                 <th>ServiceRecordID</th>
-                <th>Tecnico</th>
+                <th>Técnico</th>
                 <th>Cliente</th>
                 <th>Proyecto</th>
                 <th>Fecha</th>
                 <th>Horas</th>
                 <th>Estado</th>
-                <th>Descripcion del servicio</th>
+                <th>Descripción del servicio</th>
               </tr>
             </thead>
             <tbody id="reportsTableBody">
@@ -1242,7 +1307,7 @@
       <section class="panel table-panel manual-invoice-panel">
         <div class="table-header">
           <div class="section-title">
-            <p class="eyebrow">Facturacion manual</p>
+            <p class="eyebrow">Facturación manual</p>
             <h2 id="manualInvoicesTitle">Facturas</h2>
           </div>
         </div>
@@ -1284,19 +1349,82 @@
               <textarea id="manualInvoiceBillTo" rows="3" placeholder="Client name and billing address"></textarea>
             </div>
 
+            <section class="manual-invoice-service-detail span-2" aria-labelledby="manualInvoiceServiceDetailTitle">
+              <div class="section-title compact-title">
+                <p class="eyebrow">DETALLE DEL SERVICIO</p>
+                <h3 id="manualInvoiceServiceDetailTitle">Informaci&oacute;n editable del servicio</h3>
+              </div>
+
+              <div class="manual-invoice-service-grid">
+                <div class="form-group">
+                  <label for="manualInvoiceServiceDescription">Descripci&oacute;n principal del servicio</label>
+                  <input type="text" id="manualInvoiceServiceDescription" value="Servicios Profesionales" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceServicePeriod">Mes / per&iacute;odo del servicio</label>
+                  <input type="text" id="manualInvoiceServicePeriod" value="mayo de 2026" autocomplete="off">
+                </div>
+
+                <div class="form-group span-2">
+                  <label for="manualInvoiceAccountNumbers">N&uacute;meros de cuentas</label>
+                  <textarea id="manualInvoiceAccountNumbers" rows="5">6104-24-4011-0000-1306-6371;
+6104-24-4011-0000-1306-6372;
+6104-25-4011-0000-1306-6370;
+6104-25-4011-0000-1306-6371;
+6104-25-4011-0000-1306-6372;</textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceContractNumber">N&uacute;mero de contrato</label>
+                  <input type="text" id="manualInvoiceContractNumber" value="2026-000955A" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceContractStart">Fecha de vigencia desde</label>
+                  <input type="date" id="manualInvoiceContractStart" value="2026-05-04" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceContractEnd">Fecha de vigencia hasta</label>
+                  <input type="date" id="manualInvoiceContractEnd" value="2026-09-30" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceContractedHours">Horas contratadas</label>
+                  <input type="text" id="manualInvoiceContractedHours" value="2,741.17" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceInitialAvailableHours">Horas disponibles iniciales</label>
+                  <input type="text" id="manualInvoiceInitialAvailableHours" value="1,645.17" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceWorkedHours">Horas trabajadas</label>
+                  <input type="text" id="manualInvoiceWorkedHours" value="-971.50" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="manualInvoiceFinalAvailableHours">Horas disponibles finales</label>
+                  <input type="text" id="manualInvoiceFinalAvailableHours" value="673.67" autocomplete="off">
+                </div>
+              </div>
+            </section>
+
             <section class="manual-invoice-lines span-2" aria-labelledby="manualInvoiceLinesTitle">
               <div class="table-header compact-table-header">
                 <div class="section-title">
-                  <p class="eyebrow">Lineas</p>
-                  <h3 id="manualInvoiceLinesTitle">Lineas de factura</h3>
+                  <p class="eyebrow">Líneas</p>
+                  <h3 id="manualInvoiceLinesTitle">Líneas de factura</h3>
                 </div>
-                <button type="button" id="addManualInvoiceLineButton" class="btn session-button">+ Agregar linea</button>
+                <button type="button" id="addManualInvoiceLineButton" class="btn session-button">+ Agregar línea</button>
               </div>
 
               <div class="manual-invoice-lines-table">
                 <div class="manual-invoice-line manual-invoice-line-header">
                   <span>Cantidad</span>
-                  <span>Descripcion</span>
+                  <span>Descripción</span>
                   <span>Rate</span>
                   <span>Amount</span>
                   <span></span>
@@ -1331,6 +1459,33 @@
               </div>
             </section>
 
+            <section class="manual-invoice-certifications span-2" aria-labelledby="manualInvoiceCertificationsTitle">
+              <div class="section-title compact-title">
+                <p class="eyebrow">CERTIFICACIONES</p>
+                <h3 id="manualInvoiceCertificationsTitle">Textos de certificaci&oacute;n</h3>
+              </div>
+
+              <div class="manual-invoice-certification-grid">
+                <div class="form-group">
+                  <label class="checkbox-label manual-invoice-toggle" for="manualInvoiceShowCertification1">
+                    <input type="checkbox" id="manualInvoiceShowCertification1" checked>
+                    <span>Mostrar Certificación 1 en PDF</span>
+                  </label>
+                  <label for="manualInvoiceCertification1">CERTIFICACI&Oacute;N 1</label>
+                  <textarea id="manualInvoiceCertification1" rows="7">Bajo pena de nulidad absoluta certifico que ning&uacute;n servidor p&uacute;blico del Municipio de San Juan y ni el ALDL es parte o tiene alg&uacute;n inter&eacute;s en las ganancias o beneficios producto del contrato objeto de esta factura y de ser parte o tener inter&eacute;s en las ganancias o beneficios productos del contrato ha mediado una dispensa previa. La &uacute;nica consideraci&oacute;n para suministrar los bienes o servicios objeto del contrato ha sido el pago acordado con el representante autorizado de la entidad gubernamental. El importe de esta factura es justo y correcto. Los trabajos han sido realizados, los productos han sido entregados y los servicios han sido prestados al ALDL, y no se ha recibido pago por ellos.</textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="checkbox-label manual-invoice-toggle" for="manualInvoiceShowCertification2">
+                    <input type="checkbox" id="manualInvoiceShowCertification2" checked>
+                    <span>Mostrar Certificación 2 en PDF</span>
+                  </label>
+                  <label for="manualInvoiceCertification2">CERTIFICACI&Oacute;N 2</label>
+                  <textarea id="manualInvoiceCertification2" rows="4">Certifico que los servicios indicados en esta factura se recibieron y que no he autorizado el pago de los mismos anteriormente.</textarea>
+                </div>
+              </div>
+            </section>
+
             <section class="manual-invoice-signatures span-2" aria-labelledby="manualInvoiceSignaturesTitle">
               <div class="section-title compact-title">
                 <p class="eyebrow">Firmas</p>
@@ -1339,6 +1494,10 @@
 
               <div class="manual-invoice-signature-grid">
                 <div class="form-group">
+                  <label class="checkbox-label manual-invoice-toggle" for="manualInvoiceShowSignature1">
+                    <input type="checkbox" id="manualInvoiceShowSignature1" checked>
+                    <span>Mostrar Firma 1 en PDF</span>
+                  </label>
                   <label for="manualInvoiceSignature1Name">Firma 1 - Nombre</label>
                   <input type="text" id="manualInvoiceSignature1Name" placeholder="Nombre" autocomplete="off">
                 </div>
@@ -1349,6 +1508,10 @@
                 </div>
 
                 <div class="form-group">
+                  <label class="checkbox-label manual-invoice-toggle" for="manualInvoiceShowSignature2">
+                    <input type="checkbox" id="manualInvoiceShowSignature2" checked>
+                    <span>Mostrar Firma 2 en PDF</span>
+                  </label>
                   <label for="manualInvoiceSignature2Name">Firma 2 - Nombre</label>
                   <input type="text" id="manualInvoiceSignature2Name" placeholder="Nombre" autocomplete="off">
                 </div>
@@ -1357,6 +1520,18 @@
                   <label for="manualInvoiceSignature2Title">Firma 2 - Cargo</label>
                   <input type="text" id="manualInvoiceSignature2Title" placeholder="Cargo" autocomplete="off">
                 </div>
+              </div>
+            </section>
+
+            <section class="manual-invoice-final-message span-2" aria-labelledby="manualInvoiceFinalMessageTitle">
+              <div class="section-title compact-title">
+                <p class="eyebrow">Mensaje</p>
+                <h3 id="manualInvoiceFinalMessageTitle">Mensaje final de factura</h3>
+              </div>
+
+              <div class="form-group">
+                <label for="manualInvoiceFinalMessage">Mensaje final de factura</label>
+                <input type="text" id="manualInvoiceFinalMessage" value="&iexcl;Es un placer trabajar con ustedes!" autocomplete="off">
               </div>
             </section>
           </div>
@@ -1373,30 +1548,30 @@
     <section id="aboutTabPanel" class="tab-panel hidden" aria-labelledby="about-title">
       <section class="panel table-panel about-panel">
         <div class="section-title">
-          <p id="aboutEyebrow" class="eyebrow">Orientacion</p>
+          <p id="aboutEyebrow" class="eyebrow">Orientación</p>
           <h2 id="about-title">Acerca de</h2>
           <p id="aboutIntro" class="foundation-copy">
-            El Programa de Registro de Horas y Facturacion de Servicios ayuda a registrar, consultar y revisar los servicios por hora de Solutions By Design.
+            El Programa de Registro de Horas y Facturación de Servicios ayuda a registrar, consultar y revisar los servicios por hora de Solutions By Design, Inc.
           </p>
         </div>
 
         <div class="about-hero">
           <div>
-            <p id="aboutPurposeEyebrow" class="eyebrow">Proposito</p>
+            <p id="aboutPurposeEyebrow" class="eyebrow">Propósito</p>
             <h3 id="aboutPurposeTitle">Una herramienta para el trabajo diario</h3>
             <p id="aboutPurposeText">
-              El sistema centraliza clientes, proyectos, horas trabajadas, reportes y documentos de apoyo para que el equipo pueda administrar el trabajo con informacion clara y actualizada.
+              El sistema centraliza clientes, proyectos, horas trabajadas, reportes y documentos de apoyo para que el equipo pueda administrar el trabajo con información clara y actualizada.
             </p>
           </div>
           <div class="about-logo-wrap">
-            <img class="about-logo" src="assets/logo-about.jpeg" alt="Solutions By Design">
+            <img class="about-logo about-logo-horizontal" src="assets/logo-horizontal-web.png" alt="Solutions By Design, Inc.">
           </div>
         </div>
 
         <div class="foundation-grid about-module-grid">
           <article class="foundation-card">
             <h3 id="aboutModuleDashboardTitle">Resumen</h3>
-            <p id="aboutModuleDashboardText">Muestra indicadores, horas y actividad reciente para revisar rapidamente el estado del trabajo.</p>
+            <p id="aboutModuleDashboardText">Muestra indicadores, horas y actividad reciente para revisar rápidamente el estado del trabajo.</p>
           </article>
           <article class="foundation-card">
             <h3 id="aboutModuleClientsProjectsTitle">Clientes y proyectos</h3>
@@ -1404,7 +1579,7 @@
           </article>
           <article class="foundation-card">
             <h3 id="aboutModuleServiceRecordsTitle">Registros de servicio</h3>
-            <p id="aboutModuleServiceRecordsText">Permite registrar, editar y consultar horas trabajadas por tecnico, cliente, proyecto, fecha y estado.</p>
+            <p id="aboutModuleServiceRecordsText">Permite registrar, editar y consultar horas trabajadas por técnico, cliente, proyecto, fecha y estado.</p>
           </article>
           <article class="foundation-card">
             <h3 id="aboutModuleReportsTitle">Reportes y documentos</h3>
@@ -1413,13 +1588,13 @@
         </div>
 
         <div class="about-note">
-          <h3 id="aboutPermissionsTitle">Acceso segun rol</h3>
+          <h3 id="aboutPermissionsTitle">Acceso según rol</h3>
           <p id="aboutPermissionsText">
-            Las opciones disponibles pueden cambiar segun el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la informacion y mantener un flujo de trabajo ordenado.
+            Las opciones disponibles pueden cambiar según el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la información y mantener un flujo de trabajo ordenado.
           </p>
         </div>
 
-        <p id="aboutFooter" class="about-footer">Desarrollado para Solutions By Design.</p>
+        <p id="aboutFooter" class="about-footer">Desarrollado para Solutions By Design, Inc.</p>
       </section>
     </section>
   </main>
@@ -1956,7 +2131,7 @@
       <input type="hidden" id="editTicketId">
 
       <div class="form-group">
-        <label for="editDescription">Descripcion del problema</label>
+        <label for="editDescription">Descripción del problema</label>
         <textarea id="editDescription" rows="5" required></textarea>
       </div>
 
@@ -2013,7 +2188,7 @@
           <div class="compact-table-header">
             <div>
               <p id="edit-user-info-eyebrow" class="eyebrow">Seguridad</p>
-              <h3 id="edit-user-info-title">Informacion del usuario</h3>
+              <h3 id="edit-user-info-title">Información del usuario</h3>
             </div>
           </div>
 
@@ -2029,10 +2204,10 @@
             </div>
 
             <div class="form-group">
-              <label for="editPassword">Nueva contrasena</label>
+              <label for="editPassword">Nueva contraseña</label>
               <div class="password-field">
                 <input type="password" id="editPassword" placeholder="Dejar vacio para mantener">
-                <button type="button" class="password-toggle" data-password-toggle="editPassword" aria-label="Mostrar contrasena">
+                <button type="button" class="password-toggle" data-password-toggle="editPassword" aria-label="Mostrar contraseña">
                   <svg class="password-icon password-icon-eye" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
                     <circle cx="12" cy="12" r="3"/>
@@ -2045,7 +2220,7 @@
                   </svg>
                 </button>
               </div>
-              <button type="button" id="temporaryPasswordButton" class="btn session-button compact-button">Asignar contrasena temporal</button>
+              <button type="button" id="temporaryPasswordButton" class="btn session-button compact-button">Asignar contraseña temporal</button>
             </div>
 
             <div class="form-group">
@@ -2118,6 +2293,20 @@
       </div>
       <div class="modal-footer-actions">
         <button type="button" id="manageUserProjectAssignmentsButton" class="btn btn-primary">Administrar asignaciones</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="confirmDialog" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmDialogTitle" aria-describedby="confirmDialogMessage">
+    <section class="panel modal-panel confirm-dialog-panel">
+      <div class="section-title">
+        <p class="eyebrow">Confirmación</p>
+        <h2 id="confirmDialogTitle">Confirmar acción</h2>
+      </div>
+      <p id="confirmDialogMessage" class="confirm-dialog-message" aria-live="polite"></p>
+      <div class="modal-footer-actions confirm-dialog-actions">
+        <button type="button" id="confirmDialogCancel" class="btn session-button">No, volver</button>
+        <button type="button" id="confirmDialogConfirm" class="btn btn-primary confirm-dialog-danger">Sí, continuar</button>
       </div>
     </section>
   </div>

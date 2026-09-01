@@ -1,1489 +1,310 @@
-# Solutions By Design - Service Billing System
+# Solutions By Design — Sistema de Horas y Facturación (Service Billing System)
 
-Idioma: [Espanol](README_ES.md) | [English](README.MD)
+Idioma: [Español](README_ES.md) | [English](README.MD)
 
-Solutions By Design - Service Billing System es una aplicacion interna para registrar servicios por hora, revisar registros operativos y preparar reportes de soporte para facturacion de servicios. El nombre del repositorio se mantiene como `Service-Billing-System`.
+Solutions By Design, Inc. — Service Billing System es una aplicación web interna
+para administrar servicios por hora: clientes y proyectos, asignaciones de
+Project Manager, registros de servicio y horas trabajadas, un panel operativo,
+reportes de horas de servicio con exportación a PDF y Excel, y un generador de
+facturas manuales que produce un PDF profesional.
 
-## Nota de Migracion
+El nombre del repositorio es `Service-Billing-System`. La marca visible de la
+aplicación es `Solutions By Design, Inc.`
 
-Este repositorio ha completado la Fase 15 de la migracion. La identidad del producto, el esquema SQL Server, las APIs backend, la API de dashboard, la base inicial del frontend y las pantallas Dashboard, Clients, Projects, Service Records e Invoices conectadas al backend real estan disponibles mientras los modulos legacy se mantienen para una migracion segura.
+---
 
-Endpoints legacy como `/api/tickets` se mantienen temporalmente para no romper la aplicacion mientras se introducen de forma segura los nuevos modulos de Service Billing.
+## Estado del proyecto
 
-## Nota De Presentacion
+- **Rama:** esta versión se mantiene en **`development`**.
+- **Etapa:** funcional y revisada de forma visual y por revisión de código durante
+  el desarrollo iterativo. Está **a la espera de pruebas de aceptación formales de
+  la organización / del usuario (UAT)** antes de promoverse a `main`.
+- **`main` y producción no han sido actualizados con esta versión.** No existe
+  release, tag ni despliegue asociado a este estado.
+- Este documento describe el sistema tal como está implementado hoy en
+  `development`. **No** afirma que el sistema esté listo para producción ni
+  certificado por QA.
 
-Para la demo local actual, los valores monetarios estan ocultos intencionalmente en la interfaz. Tarifas, impuestos, subtotales, totales, montos facturados, montos pendientes, montos pagados y simbolos de moneda se conservan en la base de datos y en las APIs backend, pero no se muestran en Dashboard, Projects, Invoices, lineas de factura, Reports ni Settings.
+---
 
-Invoices tambien queda oculto de la navegacion visible del frontend para la demo actual, de forma que el flujo se concentre en clientes, proyectos, registros de servicio y reportes de horas trabajadas. Las APIs backend y tablas SQL de facturas se mantienen intactas.
+## Tecnologías
 
-## Progreso Del Proyecto
+La aplicación se construye deliberadamente sin framework de frontend y sin paso de
+compilación.
 
-- Fase 1: Identidad y documentacion ✅
-- Fase 2: Base de datos ServiceBillingDB ✅
-- Fase 3: Conexion a ServiceBillingDB ✅
-- Fase 4: CRUD de Clientes ✅
-- Fase 5: CRUD de Proyectos ✅
-- Fase 6: CRUD de Registros de Servicio ✅
-- Fase 7: CRUD de Facturas y generacion desde registros ✅
-- Fase 8: Reportes de horas y facturacion ✅
-- Fase 9: Dashboard API ✅
-- Fase 10: Frontend Foundation ✅
-- Fase 11: Clients Frontend ✅
-- Fase 12: Projects Frontend ✅
-- Fase 13: Service Records Frontend ✅
-- Fase 14: Invoices Frontend ✅
-- Fase 15: Dashboard Frontend ✅
-- Fase 17A: Migracion SQL de contratos por proyecto ✅
-- Fase 17B: Backend de contratos por proyecto ✅
-- Fase 17C: Frontend de contratos en Projects ✅
+| Capa | Tecnología |
+|---|---|
+| Frontend | HTML, CSS, JavaScript puro (una sola página, sin framework) |
+| Backend | Node.js, Express |
+| Base de datos | Microsoft SQL Server |
+| Driver de BD | `mssql` con `msnodesqlv8` (Autenticación de Windows por defecto) |
+| Autenticación / sesiones | `express-session`, hash de contraseñas con `bcrypt` |
+| Generación de PDF | `pdfkit` |
+| Exportación a Excel | `exceljs` |
+| Otros | `cors` |
 
-Proxima fase: Fase 17D - Advertencias contractuales en Service Records
+Esta versión **no usa React, Angular ni Vue**.
 
-## Estado Actual Del Proyecto
+---
 
-- ✅ ServiceBillingDB
-- ✅ Authentication
-- ✅ Users
-- ✅ Clients
-- ✅ Projects
-- ✅ Service Records
-- ✅ Invoices
-- ✅ Reports API
-- ✅ Dashboard API
-- ✅ Dashboard Frontend
-- ✅ Clients Frontend
-- ✅ Projects Frontend
-- ✅ Service Records Frontend
-- ✅ Invoices Frontend
+## Módulos y funcionalidades
 
-## Capacidades Actuales
+### Panel / Resumen (Dashboard)
 
-- Login con sesiones.
-- Control de acceso por roles `Admin` y `User`.
-- Administracion de usuarios.
-- API CRUD de clientes con desactivacion logica.
-- API CRUD de proyectos relacionados con clientes.
-- API CRUD de registros de servicio con calculo automatico de horas.
-- API CRUD de facturas con lineas de factura y generacion desde registros facturables.
-- API de reportes de horas de servicio y facturacion con resumenes y filtros.
-- API de dashboard con resumen, graficas y actividad reciente.
-- Frontend Foundation con branding Service Billing, nueva navegacion y pantallas iniciales.
-- Clients Frontend conectado al backend real con busqueda, crear, editar y desactivacion logica.
-- Projects Frontend conectado al backend real con busqueda, filtro por cliente, crear, editar y desactivacion logica.
-- Projects Frontend ahora muestra resumen contractual, informacion contractual editable para Admin y alertas visuales de contrato.
-- Service Records Frontend conectado al backend real con busqueda, filtros, modal de crear/editar, cancelacion logica, vista previa automatica de horas y acciones segun rol.
-- La implementacion frontend de Invoices permanece en el codigo, pero queda oculta de la navegacion visible para la demo actual.
-- Dashboard Frontend conectado al backend real con tarjetas y secciones enfocadas en servicios, actividad reciente, manejo de errores de API y datos limitados por rol.
-- Reports Frontend ahora usa reportes de horas de servicio en lugar de reportes legacy de tickets.
-- Flujo de solicitud de recuperacion de password.
-- Notificaciones para actividad administrativa.
-- Flujo actual de registros todavia basado internamente en el modulo legacy de tickets.
-- Los controles de exportacion incluyen PDF activo para reportes de horas de servicio; Excel permanece deshabilitado como `Excel (Proximamente)` para la demo.
-- Interfaz web responsive para desktop, tablet y movil.
+- Resumen del negocio con cinco tarjetas KPI: **Clientes, Proyectos, Registros de
+  servicio, Horas totales, Horas pendientes de procesar**.
+- Las tarjetas KPI abren un panel de detalle con los registros relacionados
+  (horas pendientes, horas procesadas, registros del mes en curso, resumen de
+  proyecto, últimos registros de servicio).
+- Gráficos de barras para **horas por mes, cliente, proyecto y técnico**,
+  renderizados sin librerías externas; las barras son interactivas y abren un
+  panel de detalle.
+- Paneles de actividad reciente de registros de servicio, clientes y proyectos.
+- **Panel de proyecto:** buscar un proyecto y revisar su información de contrato y
+  totales de horas.
+- **Panel de técnico:** filtrar por técnico, proyecto y rango de fechas para
+  revisar horas trabajadas, horas por cliente/proyecto, totales y últimos
+  registros. El administrador puede elegir cualquier técnico; un técnico ve su
+  propio alcance.
+- Los datos globales del panel se filtran a clientes, proyectos y técnicos
+  activos. Los números usan un formato `en-US` consistente (por ejemplo
+  `11,553.25 h`).
 
-## Direccion Del Sistema
+### Clientes
 
-El sistema se esta convirtiendo hacia estas funcionalidades de Service Billing:
+- Crear, editar y listar clientes con búsqueda.
+- Manejo **Activo / Inactivo** mediante desactivación lógica (soft delete): las
+  filas nunca se eliminan físicamente, por lo que se preserva la información
+  histórica.
+- Incluye contacto, correo, teléfono, nombre de facturación, identificación
+  fiscal y dirección.
 
-- Registros de servicio en lugar de tickets.
-- Usuarios como usuarios y tecnicos.
-- Catalogos de clientes y proyectos.
-- Registro de servicios por hora con horarios de manana y tarde.
-- Calculo automatico de total de horas.
-- Reportes por tecnico, cliente, proyecto y rango de fechas.
-- Preparacion de facturas desde registros facturables.
-- Resumen de horas, clientes, proyectos y facturacion.
+### Proyectos
 
-## Tecnologias Utilizadas
+- Crear, editar y listar proyectos ligados a un cliente, con búsqueda y filtro por
+  cliente.
+- Desactivación lógica **Activo / Inactivo**.
+- Información de contrato: número de contrato, horas contratadas, horas
+  usadas/restantes, fechas de vigencia y alertas visuales de estado de contrato
+  (OK, pocas horas, por vencer, agotado/vencido, sin contrato).
+- **Asignaciones de Project Manager:** se pueden asignar uno o varios usuarios
+  Project Manager a un proyecto desde el editor de proyecto (y desde la pantalla
+  de Usuarios).
 
-- HTML5
-- CSS3
-- JavaScript
-- Node.js
-- Express.js
-- SQL Server
-- mssql
-- ExcelJS
-- PDFKit
+### Registros de servicio
 
-## Estructura Del Proyecto
+- Listado con **paginación del lado del servidor de 50 registros por página** y
+  navegación Anterior / Siguiente con contador de registros.
+- Búsqueda por técnico, cliente, proyecto y descripción; filtros por técnico,
+  cliente, proyecto, fecha de servicio y estado
+  (`Recorded`, `Billed`, `Canceled`).
+- Modal de creación / edición con cálculo automático de `TotalHours` a partir de
+  los rangos de mañana y tarde
+  `(FinMañana − InicioMañana) + (FinTarde − InicioTarde)`.
+- Cancelación lógica (estado `Canceled`): los registros no se eliminan.
+- El campo de búsqueda tiene debounce.
+- Sensible al rol y a las asignaciones: lo que un usuario ve y puede hacer depende
+  de su rol y, para Project Managers, de sus proyectos asignados.
 
-- `index.html`: estructura principal de la aplicacion, login, tabs, tablas, formularios y modales.
-- `style.css`: tema oscuro responsive, tarjetas, tablas, formularios, botones y estados visuales.
-- `app.js`: logica del frontend, llamadas API, traducciones, filtros, UI por roles y renderizado dinamico.
-- `server.js`: backend Express con conexion SQL Server, autenticacion, registros legacy de tickets, usuarios, notificaciones, recuperacion de password y API de reportes.
-- `service-billing-schema.sql`: crea `ServiceBillingDB`, sus tablas, relaciones, indices y datos demo.
-- `seed.js`: crea usuarios demo y registros legacy de tickets.
-- `seed-demo-data.js`: crea datos demo adicionales para la estructura legacy actual.
-- `audit-migration.sql`: script legacy de migracion de auditoria.
+### Reportes
 
-## Como Correr El Proyecto
+- Reporte de horas de servicio con filtros: rango de fechas, técnico, cliente,
+  proyecto y estado; más un resumen (totales, horas facturadas/no
+  facturadas/canceladas, desgloses).
+- **Exportación a PDF** (PDFKit): diseño corporativo de Solutions By Design, Inc.
+  con un desglose de servicios y una sección de hoja de tiempo (Time Sheet)
+  agrupada, encabezados/pies de página y numeración `Página X de Y`.
+- **Exportación a Excel** (ExcelJS) del reporte de horas de servicio.
+- Se puede incluir un campo manual `Invoice #` en el PDF exportado solo para esa
+  solicitud; no se guarda en la base de datos.
+- Los botones de exportación permanecen deshabilitados hasta que se genere un
+  reporte con registros.
 
-1. Instalar dependencias:
+### Facturas (facturación manual)
+
+Un generador de facturas basado solo en el formulario que produce un PDF
+profesional. **Ningún dato de esta pantalla se guarda en la base de datos.**
+
+- Encabezado editable: Invoice #, Fecha, P.O. No., Terms, Fecha de vencimiento,
+  Proyecto, Bill To.
+- Sección editable de **Detalle del servicio**: descripción principal del
+  servicio, período del servicio, números de cuentas, número de contrato, fechas
+  de vigencia (selectores de fecha nativos) y horas contratadas / disponibles /
+  trabajadas / finales.
+- **Líneas de factura** dinámicas con `Cantidad`, `Descripción`, `Rate` y un
+  `Amount` calculado automáticamente (`Cantidad × Rate`). Se pueden agregar y
+  eliminar líneas.
+- Resumen: **Subtotal**, **IVU** (tasa por defecto `11.5%`, se puede desactivar o
+  cambiar) y **Total**.
+- Textos de certificación opcionales (dos bloques, cada uno se puede mostrar u
+  ocultar en el PDF) y dos bloques de firma configurables (nombre y cargo).
+- Mensaje final de factura editable.
+- `POST /api/manual-invoices/pdf` genera el PDF con todas las líneas, la marca,
+  los metadatos, el Bill To, los totales, las secciones de certificación/firma y
+  el pie de página.
+- **Validación del formulario** antes de generar: los campos obligatorios
+  (Invoice #, Fecha, Proyecto, Bill To y, por cada línea, Cantidad y Descripción)
+  muestran un `*` rojo junto al label; al enviar, los campos vacíos o inválidos
+  reciben borde rojo y un mensaje en línea "Este campo es obligatorio", se
+  establecen `aria-invalid` / `aria-describedby` y el foco se mueve al primer
+  campo inválido. El estado rojo se elimina a medida que se corrige cada campo. El
+  campo de números de cuentas elimina líneas duplicadas exactas al cargar, al
+  pegar, al perder el foco y al construir el PDF.
+
+### Usuarios
+
+- Administración de usuarios con filtros por rol y por estado.
+- Estado **Activo / Inactivo** visible en la tabla; el administrador puede activar
+  o desactivar un usuario sin eliminar filas. Los usuarios inactivos no pueden
+  iniciar sesión, pero sus registros de servicio históricos siguen disponibles.
+- El administrador no puede desactivar su propia cuenta con sesión iniciada.
+- Gestión de asignaciones de Project Manager, incluida una vista de detalle de
+  solo lectura.
+
+### Project Managers
+
+- El rol `Project Manager` está limitado a los proyectos asignados a ese usuario
+  (almacenados en `dbo.UserProjectAssignments`).
+- Dentro de Clientes, Proyectos, Registros de servicio, Panel y Reportes, un
+  Project Manager solo ve datos de sus proyectos asignados; las exportaciones
+  PDF/Excel usan el mismo alcance.
+- Las solicitudes directas de un proyecto o registro de servicio no asignado
+  devuelven `403`.
+- Los Project Managers no pueden crear, editar, cancelar ni procesar registros de
+  servicio, y no pueden acceder a la administración de usuarios, a la
+  configuración ni al endpoint de facturación manual.
+- Un Project Manager sin asignaciones puede iniciar sesión y recibe un espacio de
+  trabajo vacío con su alcance.
+
+### Notificaciones y experiencia de uso
+
+- **Toasts** dentro de la aplicación: éxito (verde), error (rojo), advertencia
+  (ámbar), información (azul), con cierre automático, pausa al pasar el cursor y
+  botón para descartar.
+- Un **modal de confirmación** con la identidad del sistema reemplaza el
+  `confirm()` del navegador para acciones destructivas.
+- Avisos de cambios sin guardar en los formularios principales; estados de carga
+  consistentes que siempre restauran los botones tras éxito o error.
+- Campana de notificaciones con contador de no leídas; el administrador puede
+  eliminar notificaciones individuales.
+- Flujo de solicitud de recuperación de contraseña
+  (`POST /api/forgot-password`); un administrador resuelve la solicitud.
+
+### Tema e interfaz
+
+- Modos de apariencia: **Sistema**, **Claro** y **Oscuro**. El tema resuelto se
+  aplica antes del primer render para evitar parpadeo, y la preferencia manual se
+  guarda en `localStorage` bajo `sbd-theme` (`system` sigue al sistema operativo).
+- Interfaz empresarial de inspiración Apple: bordes finos (hairline), elevación
+  sutil, radios consistentes, estados hover/focus/active discretos y soporte de
+  `prefers-reduced-motion`.
+- Diseño responsivo para escritorio, tablet y móvil.
+- El texto de la interfaz está disponible en **español e inglés** mediante un
+  sistema de traducción compartido, conmutable desde el encabezado.
+
+---
+
+## Roles y permisos
+
+Los roles están definidos por la implementación del backend. No se deben asumir
+permisos más allá de lo aquí listado.
+
+| Rol | Valor persistido | Resumen |
+|---|---|---|
+| **Admin** | `Admin` | Acceso administrativo completo donde está implementado: Usuarios, Configuración, roles, asignaciones de Project Manager, todos los datos de Clientes / Proyectos / Registros de servicio / Reportes / Panel, y la pantalla de Facturas. |
+| **Project Manager** | `ProjectManager` (etiqueta "Project Manager") | Acceso orientado a lectura, acotado a los proyectos asignados en Clientes, Proyectos, Registros de servicio, Panel y Reportes (incluidas exportaciones). No administra usuarios/configuración, no crea/edita/cancela/procesa registros de servicio, no usa el endpoint de facturación manual. Los recursos no asignados devuelven `403`. |
+| **Técnico / Usuario** | `Technician` o `User` | Flujo autorizado de registros de servicio: puede ver registros y crear registros bajo su propia identidad de técnico, según las verificaciones de permisos actuales. Sin acceso administrativo. |
+
+La autenticación es por sesión con contraseñas cifradas con bcrypt. Las cuentas
+inactivas se bloquean en el inicio de sesión.
+
+---
+
+## Datos y persistencia
+
+- Base de datos: **`ServiceBillingDB`** en SQL Server.
+- Conexión por defecto: servidor `localhost`, **Autenticación de Windows**.
+  Configurable mediante variables de entorno (`DB_SERVER`, `DB_PORT`, `DB_NAME` y
+  credenciales SQL cuando se proporcionan).
+- Tablas utilizadas por la aplicación: `Users`, `Notifications`,
+  `PasswordResetRequests`, `Clients`, `Projects`, `ServiceRecords`, `Invoices`,
+  `InvoiceLines`, `AppSettings` y `UserProjectAssignments`.
+- Las eliminaciones en toda la aplicación son **lógicas** (`IsActive = 0` o estado
+  `Canceled`). Se preservan los datos históricos.
+- La pantalla de Facturas y el campo `Invoice #` de Reportes **no** escriben en la
+  base de datos.
+
+---
+
+## Instalación y ejecución
+
+Requisitos: Node.js y npm, y una instancia de SQL Server accesible con
+`ServiceBillingDB` disponible.
 
 ```bash
+# 1. Instalar dependencias
 npm install
-```
 
-2. Correr seed data si tu base local de SQL Server ya tiene el esquema legacy esperado:
-
-```bash
+# 2. (Opcional) cargar datos de demostración si el esquema local lo permite
 npm run seed
-```
 
-3. Iniciar el servidor:
-
-```bash
+# 3. Iniciar el servidor
 npm start
+
+# 4. Abrir la aplicación
+#    http://localhost:3000
 ```
 
-4. Abrir la aplicacion:
-
-```text
-http://localhost:3000
-```
-
-## Cuentas Demo
-
-Administrador de Service Billing:
-
-```text
-Email: william@servicebilling.local
-Password: Admin123!
-```
-
-Tecnico de Service Billing:
-
-```text
-Email: carlos@servicebilling.local
-Password: Tech123!
-```
-
-Las cuentas demo adicionales estan definidas en `service-billing-schema.sql`.
-
-## Estado Actual De Base De Datos
-
-Configuracion actual del backend:
-
-- Server: `localhost`
-- Database: `ServiceBillingDB` por defecto
-- Variable de entorno opcional: `DB_NAME`
-- Authentication: Windows Authentication
-
-Tablas actuales usadas por la aplicacion:
-
-- `Users`
-- `Notifications`
-- `PasswordResetRequests`
-- `Clients`
-- `Projects`
-- `ServiceRecords`
-- `Invoices`
-- `InvoiceLines`
-- `AppSettings`
-
-Las tablas y endpoints legacy no se eliminan durante la migracion.
-
-## Estado Actual De API
-
-La API existente se mantiene disponible y en la Fase 4 se agrego la API de Clientes.
-
-Clientes:
-
-- `GET /api/clients`: devuelve clientes activos; permite `?search=` o `?q=`.
-- `GET /api/clients/:id`: devuelve un cliente activo.
-- `POST /api/clients`: crea un cliente.
-- `PUT /api/clients/:id`: actualiza un cliente.
-- `DELETE /api/clients/:id`: establece `IsActive = 0` sin borrar fisicamente la fila.
-
-Proyectos:
-
-- `GET /api/projects`: devuelve proyectos activos; permite busqueda y filtro por cliente.
-- `GET /api/projects/:id`: devuelve un proyecto activo.
-- `POST /api/projects`: crea un proyecto para un cliente activo.
-- `PUT /api/projects/:id`: actualiza un proyecto.
-- `DELETE /api/projects/:id`: establece `IsActive = 0` sin borrar fisicamente la fila.
-
-Registros de servicio:
-
-- `GET /api/service-records`: devuelve registros con busqueda y filtros opcionales.
-- `GET /api/service-records/:id`: devuelve un registro.
-- `POST /api/service-records`: crea un registro y calcula `TotalHours`.
-- `PUT /api/service-records/:id`: actualiza un registro y recalcula `TotalHours`.
-- `DELETE /api/service-records/:id`: cambia el estado a `Canceled` sin borrar la fila.
-
-Facturas:
-
-- `GET /api/invoices`: devuelve facturas con busqueda y filtros opcionales.
-- `GET /api/invoices/:id`: devuelve una factura con sus lineas.
-- `POST /api/invoices`: crea un encabezado de factura manual.
-- `PUT /api/invoices/:id`: actualiza el encabezado de factura y recalcula totales desde sus lineas.
-- `DELETE /api/invoices/:id`: cancela la factura sin borrar fisicamente la fila.
-- `POST /api/invoices/generate`: genera una factura desde registros de servicio en estado `Recorded`.
-
-Registros legacy:
-
-- `GET /api/tickets`
-- `POST /api/tickets`
-- `PUT /api/tickets/:id`
-- `PUT /api/tickets/:id/close`
-- `DELETE /api/tickets/:id`
-
-Usuarios:
-
-- `GET /api/users`
-- `POST /api/users`
-- `PUT /api/users/:id`
-- `DELETE /api/users/:id`
-
-Autenticacion y recuperacion:
-
-- `POST /api/login`
-- `POST /api/logout`
-- `GET /api/me`
-- `POST /api/forgot-password`
-- `GET /api/password-resets`
-- `PUT /api/password-resets/:id/resolve`
-
-Reportes:
-
-- `GET /api/reports/service-hours`
-- `GET /api/reports/service-hours/summary`
-- `GET /api/reports/invoices`
-- `GET /api/reports/invoices/summary`
-- `GET /api/reports/tickets`
-- `GET /api/reports/tickets/pdf`
-- `GET /api/reports/tickets/excel`
-
-Dashboard:
-
-- `GET /api/dashboard/summary`
-- `GET /api/dashboard/charts`
-- `GET /api/dashboard/recent-activity`
-
-## Fase 4: CRUD De Clientes
-
-### Permisos
-
-- Usuarios autenticados con rol `Admin`, `Technician` y personal actual pueden listar y consultar clientes.
-- Solo usuarios `Admin` pueden crear, editar o desactivar clientes.
-- La desactivacion es logica: la API establece `IsActive` en `0`.
-
-### Tabla Clients
-
-La tabla `dbo.Clients` incluye:
-
-- `ClientID`: llave primaria identity.
-- `ClientName`: nombre requerido y unico.
-- `ContactName`: contacto principal.
-- `Email`: correo del contacto.
-- `Phone`: telefono del contacto.
-- `BillingName`: nombre legal o de facturacion.
-- `TaxID`: identificador contributivo.
-- `AddressLine1`, `AddressLine2`, `City`, `StateProvince`, `PostalCode`, `Country`: datos de direccion. La API actual expone `AddressLine1` como `Address`.
-- `IsActive`: controla si el cliente esta activo o desactivado.
-- `CreatedAt`, `UpdatedAt`: fechas de auditoria.
-- `CreatedByUserID`: llave foranea hacia `dbo.Users`.
-
-### Ejemplos De API
-
-Primero inicia sesion para que el cliente HTTP guarde la cookie de sesion:
-
-```http
-POST /api/login
-Content-Type: application/json
-
-{
-  "email": "william@servicebilling.local",
-  "password": "Admin123!"
-}
-```
-
-Listar o buscar clientes activos:
-
-```http
-GET /api/clients
-GET /api/clients?search=acme
-GET /api/clients/1
-```
-
-Crear un cliente:
-
-```http
-POST /api/clients
-Content-Type: application/json
-
-{
-  "ClientName": "Empresa Ejemplo",
-  "ContactName": "Ana Perez",
-  "Email": "ana@ejemplo.com",
-  "Phone": "787-555-1000",
-  "Address": "100 Main Street",
-  "BillingName": "Empresa Ejemplo LLC",
-  "TaxID": "66-1234567",
-  "IsActive": true
-}
-```
-
-Editar o desactivar un cliente:
-
-```http
-PUT /api/clients/1
-DELETE /api/clients/1
-```
-
-## Fase 5: CRUD De Proyectos
-
-Los proyectos pertenecen a clientes mediante `Projects.ClientID`, que referencia `Clients.ClientID`. Cada operacion de creacion o edicion valida que el cliente seleccionado exista y este activo.
-
-### Permisos
-
-- Usuarios autenticados con rol `Admin`, `Technician` y personal actual pueden listar y consultar proyectos.
-- Solo usuarios `Admin` pueden crear, editar o desactivar proyectos.
-- La desactivacion es logica mediante `IsActive = 0`.
-
-### Filtros Disponibles
-
-- Busqueda por `ProjectName`, `ClientName` o `Description` usando `?search=` o `?q=`.
-- Filtro por cliente usando `?clientId=` o `?ClientID=`.
-- Las respuestas GET incluyen `ClientName`.
-
-### Ejemplos De API
-
-```http
-GET /api/projects
-GET /api/projects?search=migracion
-GET /api/projects?clientId=1
-GET /api/projects/1
-```
-
-```http
-POST /api/projects
-Content-Type: application/json
-
-{
-  "ClientID": 1,
-  "ProjectName": "Soporte Mensual",
-  "Description": "Soporte y mantenimiento recurrente",
-  "HourlyRate": 95.50,
-  "IsActive": true
-}
-```
-
-```http
-PUT /api/projects/1
-DELETE /api/projects/1
-```
-
-`HourlyRate` permite decimales y no puede ser negativo.
-
-## Fase 6: CRUD De Registros De Servicio
-
-Cada registro relaciona un tecnico, cliente y proyecto activos mediante `TechnicianUserID`, `ClientID` y `ProjectID`. El proyecto debe estar activo y pertenecer al cliente seleccionado.
-
-### Calculo De TotalHours
-
-La API calcula `TotalHours`; el cliente no envia el valor final. Se suman los intervalos validos de manana y tarde:
-
-```text
-(MorningEnd - MorningStart) + (AfternoonEnd - AfternoonStart)
-```
-
-Las horas aceptan formato `HH:mm` o `HH:mm:ss`. Cada intervalo requiere entrada y salida, y la salida debe ser posterior a la entrada.
-
-### Filtros Disponibles
-
-- Busqueda por descripcion del servicio, tecnico, cliente y proyecto.
-- `TechnicianUserID`
-- `ClientID`
-- `ProjectID`
-- `ServiceDate` en formato `YYYY-MM-DD`
-- `Status`: `Recorded`, `Billed` o `Canceled`
-
-Las respuestas GET incluyen `TechnicianName`, `ClientName` y `ProjectName`.
-
-### Permisos Por Rol
-
-- `Admin`: puede crear, consultar, editar y cancelar registros.
-- `Technician`: puede consultar y crear registros bajo su propio `TechnicianUserID`.
-- Solo `Admin` puede cancelar un registro.
-- La cancelacion establece `Status = 'Canceled'`; no borra fisicamente los datos.
-
-### Ejemplos De API
-
-```http
-GET /api/service-records
-GET /api/service-records?search=mantenimiento
-GET /api/service-records?ClientID=1&Status=Recorded
-GET /api/service-records?TechnicianUserID=3&ServiceDate=2026-06-22
-GET /api/service-records/1
-```
-
-```http
-POST /api/service-records
-Content-Type: application/json
-
-{
-  "TechnicianUserID": 3,
-  "ClientID": 1,
-  "ProjectID": 1,
-  "ServiceDate": "2026-06-22",
-  "MorningStart": "08:30",
-  "MorningEnd": "12:00",
-  "AfternoonStart": "13:00",
-  "AfternoonEnd": "16:30",
-  "ServiceDescription": "Mantenimiento y soporte tecnico",
-  "Status": "Recorded"
-}
-```
-
-El ejemplo produce `TotalHours: 7.00`.
-
-```http
-PUT /api/service-records/1
-DELETE /api/service-records/1
-```
-
-## Fase 7: CRUD De Facturas
-
-Las facturas usan la tabla `dbo.Invoices` para los encabezados y `dbo.InvoiceLines` para los detalles. Las lineas generadas se relacionan nuevamente con `ServiceRecords` mediante `ServiceRecordID`, conservando trazabilidad entre el trabajo registrado y la facturacion.
-
-### Generacion De Facturas
-
-`POST /api/invoices/generate` crea una factura desde registros de servicio facturables:
-
-- Selecciona registros por `ClientID`, `PeriodFrom` y `PeriodTo`.
-- Incluye solo registros con `Status = 'Recorded'`.
-- Excluye registros cancelados y registros que ya tengan `InvoiceID`.
-- Crea un encabezado en `Invoices`.
-- Crea una linea por cada registro de servicio en `InvoiceLines`.
-- Calcula `Subtotal`, `TaxAmount` y `TotalAmount`.
-- Actualiza los `ServiceRecords` incluidos de `Recorded` a `Billed`.
-- Guarda el `InvoiceID` generado en cada registro facturado.
-
-### Estados De Factura
-
-Los estados permitidos de factura son:
-
-- `Draft`
-- `Issued`
-- `Paid`
-- `Canceled`
-
-Cancelar una factura establece `Status = 'Canceled'` e `IsActive = 0`; no borra fisicamente los datos de facturacion.
-
-### Permisos
-
-- `Admin`: puede crear, consultar, editar, cancelar y generar facturas.
-- `Technician`: puede consultar facturas.
-- La generacion de facturas esta restringida a `Admin`.
-
-### Ejemplos De API
-
-```http
-GET /api/invoices
-GET /api/invoices?ClientID=1&Status=Issued
-GET /api/invoices?periodFrom=2026-06-01&periodTo=2026-06-30
-GET /api/invoices/1
-```
-
-Generar una factura desde registros de servicio:
-
-```http
-POST /api/invoices/generate
-Content-Type: application/json
-
-{
-  "ClientID": 1,
-  "PeriodFrom": "2026-06-01",
-  "PeriodTo": "2026-06-30",
-  "TaxRate": 0.18,
-  "Notes": "Factura generada desde registros de servicio"
-}
-```
-
-Crear un encabezado de factura manual:
-
-```http
-POST /api/invoices
-Content-Type: application/json
-
-{
-  "InvoiceNumber": "INV-2026-00099",
-  "ClientID": 1,
-  "InvoiceDate": "2026-06-30",
-  "PeriodFrom": "2026-06-01",
-  "PeriodTo": "2026-06-30",
-  "TaxRate": 0.18,
-  "Status": "Draft",
-  "Notes": "Encabezado de factura manual"
-}
-```
-
-Editar o cancelar una factura:
-
-```http
-PUT /api/invoices/1
-DELETE /api/invoices/1
-```
-
-## Fase 8: Reportes
-
-La Fase 8 agrega endpoints backend para reportes de horas de servicio y facturacion. Estos reportes usan las tablas actuales de Service Billing: `Users`, `Clients`, `Projects`, `ServiceRecords`, `Invoices` e `InvoiceLines`.
-
-### Reporte De Horas De Servicio
-
-`GET /api/reports/service-hours` devuelve registros de servicio con:
-
-- `ServiceRecordID`
-- `TechnicianName`
-- `ClientName`
-- `ProjectName`
-- `ServiceDate`
-- `MorningStart`, `MorningEnd`
-- `AfternoonStart`, `AfternoonEnd`
-- `TotalHours`
-- `ServiceDescription`
-- `Status`
-
-Filtros disponibles:
-
-- `from`
-- `to`
-- `technicianUserId`
-- `clientId`
-- `projectId`
-- `status`: `Recorded`, `Billed` o `Canceled`
-
-### Resumen De Horas
-
-`GET /api/reports/service-hours/summary` devuelve:
-
-- `TotalRecords`
-- `TotalHours`
-- `BilledHours`
-- `UnbilledHours`
-- `CanceledHours`
-- `HoursByTechnician`
-- `HoursByClient`
-- `HoursByProject`
-
-### Reporte De Facturas
-
-`GET /api/reports/invoices` devuelve facturas con:
-
-- `InvoiceID`
-- `InvoiceNumber`
-- `ClientName`
-- `InvoiceDate`
-- `PeriodFrom`
-- `PeriodTo`
-- `Subtotal`
-- `TaxAmount`
-- `TotalAmount`
-- `Status`
-
-Filtros disponibles:
-
-- `from`
-- `to`
-- `clientId`
-- `status`: `Draft`, `Issued`, `Paid` o `Canceled`
-
-### Resumen De Facturacion
-
-`GET /api/reports/invoices/summary` devuelve:
-
-- `TotalInvoices`
-- `DraftInvoices`
-- `IssuedInvoices`
-- `PaidInvoices`
-- `CanceledInvoices`
-- `TotalSubtotal`
-- `TotalTax`
-- `TotalAmount`
-- `AmountByClient`
-- `AmountByStatus`
-
-### Permisos
-
-- `Admin`: puede ver todos los reportes de horas y facturas.
-- `Technician`: solo puede ver sus propios registros de servicio.
-- `Technician`: solo puede ver facturas relacionadas con sus registros mediante `InvoiceLines`.
-
-### Ejemplos De API
-
-```http
-GET /api/reports/service-hours
-GET /api/reports/service-hours?from=2026-06-01&to=2026-06-30
-GET /api/reports/service-hours?technicianUserId=3&status=Billed
-GET /api/reports/service-hours?clientId=1&projectId=1
-GET /api/reports/service-hours/summary
-GET /api/reports/service-hours/summary?from=2026-06-01&to=2026-06-30&clientId=1
-```
-
-```http
-GET /api/reports/invoices
-GET /api/reports/invoices?from=2026-06-01&to=2026-06-30
-GET /api/reports/invoices?clientId=1&status=Issued
-GET /api/reports/invoices/summary
-GET /api/reports/invoices/summary?from=2026-06-01&to=2026-06-30
-```
-
-## Fase 9: Dashboard API
-
-La Fase 9 agrega endpoints backend para alimentar un dashboard moderno del Service Billing System. Estos endpoints estan pensados para tarjetas de resumen, graficas y paneles de actividad reciente sin modificar todavia el frontend.
-
-### Dashboard Summary
-
-`GET /api/dashboard/summary` devuelve:
-
-- `TotalClients`
-- `TotalProjects`
-- `TotalServiceRecords`
-- `TotalInvoices`
-- `TotalHours`
-- `UnbilledHours`
-- `BilledHours`
-- `TotalBilledAmount`
-- `PendingInvoiceAmount`
-- `PaidAmount`
-
-### Dashboard Charts
-
-`GET /api/dashboard/charts` devuelve:
-
-- `HoursByMonth`
-- `BillingByMonth`
-- `HoursByClient`
-- `HoursByProject`
-- `HoursByTechnician`
-- `InvoicesByStatus`
-
-### Recent Activity
-
-`GET /api/dashboard/recent-activity` devuelve los ultimos:
-
-- `ServiceRecords`
-- `Invoices`
-- `Clients`
-- `Projects`
-
-### Permisos
-
-- `Admin`: puede ver todos los datos del dashboard.
-- `Technician`: solo puede ver sus propios registros de servicio y datos relacionados con esos registros.
-- Los datos de facturas para `Technician` se limitan mediante `InvoiceLines` relacionados con sus `ServiceRecords`.
-
-### Ejemplos De API
-
-```http
-GET /api/dashboard/summary
-GET /api/dashboard/charts
-GET /api/dashboard/recent-activity
-```
-
-Probar como administrador:
-
-```http
-POST /api/login
-Content-Type: application/json
-
-{
-  "email": "william@servicebilling.local",
-  "password": "Admin123!"
-}
-```
-
-Probar como tecnico:
-
-```http
-POST /api/login
-Content-Type: application/json
-
-{
-  "email": "carlos@servicebilling.local",
-  "password": "Tech123!"
-}
-```
-
-## Fase 10: Frontend Foundation
-
-La Fase 10 inicia la transicion visual desde la interfaz Help Desk hacia el frontend de Service Billing System. En esta fase no se agregaron nuevas conexiones frontend a APIs; el trabajo se enfoca en estructura, branding y navegacion segura.
-
-### Frontend Foundation Completada
-
-- Se establecio la identidad frontend de Service Billing; el branding visible actual ahora es `Solutions By Design`.
-- Nueva estructura de navegacion principal.
-- Login y autenticacion existentes conservados.
-- Dashboard existente mantenido por ahora.
-- Modulos legacy conservados internamente sin borrar codigo viejo.
-- Pantallas frontend iniciales agregadas para futuros modulos de Service Billing.
-- Comportamiento responsive mantenido para desktop, tablet y movil.
-
-### Navegacion
-
-La navegacion principal ahora incluye:
-
-- `Dashboard`
-- `Clients`
-- `Projects`
-- `Service Records`
-- `Invoices`
-- `Reports`
-- `Users`
-- `Settings`
-
-### Pantallas Iniciales
-
-- `Clients`: area inicial para catalogo y administracion de clientes.
-- `Projects`: area inicial para proyectos de clientes y tarifas por hora.
-- `Service Records`: flujo actual legacy, renombrado visualmente para Service Billing.
-- `Invoices`: area inicial para listas de facturas, lineas y generacion.
-- `Reports`: area de reportes conservada para flujos de facturacion y analitica.
-- `Users`: administracion de usuarios existente.
-- `Settings`: area inicial para cuenta, notificaciones y valores por defecto de facturacion.
-
-## Fase 11: Clients Frontend
-
-La Fase 11 conecta la pantalla `Clients` al backend real. La pantalla ahora carga clientes reales y permite administracion por rol, sin tocar Projects, Service Records, Invoices ni la logica legacy de tickets.
-
-### Clients Frontend Completado
-
-- Carga la lista de clientes con `GET /api/clients`.
-- Agrega busqueda de clientes usando el query de busqueda del backend.
-- Agrega boton `Add Client` para administradores.
-- Agrega modal para crear cliente.
-- Agrega modal para editar cliente.
-- Soporta desactivacion logica con `DELETE /api/clients/:id`.
-- Muestra `ClientName`, `ContactName`, `Email`, `Phone`, `BillingName`, `TaxID` e `IsActive`.
-- Usa la sesion actual para controlar acciones por rol.
-- Mantiene diseno responsive en la pantalla Clients.
-
-### Validaciones
-
-- `ClientName` es requerido.
-- `Email` es opcional y se muestra limpio en el formulario.
-- La desactivacion pide confirmacion antes de llamar la API.
-- Se muestran mensajes de exito y error en la pantalla Clients o en el modal.
-
-### Permisos Por Rol
-
-- `Admin`: puede crear, editar y desactivar clientes.
-- `Technician` / staff: solo lectura en la lista de clientes.
-
-### Uso De API
-
-El frontend usa:
-
-```http
-GET /api/clients
-GET /api/clients?search=acme
-POST /api/clients
-PUT /api/clients/:id
-DELETE /api/clients/:id
-```
-
-### Flujo De Prueba
-
-1. Iniciar sesion como administrador.
-2. Abrir `Clients`.
-3. Buscar un cliente existente.
-4. Crear un cliente nuevo con `ClientName`.
-5. Editar contacto, facturacion, telefono, email o tax ID.
-6. Desactivar un cliente y confirmar el mensaje.
-7. Iniciar sesion como tecnico y verificar que la lista sea solo lectura.
-
-## Fase 12: Projects Frontend
-
-La Fase 12 conecta la pantalla `Projects` al backend real. La pantalla ahora carga proyectos reales, permite busqueda y filtro por cliente, y mantiene acciones de administracion segun el rol de la sesion actual.
-
-### Projects Frontend Completado
-
-- Carga la lista de proyectos con `GET /api/projects`.
-- Permite busqueda por nombre de proyecto, cliente o descripcion.
-- Agrega filtro por cliente.
-- Carga clientes activos desde `GET /api/clients` para el filtro y el dropdown del formulario.
-- Agrega boton `Add Project` para administradores.
-- Agrega modal para crear proyecto.
-- Agrega modal para editar proyecto.
-- Soporta desactivacion logica con `DELETE /api/projects/:id`.
-- Muestra `ProjectName`, `ClientName`, `Description` e `IsActive`.
-- Mantiene valores internos de tarifa disponibles para compatibilidad con la API, pero los oculta en la UI para la demo actual.
-- Usa la sesion actual para controlar acciones por rol.
-- Mantiene diseno responsive y consistente con la pantalla Clients.
-
-### Validaciones
-
-- `ClientID` es requerido.
-- `ProjectName` es requerido.
-- Los valores internos del proyecto siguen validados para compatibilidad con la API.
-- La desactivacion pide confirmacion antes de llamar la API.
-- Se muestran mensajes de exito y error en la pantalla Projects o en el modal.
-
-### Permisos Por Rol
-
-- `Admin`: puede crear, editar y desactivar proyectos.
-- `Technician` / staff: solo lectura en la lista de proyectos.
-
-### Uso De API
-
-El frontend usa:
-
-```http
-GET /api/projects
-GET /api/projects?search=support
-GET /api/projects?clientId=1
-GET /api/clients
-POST /api/projects
-PUT /api/projects/:id
-DELETE /api/projects/:id
-```
-
-### Flujo De Prueba
-
-1. Iniciar sesion como administrador.
-2. Abrir `Projects`.
-3. Buscar por proyecto, cliente o descripcion.
-4. Filtrar por cliente.
-5. Crear un proyecto seleccionando `ClientID` y entrando `ProjectName`.
-6. Editar cliente, nombre, descripcion o estado activo del proyecto.
-7. Desactivar un proyecto y confirmar el mensaje.
-8. Iniciar sesion como tecnico y verificar que la lista sea solo lectura.
-
-## Fase 13: Service Records Frontend
-
-La Fase 13 conecta la pantalla `Service Records` al backend real. La pantalla ahora carga registros de servicio reales, permite busqueda y filtros operacionales, y ofrece flujos de creacion, edicion y cancelacion logica segun el rol de la sesion actual.
-
-### Service Records Frontend Completado
-
-- Carga la lista de registros con `GET /api/service-records`.
-- Permite busqueda por tecnico, cliente, proyecto o descripcion del servicio.
-- Agrega filtros por tecnico, cliente, proyecto, fecha de servicio y estado.
-- Agrega boton `Add Service Record` para los roles permitidos.
-- Agrega modal para crear registros de servicio.
-- Agrega modal para editar registros de servicio.
-- Soporta cancelacion logica con `DELETE /api/service-records/:id`.
-- Muestra `TechnicianName`, `ClientName`, `ProjectName`, `ServiceDate`, `MorningStart`, `MorningEnd`, `AfternoonStart`, `AfternoonEnd`, `TotalHours`, `ServiceDescription` y `Status`.
-- Calcula automaticamente una vista previa de `TotalHours` usando los rangos de horas ingresados antes de guardar.
-- Carga tecnicos dinamicamente desde usuarios, clientes desde `GET /api/clients` y proyectos desde `GET /api/projects`.
-- Filtra el dropdown de proyectos segun el cliente seleccionado.
-- Valida campos requeridos y rangos de horarios antes de enviar la solicitud.
-- Usa la sesion actual para controlar las acciones disponibles por rol.
-- Mantiene diseno responsive y consistente con Clients y Projects.
-
-### Filtros De Service Records
-
-`GET /api/service-records` puede llamarse desde el frontend con:
-
-- `search`
-- `technicianUserId`
-- `clientId`
-- `projectId`
-- `serviceDate`
-- `status`
-
-Ejemplo:
-
-```http
-GET /api/service-records?clientId=1&status=Recorded
-```
-
-### Permisos Por Rol
-
-- `Admin`: puede crear, editar y cancelar registros de servicio.
-- `Technician`: puede crear y visualizar registros de servicio.
-- La UI usa la sesion activa para mostrar u ocultar acciones y mantener el flujo del tecnico asociado al usuario autenticado cuando aplica.
-
-### Flujo De Prueba
-
-1. Iniciar sesion como administrador.
-2. Abrir `Service Records`.
-3. Confirmar que la tabla carga registros desde `GET /api/service-records`.
-4. Usar busqueda y filtros por tecnico, cliente, proyecto, fecha y estado.
-5. Hacer clic en `Add Service Record`, completar el modal y verificar que `TotalHours` se actualiza segun los horarios.
-6. Guardar el registro y confirmar que aparece en la lista.
-7. Editar el registro como administrador.
-8. Cancelar el registro y confirmar el mensaje.
-9. Iniciar sesion como tecnico y verificar que la pantalla permite crear y visualizar sin acciones exclusivas de Admin.
-
-## Fase 14: Invoices Frontend
-
-La Fase 14 conecta la pantalla `Invoices` al backend real. La pantalla ahora carga facturas reales, permite filtros de facturacion, genera facturas desde horas de servicio registradas y ofrece flujos de detalle, estado y cancelacion segun el rol de la sesion actual.
-
-### Invoices Frontend Completado
-
-- Carga la lista de facturas con `GET /api/invoices`.
-- Permite busqueda por numero de factura, cliente o notas.
-- Agrega filtros por cliente, estado y rango de fechas.
-- Agrega `Generate Invoice` para administradores.
-- Genera facturas con `POST /api/invoices/generate`.
-- Agrega modal para generar facturas desde `ServiceRecords`.
-- Usa `ClientID`, `PeriodFrom`, `PeriodTo` y `Notes` en el flujo visible de generacion.
-- Mantiene valores internos de impuesto disponibles para compatibilidad con la API, pero los oculta en la UI para la demo actual.
-- Agrega vista de detalle de factura.
-- Muestra `InvoiceLines` desde `GET /api/invoices/:id`.
-- Permite editar estado de factura para administradores.
-- Soporta cancelacion logica con `DELETE /api/invoices/:id`.
-- Carga clientes dinamicamente para filtros y el modal de generacion.
-- Muestra `InvoiceNumber`, `ClientName`, `InvoiceDate`, `PeriodFrom`, `PeriodTo` y `Status`.
-- Muestra `InvoiceLines` sin columnas monetarias.
-- Usa la sesion actual para controlar acciones disponibles por rol.
-- Mantiene diseno responsive y consistente con los modulos conectados.
-
-### Filtros De Invoices
-
-`GET /api/invoices` puede llamarse desde el frontend con:
-
-- `search`
-- `clientId`
-- `periodFrom`
-- `periodTo`
-- `status`
-
-Ejemplo:
-
-```http
-GET /api/invoices?clientId=1&status=Issued&periodFrom=2026-06-01&periodTo=2026-06-30
-```
-
-### Ejemplo Para Generar Factura
-
-```http
-POST /api/invoices/generate
-Content-Type: application/json
-
-{
-  "ClientID": 1,
-  "PeriodFrom": "2026-06-01",
-  "PeriodTo": "2026-06-30",
-  "Notes": "Facturacion de servicios de junio"
-}
-```
-
-### Permisos Por Rol
-
-- `Admin`: puede generar, editar estado y cancelar facturas.
-- `Technician` / `Staff`: acceso de solo lectura a facturas.
-- La UI usa la sesion activa para mostrar u ocultar acciones de generacion, estado y cancelacion.
-
-### Flujo De Prueba
-
-1. Iniciar sesion como administrador.
-2. Abrir `Invoices`.
-3. Confirmar que la tabla carga facturas desde `GET /api/invoices`.
-4. Usar busqueda y filtros por cliente, estado y rango de fechas.
-5. Hacer clic en `Generate Invoice`, seleccionar un cliente y un periodo con registros `Recorded`, y guardar.
-6. Abrir el detalle de la factura y confirmar que se muestran las `InvoiceLines`.
-7. Editar el estado de la factura como administrador.
-8. Cancelar una factura y confirmar el mensaje.
-9. Iniciar sesion como tecnico y verificar que la pantalla de facturas sea solo lectura.
-
-## Fase 15: Dashboard Frontend
-
-La Fase 15 conecta la pantalla `Dashboard` a las APIs reales del dashboard. El dashboard ahora muestra metricas del negocio, secciones visuales y actividad reciente desde los modulos de Service Billing.
-
-Ajuste de demo: las tarjetas, graficas y actividad reciente especificas de facturas quedan ocultas del frontend visible por ahora. El Dashboard permanece enfocado en clientes, proyectos, registros de servicio y horas.
-
-### Dashboard Frontend Completado
-
-- Conecta el Dashboard frontend con `GET /api/dashboard/summary`.
-- Conecta las secciones visuales con `GET /api/dashboard/charts`.
-- Conecta la actividad reciente con `GET /api/dashboard/recent-activity`.
-- Usa la sesion activa para cargar el alcance correcto del dashboard.
-- Muestra dashboard completo para `Admin`.
-- Muestra dashboard limitado para `Technician` segun permisos del backend.
-- Maneja errores de API con un mensaje visible en el dashboard.
-- Mantiene diseno responsive enfocado en Clients, Projects, Service Records y horas de servicio.
-
-### Tarjetas De Resumen
-
-El dashboard muestra:
-
-- `TotalClients`
-- `TotalProjects`
-- `TotalServiceRecords`
-- `TotalHours`
-- `CurrentMonthHours`
-- `UnbilledHours` mostrado como horas pendientes.
-- `BilledHours` mostrado como horas procesadas.
-- Los valores de facturas y montos monetarios estan ocultos en la UI para la demo actual.
-- Las tarjetas de horas del mes actual, horas pendientes, horas procesadas, proyectos y registros de servicio abren un panel de detalle relacionado.
-
-### Secciones Visuales
-
-El dashboard incluye secciones visuales ligeras sin agregar librerias nuevas:
-
-- `HoursByMonth`
-- `HoursByClient`
-- `HoursByProject`
-- `HoursByTechnician`
-
-### Actividad Reciente
-
-El dashboard muestra actividad reciente de:
-
-- `ServiceRecords`
-- `Clients`
-- `Projects`
-
-### Detalles Interactivos Del Dashboard
-
-- `Horas del mes actual`: muestra registros de servicio del mes actual.
-- `Horas pendientes`: muestra registros `Recorded`.
-- `Horas procesadas`: muestra registros `Billed`.
-- `Proyectos`: muestra resumen de proyectos con horas y estado contractual.
-- `Registros de servicio`: muestra los registros de servicio mas recientes.
-
-### Project Dashboard
-
-El Dashboard incluye un panel interno `Project Dashboard` para revision de demo:
-
-- Permite buscar proyectos por `ProjectName` o `ClientName`.
-- Permite seleccionar un proyecto desde un dropdown filtrado.
-- Muestra detalles del proyecto y contrato: `ContractNumber`, `ContractType`, `ContractStartDate`, `ContractEndDate`, `ContractedHours`, `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus`, `ContractStatus` e `IsActive`.
-- Muestra resumen de horas del proyecto: total, mes actual, pendientes, procesadas y canceladas.
-- Muestra los ultimos registros de servicio del proyecto seleccionado.
-- Usa solo endpoints existentes: `GET /api/projects` y `GET /api/reports/service-hours?projectId=`.
-- No muestra dinero, facturas, tarifas ni totales monetarios.
-
-### Technician Dashboard
-
-El Dashboard tambien incluye un panel interno `Technician Dashboard`:
-
-- Usuarios Admin pueden buscar tecnicos por nombre y seleccionar uno desde un dropdown filtrado.
-- Usuarios Technician ven su propio alcance de dashboard.
-- Despues de seleccionar un tecnico, el dropdown `Proyecto` muestra `Todos los proyectos` y solo los proyectos donde ese tecnico tiene registros de servicio.
-- Al cambiar el proyecto seleccionado se recalculan automaticamente los totales del tecnico, horas del mes actual, horas pendientes/procesadas/canceladas, total de registros, horas por cliente y ultimos registros de servicio.
-- Muestra tecnico, rol, estado activo/inactivo, total de horas trabajadas, horas del mes actual, horas pendientes, horas procesadas, horas canceladas y total de registros.
-- Muestra `Horas por proyecto` con `ProjectName`, `ClientName`, `TotalHours` y `LastServiceDate`; si se selecciona un proyecto, esta tabla muestra el alcance del proyecto seleccionado.
-- Muestra `Horas por cliente` con `ClientName`, `TotalHours` y `TotalRecords`.
-- Muestra los ultimos registros de servicio del tecnico seleccionado.
-- Usa endpoints existentes: `GET /api/users` para seleccion Admin y `GET /api/reports/service-hours?technicianUserId=`.
-- No muestra dinero, facturas, tarifas ni totales monetarios.
-
-### Fase 27: Proyectos Del Dashboard Y Filtros De Fecha Por Tecnico
-
-- El Dashboard visible muestra todos los proyectos activos devueltos por `ServiceBillingDB` (`IsActive = 1`) mediante las APIs existentes de dashboard y proyectos.
-- El enfoque en proyectos especificos, como WIOA Bayamon, COC, WIOA Humacao o WIOA San Juan, debe manejarse con busqueda/filtros y no con exclusiones hardcodeadas del Dashboard.
-- No se eliminan ni modifican registros de base de datos.
-- Technician Dashboard ahora incluye filtros `Fecha desde` y `Fecha hasta`.
-- Usuarios Admin pueden combinar tecnico, proyecto y rango de fechas para revisar horas trabajadas, totales por cliente, ultimos registros, total de registros, horas pendientes, horas procesadas y horas canceladas.
-- El dropdown de proyecto sigue mostrando solo proyectos donde el tecnico seleccionado tiene registros.
-- Se crean notificaciones para Admin cuando registros de servicio se marcan como `Billed`/procesados, incluyendo tecnico, proyecto, cliente, fecha de servicio y cantidad de registros procesados.
-- Dinero, pantallas de invoices, tarifas y totales monetarios permanecen ocultos en el dashboard visible.
-### Fase 27.1: Service Records, Users Y Limpieza De Descripcion
-
-- Las descripciones de Service Records se limpian al mostrarse para que etiquetas HTML heredadas como `<div>`, `</div>` y `<br>` no aparezcan visibles en tablas, dashboard o reportes.
-- El valor original en base de datos no se modifica; la limpieza es solo visual y conserva saltos de linea legibles.
-- Service Records se pueden editar desde la tabla de Service Records.
-- Usuarios Admin pueden editar cualquier Service Record y cambiar estado cuando aplique.
-- Roles Technician/User pueden editar sus propios registros sin cambiar tecnico asignado ni estado.
-- Users ahora muestra estado `Active`/`Inactive` en la tabla.
-- Usuarios Admin pueden activar o desactivar usuarios sin borrar filas de la base de datos.
-- Usuarios inactivos no pueden iniciar sesion, pero sus registros historicos permanecen disponibles.
-- Los dropdowns de tecnicos prefieren usuarios activos para ocultar personal inactivo de nuevas selecciones operativas.
-
-### Fase 27.2: Prioridad De Proyectos Y Edicion De Descripcion En Technician Dashboard
-
-- Technician Dashboard prioriza los proyectos activos principales al inicio del dropdown de proyectos, manteniendo disponibles los demas proyectos del tecnico.
-- Los proyectos principales solo se priorizan para seleccion; no se borran registros, no se ocultan en la base y no se eliminan de otros modulos.
-- Usuarios Admin pueden editar la descripcion desde `Ultimos registros de servicio` en Technician Dashboard.
-- El editor de descripcion permite cambiar solo `ServiceDescription` y guarda en `ServiceBillingDB`.
-- Roles Technician/User pueden ver descripciones, pero no editarlas desde Technician Dashboard.
-- La API de reportes de horas ahora incluye IDs internos necesarios para filtros del dashboard y acciones de edicion.
-
-### Fase 27.3: Correccion De Activacion Y Desactivacion De Usuarios
-
-- La activacion/desactivacion de Users ahora usa `PUT /api/users/:id/status` para actualizar `IsActive` en `ServiceBillingDB`.
-- La tabla Users se refresca despues del cambio y muestra `Active` o `Inactive`.
-- El boton cambia entre `Desactivar` y `Activar` segun el estado actual.
-- Usuarios Admin no pueden desactivar su propia cuenta activa mientras estan logueados.
-- Usuarios inactivos son bloqueados por `POST /api/login` y usuarios activos pueden iniciar sesion normalmente.
-- No se borran usuarios ni registros historicos de servicio.
-
-### Fase 28: Technician Dashboard Simplificado
-
-- Technician Dashboard se simplifica alrededor del flujo diario: seleccionar Tecnico, Proyecto, Fecha desde y Fecha hasta.
-- El Dashboard General permanece visible con graficas globales de horas de servicio, tarjetas de resumen y actividad reciente.
-- Technician Dashboard muestra informacion enfocada al proyecto cuando se selecciona uno: tecnico, cliente, proyecto, total de horas, total de registros, horas pendientes, horas procesadas y horas canceladas.
-- La tabla principal es `Ultimos Service Records` con Fecha, Cliente, Proyecto, Horas, Estado, Descripcion y Editar solo para Admin.
-- Al cambiar proyecto o rango de fechas, los totales y la tabla se actualizan automaticamente.
-- La edicion de descripcion desde Technician Dashboard para Admin se mantiene disponible.
-
-### Fase 28.1: Dashboard General Restaurado
-
-- El Dashboard General queda restaurado junto al Technician Dashboard simplificado.
-- Las barras globales de horas vuelven a mostrarse: horas por mes, cliente, proyecto de servicio y tecnico.
-- Los paneles de actividad reciente de Service Records, Clients y Projects vuelven a estar visibles.
-- Las graficas generales siguen usando datos reales de horas desde `GET /api/reports/service-hours`.
-- Technician Dashboard permanece enfocado en un tecnico, un proyecto y un rango de fechas opcional.
-
-### Fase 28.2: Barras Filtradas Por Tecnico
-
-- Technician Dashboard ahora incluye barras visuales filtradas por el tecnico seleccionado.
-- Cuando solo se selecciona un tecnico, las barras muestran todos los proyectos, clientes, meses y ultimos registros de ese tecnico.
-- Cuando se selecciona proyecto o rango de fechas, las tarjetas, barras y registros del Technician Dashboard se recalculan con esos filtros.
-- Se agregan barras filtradas de horas por proyecto, horas por cliente y horas por mes.
-- La edicion de descripcion solo para Admin se mantiene disponible desde la tabla del Technician Dashboard.
-
-### Fase 28.3: Formato Global De Numeros
-
-- El frontend ahora usa un helper global `formatNumber` con formato `en-US`.
-- Las horas se muestran con coma para miles y punto para decimales, por ejemplo `90,674.75 h`.
-- Tarjetas del Dashboard, barras del Dashboard General, barras del Technician Dashboard, Reports, Service Records, horas contractuales de Projects y contadores visibles usan el mismo formato numerico.
-- Este cambio es solo visual; los valores en base de datos y calculos backend no cambian.
-
-### Fase 28.4: Dashboard General Con Datos Activos
-
-- El Dashboard General ahora filtra la informacion visible de la empresa usando clientes activos, proyectos activos y tecnicos activos.
-- Las tarjetas y barras de horas usan solo Service Records relacionados a Projects activos, Clients activos y Technicians activos.
-- La actividad reciente se filtra para mostrar contexto activo de Service Records, Clients activos y Projects activos.
-- Technician Dashboard no cambia y mantiene sus filtros de tecnico, proyecto y rango de fechas.
-- Este filtro es solo visual en frontend; no se borran ni modifican registros en `ServiceBillingDB` ni en `ServiceSBD_20260629`.
-
-### Fase 28.5: Proyectos Principales Activos Primero
-
-- La barra `Horas por proyecto de servicio` del Dashboard General prioriza arriba los proyectos activos principales actuales.
-- Los proyectos principales incluyen hosting/mantenimiento WIOA Bayamon, desarrollo web ALDL La Montana, webpage Conexion Laboral Sureste, CoC Departamento de la Familia y Solutions By Design.
-- Los demas proyectos activos permanecen visibles debajo de los proyectos priorizados.
-- Se mantiene el filtro de datos activos y el formato numerico `en-US`.
-
-### Fase 28.6: Enfoque En Clientes Y Proyectos Principales
-
-- Las barras del Dashboard General priorizan los clientes y proyectos principales actuales, manteniendo solo datos activos.
-- `Horas de servicio por cliente` muestra primero Municipio de Bayamon - Programa WIOA, ALDL La Montana, Departamento de la Familia, WIOA SE y Solutions By Design.
-- `Horas por proyecto de servicio` muestra primero Hosting Y Mantenimiento 2025-2026, DESARROLLO DE PAGINA WEB 2025, Webpage 2025 y Programa Continuo de Cuidado (CoC).
-- Las barras de cliente y proyecto son clickeables: cliente muestra proyectos activos y horas; proyecto muestra cliente, horas totales y ultimos Service Records relacionados.
-- Technician Dashboard permanece sin cambios.
-
-### Fase 28.7: Mejoras Del Detalle De Barras Del Dashboard
-
-- Al hacer click en una barra de cliente o proyecto del Dashboard General, la pantalla baja automaticamente al panel de detalle con scroll suave.
-- El detalle de cliente muestra cliente seleccionado, proyectos activos relacionados, tecnicos, horas por tecnico/proyecto, total de horas, total de registros y ultima fecha de servicio.
-- El detalle de proyecto muestra proyecto seleccionado, cliente relacionado, tecnicos, horas por tecnico, total de horas, total de registros, ultima fecha y ultimos Service Records relacionados.
-- Las tablas de detalle mantienen formato numerico `en-US` y filtros de datos activos.
-
-### Ajuste Visual: Dashboard Principal Mas Limpio
-
-- El resumen principal del Dashboard se simplifico a cinco tarjetas: Clientes, Proyectos, Registros de servicio, Horas totales y Horas pendientes de procesar.
-- Se quitaron las tarjetas Horas del mes actual y Horas procesadas del resumen principal.
-- Las tarjetas y paneles del Dashboard usan un estilo oscuro mas compacto y empresarial, con bordes suaves, sombras sutiles, mejor espaciado y menos decoracion.
-- Las interacciones del Dashboard General, graficas, filtros de datos activos y Technician Dashboard se mantienen sin cambios.
-
-### Fase 29: Pulido Profesional UI/UX
-
-- Se agrego una capa global de pulido visual comercial manteniendo el tema oscuro y la identidad actual del sistema.
-- Se mejoraron tabs de navegacion, cards, formularios, tablas, botones, badges, modales, scrollbars, graficas del Dashboard y estados hover/focus.
-- Se agregaron animaciones sutiles para paneles, modales, cards, botones y barras del Dashboard sin cambiar el comportamiento de la aplicacion.
-- Esta fase es solo visual; no cambia logica backend, estructura de base de datos, datos migrados ni informacion de `ServiceSBD_20260629`.
-
-### Fase 30: Branding Solutions By Design y Textos EN/ES
-
-- El branding visible de la aplicacion ahora presenta `Solutions By Design`, usando `Solutions By Design - Service Billing System` donde aporta contexto documental.
-- El nombre del repositorio se mantiene como `Service-Billing-System`.
-- Se mejoraron textos en ingles y espanol en navegacion, dashboard, formularios, tablas, modales, reportes, usuarios, settings, notificaciones, botones, estados vacios y labels.
-- Esta fase solo cambia textos y branding; no modifica base de datos, comportamiento backend ni datos reales migrados.
-
-### Fase 30.1: Localizacion Completa de UI y Limpieza de Branding
-
-- Se removio el branding visible `Service Billing System` de la interfaz, manteniendo el nombre del repositorio sin cambios.
-- La descripcion principal ahora usa solamente el branding `Solutions By Design`.
-- Se amplio la localizacion en ingles y espanol para paneles del Dashboard, estados contractuales, estados de registros de servicio, estados de facturas, formularios, tablas, selects, mensajes vacios y acciones.
-- Valores internos como `Recorded`, `Billed`, `NO_CONTRACT`, `ClientID` y `ServiceDescription` ahora se traducen o se reemplazan por labels orientados al usuario cuando aparecen en la interfaz.
-- Esta fase no modifica logica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
-
-### Fase 31: Mejoras UX del Dashboard General
-
-- Las barras del Dashboard General ahora son interactivas para horas por mes, cliente, proyecto y tecnico.
-- Al hacer click en cualquier barra, se abre el panel de detalle existente, se hace scroll suave automatico y se aplica un resaltado sutil.
-- Los detalles de cliente, proyecto, tecnico y mes ahora muestran resumen ejecutivo con horas, registros, clientes/proyectos/tecnicos relacionados, ultima actividad y ultimos registros de servicio cuando aplica.
-- Se mejoraron los estados hover de las barras con cursor claro, movimiento sutil y transiciones mas fluidas.
-- Esta fase es solo frontend y no modifica Technician Dashboard, logica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
-
-### Fase 31.1: Localizacion De Labels Del Dashboard
-
-- Los labels pequenos del Dashboard ahora usan el sistema compartido de traducciones EN/ES.
-- En espanol se muestran `HORAS`, `CLIENTES`, `PROYECTOS`, `TECNICOS`, `MESES` y `REGISTROS DE SERVICIO`.
-- En ingles se muestran `HOURS`, `CLIENTS`, `PROJECTS`, `TECHNICIANS`, `MONTHS` y `SERVICE RECORDS`.
-- Los labels de graficas del Dashboard General y Technician Dashboard se actualizan correctamente al cambiar el idioma.
-- Esta fase solo cambia textos de interfaz y no modifica backend, bases de datos, ServiceBillingDB ni ServiceSBD_20260629.
-
-### Fase 32: Reportes PDF Profesionales Y Time Sheet
-
-- Reports ahora incluye exportacion PDF activa para reportes de horas de servicio usando los filtros actuales: rango de fechas, tecnico, cliente, proyecto y estado.
-- Se elimino el filtro mensual separado `Periodo` de Reports; el periodo del reporte ahora se define solamente con `Fecha desde` y `Fecha hasta`.
-- El nuevo PDF usa un diseno corporativo de Solutions By Design con encabezado, contexto de cliente/proyecto/invoice, periodo, fecha de generacion, resumen ejecutivo, desglose de servicios y Time Sheet final.
-- El desglose de servicios incluye fecha, numero de orden legacy cuando existe, tecnico, descripcion limpia del servicio, estado y total de horas.
-- La seccion Time Sheet agrupa registros por tecnico y muestra tecnico, fecha, cliente, proyecto/departamento, entradas/salidas AM/PM y total de horas.
-- Cada pagina del PDF incluye Solutions By Design, fecha de generacion y numero de pagina en el pie.
-- Se evita generar PDFs vacios: el frontend mantiene PDF deshabilitado hasta que haya un reporte con registros y el backend devuelve un mensaje claro si los filtros no producen datos.
-- Los valores de horas mantienen el formato global `en-US`, por ejemplo `10,000.50 h`.
-- Esta fase no modifica ServiceSBD_20260629, estructura de ServiceBillingDB, Dashboard, Users, Clients, Projects ni CRUD de Service Records.
-
-### Fase 32.1: Ajuste A Formato Clasico De PDF
-
-- El PDF de horas de servicio se ajusto para parecerse mas al formato clasico de referencia.
-- Se removio el encabezado grande tipo portada y la seccion de tarjetas de resumen ejecutivo.
-- El reporte ahora comienza directamente con un encabezado compacto de `Desglose de servicios prestados` y una tabla con `Fecha`, `Orden`, `Tecnico`, `Descripcion` y `Horas`.
-- Las descripciones completas se mantienen visibles y la columna de descripcion tiene mas ancho.
-- El total de horas aparece al final del desglose de servicios.
-- La pagina final `Time Sheet` usa una tabla compacta en landscape agrupada por tecnico con `Tecnico`, `Dia`, `Cliente`, `Departamento/Proyecto`, `Manana`, `Tarde` y `Total`.
-- El generador PDF usa `assets/logo-horizontal.png` y usa texto `Solutions By Design` como fallback si falta el archivo.
-
-### Fase 33: Invoice Manual Para Reportes PDF
-
-- Reports ahora incluye un campo temporal `Invoice #` encima de la accion de exportar PDF.
-- El valor no se guarda en la base de datos y solo se usa para la exportacion PDF actual.
-- Si el campo contiene `8878`, el PDF muestra `Invoice: #8878`; si esta vacio, muestra `Invoice: N/A`.
-- El invoice aparece en cada pagina del desglose de servicios y en cada pagina del Time Sheet.
-- El campo conserva su valor durante la sesion actual del navegador hasta recargar la pagina.
-- Los filtros existentes, SQL, generacion de reportes de horas y endpoint de exportacion PDF se mantienen sin otros cambios.
-
-### Fase 33.1: Layout De Invoice Y Limpieza De Notificaciones
-
-- El campo manual `Invoice #` ahora aparece como un campo normal del grid de Reports junto a los demas filtros, no dentro de la fila de botones.
-- La fila de botones de Reports ahora contiene solo `Generar reporte`, `Exportar PDF` y `Excel (Proximamente)`.
-- Los usuarios Admin pueden borrar notificaciones individuales desde la tabla de Notificaciones.
-- El borrado pide confirmacion, elimina solo la notificacion seleccionada y refresca la lista y el contador de notificaciones.
-- Se agrego `DELETE /api/notifications/:id`, protegido por autenticacion y rol Admin.
-- No se cambiaron estructura de base de datos, datos de ServiceSBD_20260629, filtros de Reports, exportacion PDF, Dashboard, Users, Clients, Projects ni flujos de Service Records.
-
-### Fase 33.2: Exclusion De Registros Demo En Reports Y PDF
-
-- Reports y la exportacion PDF de horas de servicio ahora excluyen registros demo/prueba conocidos sin borrar datos de la base.
-- El criterio de exclusion es explicito: se omiten registros asignados a los emails demo `william@servicebilling.local` y `carlos@servicebilling.local`.
-- Los registros demo excluidos ya no aparecen en la tabla de Reports, desglose PDF, Time Sheet PDF ni totales del reporte.
-- Total de registros, total de horas, horas pendientes, horas procesadas y horas canceladas se calculan despues de excluir esos registros demo.
-- Esto no modifica ServiceSBD_20260629, estructura de ServiceBillingDB, Users, Clients, Projects, Service Records, Dashboard UI ni Technician Dashboard UI.
-
-### Fase 33.3: Mejoras Profesionales De Layout PDF
-
-- Se mejoro la paginacion del PDF para mantener cada registro de servicio unido y evitar que se divida entre paginas.
-- El desglose de servicios ahora verifica la altura de cada fila antes de dibujarla y repite automaticamente el encabezado de tabla despues de cada salto de pagina.
-- Las descripciones largas reciben mejor espaciado y texto ligeramente mas pequeno solo cuando es necesario para mantener el registro unido.
-- La limpieza de descripcion remueve residuos comunes de HTML/entities legacy y caracteres basura aislados antes de renderizar.
-- El total del desglose aparece inmediatamente despues del ultimo registro, sin espacios en blanco innecesarios.
-- El encabezado del PDF repite marca Solutions By Design, cliente, departamento/proyecto, titulo del reporte, periodo e invoice en las paginas del reporte.
-- Las paginas de Time Sheet mantienen layout landscape consistente e incluyen cliente y departamento/proyecto en el encabezado.
-- Los pies de pagina mantienen numeracion `Pagina X de Y`.
-
-### Fase 33.4: Correccion De Pagina En Blanco Y Footer Manual
-
-- Se elimino la creacion de paginas usadas solamente para imprimir totales o footer.
-- Los totales del desglose y del Time Sheet ahora se renderizan en la pagina actual inmediatamente despues del ultimo registro.
-- El ultimo registro reserva espacio para el total antes de dibujarse, evitando paginas en blanco o solapamiento.
-- Los footers del PDF se dibujan manualmente sobre paginas existentes e incluyen solo fecha larga y `Pagina X de Y`.
-- El footer ya no dibuja lineas o contenido adicional que pueda provocar una pagina extra.
-
-## Ajuste De Demo: Reports E Invoices
-
-- La pantalla visible `Reports` ahora usa `GET /api/reports/service-hours` y `GET /api/reports/service-hours/summary`.
-- Reports muestra tecnico, cliente, proyecto, fecha de servicio, horas trabajadas, descripcion del servicio y estado del registro.
-- Reports ya no llama endpoints legacy de reportes de tickets desde el frontend.
-- Los botones temporales de imprimir/exportar hoja quedan ocultos para la demo.
-- La exportacion PDF esta activa para reportes de horas de servicio, mientras Excel permanece visible, deshabilitado y rotulado `Excel (Proximamente)` hasta implementar exportacion de hojas de calculo.
-- La navegacion visible del frontend oculta `Invoices` temporalmente para claridad de demo.
-- Las APIs de Invoices, la logica backend, las tablas SQL y la implementacion frontend existente permanecen en el codigo.
-
-## Fase 17C: Frontend De Contratos En Projects
-
-- Projects ahora muestra resumen contractual: `ContractNumber`, `ContractedHours`, `UsedHours`, `RemainingHours`, `ContractEndDate` y `ContractStatus`.
-- El modal de Project incluye la seccion `Contract Information` para usuarios Admin.
-- Los valores calculados permanecen solo lectura: `UsedHours`, `RemainingHours`, `HoursAlertStatus`, `ExpirationAlertStatus` y `ContractStatus`.
-- Las alertas visuales usan verde para `OK`, amarillo para `LOW_HOURS`, naranja para `EXPIRING_SOON`, rojo para estados sin horas/expirados y gris para `NO_CONTRACT`.
-- No se muestran campos monetarios ni tarifas por hora.
-
-## Fase 34: Modulo Manual De Facturas PDF
-
-- Se agrego un tab visible `Facturas` para preparar facturas manuales, separado de `Reports`.
-- `Reports` sigue enfocado en desglose de servicios y PDF de Time Sheet.
-- La pantalla de facturas usa campos manuales de encabezado y lineas dinamicas de factura.
-- Las lineas usan `Cantidad`, `Descripcion`, `Rate` y `Amount` calculado; no se usa campo `Item`.
-- `Amount` se calcula como `Cantidad x Rate`, y el `Total` se calcula sumando todos los amounts.
-- La secretaria puede agregar o eliminar lineas antes de generar el PDF.
-- Se agrego `POST /api/manual-invoices/pdf` para generar un PDF profesional de factura desde los valores del formulario.
-- El PDF incluye todas las lineas dinamicas, branding de Solutions By Design, metadata de factura, Bill To, terminos/proyecto, total, certificacion, lineas de firma y footer de pagina.
-- En esta fase no se guarda informacion de facturas en la base de datos.
-- La implementacion no modifica `ServiceSBD_20260629`, `ServiceBillingDB`, Reports, Dashboard, Clients, Projects, Users ni Service Records.
-
-### Flujo De Prueba De Factura Manual
-
-1. Iniciar sesion en la aplicacion.
-2. Abrir `Facturas`.
-3. Llenar los campos manuales del encabezado.
-4. Agregar una o mas lineas con cantidad, descripcion y rate.
-5. Confirmar que cada amount y el total se calculan automaticamente.
-6. Presionar `Generar factura PDF`.
-7. Confirmar que el PDF descarga y muestra todas las lineas con el total calculado.
-
-### Fase 34.1: Lineas Dinamicas Estilo QuickBooks
-
-- La UI de factura manual ahora usa una tabla limpia de lineas similar a QuickBooks.
-- Cada linea permite `Cantidad`, `Descripcion`, `Rate` y `Amount` calculado automaticamente.
-- El boton `+ Agregar linea` agrega mas lineas de factura, y cada linea puede eliminarse.
-- El PDF incluye todas las lineas dinamicas y calcula el total desde los amounts.
-- No se guarda informacion en la base de datos.
-
-### Fase 34.2: Subtotal, IVU E Impuesto Opcional
-
-- Las facturas manuales ahora muestran un resumen profesional con `Subtotal`, `IVU` y `Total`.
-- `Subtotal` se calcula desde todos los amounts de las lineas.
-- `Aplicar IVU` puede activarse o desactivarse.
-- El porcentaje por defecto de IVU es `11.5%`, y puede cambiarse manualmente.
-- Si el IVU esta desactivado, el impuesto es `0.00` y el total es igual al subtotal.
-- El PDF muestra el mismo resumen de subtotal, IVU y total.
-- Los calculos siguen siendo temporales/manuales y no se guardan en la base de datos.
-
-### Fase 34.3: Firmas Manuales Configurables
-
-- Las facturas manuales ahora incluyen dos bloques configurables de firma.
-- Cada firma tiene campos manuales de `Nombre` y `Cargo`.
-- El PDF renderiza dos secciones profesionales con linea de firma y linea de fecha.
-- Si los campos quedan vacios, se mantiene la linea sin nombres hardcodeados.
-- Los valores de firma no se guardan en la base de datos.
-
-### Fase 34.5: Logo Oficial De Solutions By Design
-
-- Se agrego el primer asset oficial de logo de Solutions By Design.
-- Este asset fue reemplazado luego por el logo horizontal transparente en la Fase 34.8.
-
-### Fase 34.6: Favicon Oficial
-
-- Se generaron assets de favicon desde el logo oficial:
-  - `assets/favicon.ico`
-  - `assets/favicon-32x32.png`
-  - `assets/favicon-16x16.png`
-  - `assets/apple-touch-icon.png`
-- Se agregaron los links estandar de favicon y Apple touch icon en `index.html`.
-- Se actualizo el titulo de la pestana a `Solutions By Design - Service Billing System`.
-- Para actualizar el favicon en el futuro solo hay que reemplazar los archivos favicon dentro de `assets`.
-
-### Fase 34.7: Logo Horizontal Oficial
-
-- Se agrego el logo horizontal de Solutions By Design como marca principal.
-- Este asset fue reemplazado por la version oficial transparente en la Fase 34.8.
-
-### Fase 34.8: Reemplazo Por Logo Oficial Transparente
-
-- Se reemplazaron todos los logos anteriores con el nuevo logo oficial transparente.
-- La ruta activa del logo es `assets/logo-horizontal.png`.
-- Login, header, Dashboard, Reports, Facturas, Report PDF, Time Sheet PDF, Invoice PDF y futuros templates PDF usan el mismo asset.
-- Los archivos de favicon se regeneraron desde el nuevo logo.
-- Los archivos viejos de logo fueron removidos de `assets`.
-- Para reemplazar el logo en el futuro solo hay que cambiar `assets/logo-horizontal.png` y regenerar los favicons si tambien debe cambiar el icono del navegador.
-
-### Ejemplos De API
-
-```http
-GET /api/dashboard/summary
-```
-
-```http
-GET /api/dashboard/charts
-```
-
-```http
-GET /api/dashboard/recent-activity
-```
-
-### Flujo De Prueba
-
-1. Iniciar sesion como administrador.
-2. Abrir `Dashboard`.
-3. Confirmar que todas las tarjetas de resumen cargan datos.
-4. Confirmar que las secciones visuales muestran datos o estados vacios.
-5. Confirmar que la actividad reciente muestra registros de servicio, clientes y proyectos.
-6. Usar `Project Dashboard`, buscar por proyecto o cliente, seleccionar un proyecto y confirmar alertas contractuales y totales de horas.
-7. Usar `Technician Dashboard`, buscar por nombre de tecnico, seleccionar uno, filtrar por `Proyecto`, `Fecha desde` y `Fecha hasta`, y confirmar que totales, horas por cliente, horas por proyecto y ultimos registros se actualizan.
-8. Iniciar sesion como tecnico y confirmar que el dashboard esta limitado por permisos del backend.
-9. Interrumpir temporalmente una API o conexion local de base de datos durante pruebas y confirmar que aparece el mensaje de error del dashboard.
-
-Proxima fase: Fase 17D - Advertencias contractuales en Service Records.
-
-## Fase 34: Rol Project Manager Y Asignacion De Proyectos
-
-La aplicacion incorpora el rol `Project Manager` con acceso limitado a proyectos asignados por un administrador. La relacion se almacena en `dbo.UserProjectAssignments` dentro de `ServiceBillingDB`; la base restaurada `ServiceSBD_20260629` permanece sin cambios.
-
-El identificador persistido y utilizado por la API es `ProjectManager`; la interfaz muestra la etiqueta amigable `Project Manager`. La validacion de sesion no depende de las asignaciones, por lo que un manager sin proyectos puede iniciar sesion y recibe un espacio filtrado vacio en lugar de ser desconectado.
-
-### Migracion SQL
-
-Ejecutar `phase-34-project-manager-assignments.sql` en SSMS antes de iniciar esta version. El script es idempotente, actualiza `CK_Users_Role`, crea la tabla puente, sus llaves foraneas e indices, y conserva asignaciones desactivadas para auditoria.
-
-### Administracion Y API
-
-- Users permite seleccionar `Project Manager`, filtrar por rol, ver contadores y administrar asignaciones completas para usuarios Project Manager.
-- Projects tambien permite asignar uno o varios Project Managers activos desde el editor del proyecto.
-- `GET /api/users/:id/project-assignments` consulta las asignaciones activas del usuario.
-- `POST /api/users` y `PUT /api/users/:id` aceptan `projectIds` para cambios de asignacion de Project Manager.
-- `PUT /api/users/:id/project-assignments` sigue disponible para actualizaciones solo de asignaciones.
-- `POST /api/projects` y `PUT /api/projects/:id` aceptan el arreglo completo `projectManagerUserIds`.
-
-### Permisos Y Seguridad
-
-- Admin conserva acceso global y exclusivo a Users, Settings, roles y asignaciones.
-- Project Manager solo recibe Clients, Projects, Service Records, Dashboard y Reports relacionados con sus proyectos asignados.
-- Los filtros por fecha, tecnico, cliente, proyecto y estado se mantienen dentro de ese alcance.
-- PDF y Excel usan el mismo alcance aplicado por el backend.
-- Consultar directamente un proyecto o registro fuera de las asignaciones devuelve `403`.
-- Project Manager no puede crear, editar, cancelar ni procesar Service Records, ni acceder a endpoints administrativos o facturas manuales.
-- Technician conserva su alcance por registros propios.
-
-### Flujo De Prueba
-
-1. Ejecutar `phase-34-project-manager-assignments.sql` en `ServiceBillingDB`.
-2. Iniciar sesion como Admin, crear un usuario `Project Manager` y asignarlo desde el editor de dos proyectos.
-3. Iniciar sesion con ese usuario y confirmar que Projects, Clients, Dashboard, Service Records y Reports solo muestran datos relacionados.
-4. Exportar PDF y Excel y confirmar que contienen exclusivamente registros de los proyectos asignados.
-5. Solicitar `GET /api/projects/{id-no-asignado}` y verificar respuesta `403`.
-6. Quitar una asignacion como Admin y confirmar que desaparece al refrescar la sesion del Project Manager.
-7. Confirmar que Admin continua viendo todo y Technician mantiene sus permisos previos.
-
-### Fase 34.1: Editor De Proyectos Y Selector Multiple
-
-- El editor de Projects separa informacion basica, campos de contrato y resumen contractual en un grid responsive de dos columnas.
-- Las metricas del resumen solo aparecen al editar un proyecto existente; si no hay contrato se muestra un unico badge `Sin contrato`.
-- La tabla de Projects tiene un encabezado localizado por campo y resume managers asignados como `Nombre +N`, con la lista completa disponible mediante hover o foco de teclado.
-- El control reutilizable de asignaciones usa checkboxes con busqueda, chips, contador en vivo y limpieza de seleccion. Ya no requiere Ctrl o Shift.
-- Las asignaciones ahora se actualizan desde el editor de Projects.
-
-### Fase 34.2: Sincronizacion Bidireccional De Asignaciones
-
-- Las asignaciones ahora se administran desde Users y Projects usando la misma fuente `dbo.UserProjectAssignments`.
-- Crear o editar Users muestra el selector de proyectos asignados solo cuando el rol seleccionado es `ProjectManager`.
-- El selector de proyectos incluye checkboxes con busqueda, chips de seleccion, contador en vivo, seleccionar visibles y limpiar seleccion.
-- El selector de proyectos incluye un filtro Admin de estado para Activos, Inactivos y Todos. Las asignaciones historicas inactivas permanecen visibles y marcadas, pero deshabilitadas.
-- Al editar un Project Manager se cargan sus asignaciones existentes, se conservan al agregar nuevas y se guarda el conjunto completo seleccionado.
-- Cambiar un Project Manager a otro rol pide confirmacion antes de desactivar asignaciones activas.
-- Crear o editar Projects sigue enviando el arreglo completo `projectManagerUserIds` y refresca Users inmediatamente despues de guardar.
-- El contador de asignaciones en Users abre un detalle de solo lectura con cliente, proyecto, estado del proyecto y fecha de asignacion, mas un boton Admin para administrar.
-- La tabla de Projects muestra managers asignados como `Nombre +N`; al hacer click abre un modal compacto con la lista completa y un boton Admin para administrar.
-- Las actualizaciones desde Users y Projects validan rol Admin, usuarios/proyectos activos, IDs duplicados y guardan cambios con transacciones SQL.
-- El backend rechaza nuevas asignaciones a proyectos inactivos, pero permite conservar relaciones historicas activas ya existentes.
-- Quitar managers o proyectos desactiva logicamente la relacion en `dbo.UserProjectAssignments`; no se elimina historial.
-
-## Fase 35: Pulido De Produccion Y Confiabilidad
-
-- La gestion de cache de archivos estaticos quedo preparada para demo/local: HTML y respuestas API usan no-cache/no-store, mientras `app.js`, `style.css` y assets versionados pueden cachearse de forma segura.
-- `index.html` recibe una version automatica de assets calculada desde las fechas de modificacion del frontend, con opcion de sobrescribirla mediante `APP_ASSET_VERSION`.
-- Los formularios principales advierten antes de descartar cambios sin guardar en Clients, Projects, Service Records, Users y dialogos de facturas.
-- Las acciones largas muestran estados de carga consistentes y siempre restauran los botones tras exito o error.
-- Se agrego un sistema reutilizable de Toast notifications en la esquina superior derecha para mensajes de exito, error, advertencia e informacion, con iconos, boton de cierre, cierre automatico, pausa al pasar el mouse y estilos para modo claro/oscuro.
-- El Login ahora usa Toasts seguros para acceso correcto, credenciales incorrectas, cuentas inactivas y errores de conexion.
-- La cobertura de Toasts incluye login/logout, crear/editar/activar/desactivar clientes y proyectos, cambios de asignaciones de Project Manager, crear/editar/cambiar estado de usuarios, contrasenas temporales, guardar/editar/cancelar registros de servicio, reportes sin resultados/PDF/Excel, PDF de factura manual, recuperacion de contrasena y resolver/borrar notificaciones.
-- Los modales pueden cerrarse con `Escape`, respetando la confirmacion si hay cambios pendientes.
-- Los botones de exportacion de Reports mantienen el estilo visual PDF/Excel y usan el comportamiento compartido de carga.
-- Las respuestas API se marcan explicitamente como `no-store` para reducir datos obsoletos de sesion o permisos durante demos.
-- Las tablas responsive, encabezados sticky, enfoque visible, botones deshabilitados y variables de tema claro/oscuro quedan alineados con el pase de pulido de produccion.
+Variables de entorno opcionales: `DB_SERVER`, `DB_PORT`, `DB_NAME`,
+`APP_ASSET_VERSION`, `PORT`.
+
+---
+
+## Launcher de Windows
+
+Se incluye un launcher de conveniencia para demostraciones locales en
+`tools/launcher/service_billing_launcher.py`, con su propia documentación en
+`tools/launcher/README.md`.
+
+Ejecuta `npm start` desde la carpeta del proyecto, espera a que
+`http://localhost:3000` responda, abre el navegador predeterminado, evita iniciar
+procesos duplicados y guarda logs en `tools/launcher/logs/`. No modifica la base
+de datos ni reemplaza el servidor Node/Express. Opcionalmente se puede empaquetar
+como `.exe` con PyInstaller.
+
+---
+
+## Estructura del repositorio
+
+| Ruta | Propósito |
+|---|---|
+| `index.html` | Estructura de la aplicación: login, navegación, pantallas, tablas, formularios y modales. |
+| `style.css` | Sistema de tema (Sistema/Claro/Oscuro), maquetación, componentes y estados visuales. |
+| `app.js` | Lógica de frontend: llamadas a la API, traducciones, filtros, interfaz por rol, validación, render dinámico. |
+| `server.js` | Backend Express: conexión a SQL Server, autenticación, APIs de todos los módulos, reportes, generación de PDF y Excel. |
+| `service-billing-schema.sql` | Crea `ServiceBillingDB`, sus tablas, relaciones, índices y datos de demostración. |
+| `phase-34-project-manager-assignments.sql` | Migración idempotente del rol Project Manager y `UserProjectAssignments`. |
+| `seed.js`, `seed-demo-data.js` | Utilidades de datos de demostración. |
+| `assets/` | Logos y favicons. |
+| `tools/launcher/` | Launcher de demostración para Windows y su documentación. |
+
+---
+
+## Estado de pruebas
+
+- Los módulos se han ejercitado durante el desarrollo iterativo y la revisión de
+  código, y la interfaz actual se ha revisado de forma visual.
+- Las pruebas formales y documentadas de QA y de aceptación de la
+  organización / del usuario en todos los roles, navegadores y escenarios de
+  datos **siguen pendientes**.
+- Hasta que se completen y aprueben las UAT, esta versión permanece en
+  `development` y no se promueve a `main` ni se despliega.
+
+---
 
 ## Autor
 
-William Rosado Perez
-
-- B.S. Computer Science
-- IT Support Specialist
-- Database Support
-- Puerto Rico
+**William Rosado Pérez** — B.S. Computer Science · IT Support Specialist ·
+Database Support · Puerto Rico
 
 GitHub: [https://github.com/Puppywill](https://github.com/Puppywill)

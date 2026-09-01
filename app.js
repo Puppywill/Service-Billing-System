@@ -14,6 +14,8 @@ const sessionName = document.querySelector("#sessionName");
 const sessionRole = document.querySelector("#sessionRole");
 const logoutButton = document.querySelector("#logoutButton");
 const languageToggle = document.querySelector("#languageToggle");
+const themeToggle = document.querySelector("#themeToggle");
+const themeToggleLabel = document.querySelector("#themeToggleLabel");
 const notificationBell = document.querySelector("#notificationBell");
 const notificationCount = document.querySelector("#notificationCount");
 const forgotPasswordLink = document.querySelector("#forgotPasswordLink");
@@ -116,6 +118,10 @@ const serviceRecordStatusFilter = document.querySelector("#serviceRecordStatusFi
 const serviceRecordsTableBody = document.querySelector("#serviceRecordsTableBody");
 const serviceRecordsTotalCount = document.querySelector("#serviceRecordsTotalCount");
 const serviceRecordsMessage = document.querySelector("#serviceRecordsMessage");
+const serviceRecordsPagination = document.querySelector("#serviceRecordsPagination");
+const serviceRecordsPrevPage = document.querySelector("#serviceRecordsPrevPage");
+const serviceRecordsNextPage = document.querySelector("#serviceRecordsNextPage");
+const serviceRecordsPageStatus = document.querySelector("#serviceRecordsPageStatus");
 const serviceRecordModal = document.querySelector("#serviceRecordModal");
 const serviceRecordForm = document.querySelector("#serviceRecordForm");
 const serviceRecordModalTitle = document.querySelector("#service-record-modal-title");
@@ -286,6 +292,7 @@ const userProjectsDetailTitle = document.querySelector("#user-projects-detail-ti
 const userProjectsDetailSummary = document.querySelector("#userProjectsDetailSummary");
 const userProjectsDetailBody = document.querySelector("#userProjectsDetailBody");
 const manageUserProjectAssignmentsButton = document.querySelector("#manageUserProjectAssignmentsButton");
+const confirmDialog = document.querySelector("#confirmDialog");
 
 const openCount = document.querySelector("#openCount");
 const progressCount = document.querySelector("#progressCount");
@@ -314,6 +321,16 @@ const manualInvoicePoNumber = document.querySelector("#manualInvoicePoNumber");
 const manualInvoiceTerms = document.querySelector("#manualInvoiceTerms");
 const manualInvoiceDueDate = document.querySelector("#manualInvoiceDueDate");
 const manualInvoiceProject = document.querySelector("#manualInvoiceProject");
+const manualInvoiceServiceDescription = document.querySelector("#manualInvoiceServiceDescription");
+const manualInvoiceServicePeriod = document.querySelector("#manualInvoiceServicePeriod");
+const manualInvoiceAccountNumbers = document.querySelector("#manualInvoiceAccountNumbers");
+const manualInvoiceContractNumber = document.querySelector("#manualInvoiceContractNumber");
+const manualInvoiceContractStart = document.querySelector("#manualInvoiceContractStart");
+const manualInvoiceContractEnd = document.querySelector("#manualInvoiceContractEnd");
+const manualInvoiceContractedHours = document.querySelector("#manualInvoiceContractedHours");
+const manualInvoiceInitialAvailableHours = document.querySelector("#manualInvoiceInitialAvailableHours");
+const manualInvoiceWorkedHours = document.querySelector("#manualInvoiceWorkedHours");
+const manualInvoiceFinalAvailableHours = document.querySelector("#manualInvoiceFinalAvailableHours");
 const manualInvoiceLinesBody = document.querySelector("#manualInvoiceLinesBody");
 const addManualInvoiceLineButton = document.querySelector("#addManualInvoiceLineButton");
 const manualInvoiceApplyTax = document.querySelector("#manualInvoiceApplyTax");
@@ -322,10 +339,17 @@ const manualInvoiceSubtotalDisplay = document.querySelector("#manualInvoiceSubto
 const manualInvoiceTaxLabel = document.querySelector("#manualInvoiceTaxLabel");
 const manualInvoiceTaxDisplay = document.querySelector("#manualInvoiceTaxDisplay");
 const manualInvoiceTotalDisplay = document.querySelector("#manualInvoiceTotalDisplay");
+const manualInvoiceShowCertification1 = document.querySelector("#manualInvoiceShowCertification1");
+const manualInvoiceShowCertification2 = document.querySelector("#manualInvoiceShowCertification2");
+const manualInvoiceShowSignature1 = document.querySelector("#manualInvoiceShowSignature1");
+const manualInvoiceShowSignature2 = document.querySelector("#manualInvoiceShowSignature2");
+const manualInvoiceCertification1 = document.querySelector("#manualInvoiceCertification1");
+const manualInvoiceCertification2 = document.querySelector("#manualInvoiceCertification2");
 const manualInvoiceSignature1Name = document.querySelector("#manualInvoiceSignature1Name");
 const manualInvoiceSignature1Title = document.querySelector("#manualInvoiceSignature1Title");
 const manualInvoiceSignature2Name = document.querySelector("#manualInvoiceSignature2Name");
 const manualInvoiceSignature2Title = document.querySelector("#manualInvoiceSignature2Title");
+const manualInvoiceFinalMessage = document.querySelector("#manualInvoiceFinalMessage");
 const manualInvoiceMessage = document.querySelector("#manualInvoiceMessage");
 const generateManualInvoicePdfButton = document.querySelector("#generateManualInvoicePdfButton");
 
@@ -334,6 +358,10 @@ let clients = [];
 let projectClients = [];
 let projects = [];
 let serviceRecords = [];
+let serviceRecordsPage = 1;
+let serviceRecordsPageSize = 50;
+let serviceRecordsTotal = 0;
+let serviceRecordsTotalPages = 1;
 let serviceRecordTechnicians = [];
 let serviceRecordClients = [];
 let serviceRecordProjects = [];
@@ -370,6 +398,87 @@ let hasGeneratedReport = false;
 let currentUser = null;
 let activeTab = "tickets";
 let currentLanguage = localStorage.getItem("helpdeskLanguage") || "es";
+
+const THEME_STORAGE_KEY = "sbd-theme";
+const THEME_MODES = ["system", "light", "dark"];
+let themeMode = "system";
+const prefersDarkQuery = typeof window.matchMedia === "function"
+  ? window.matchMedia("(prefers-color-scheme: dark)")
+  : null;
+
+function readStoredTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return THEME_MODES.includes(stored) ? stored : "system";
+  } catch (error) {
+    return "system";
+  }
+}
+
+function resolveThemeMode(mode) {
+  if (mode === "light" || mode === "dark") return mode;
+  return prefersDarkQuery && prefersDarkQuery.matches ? "dark" : "light";
+}
+
+function applyTheme(mode) {
+  themeMode = THEME_MODES.includes(mode) ? mode : "system";
+  const root = document.documentElement;
+  const resolved = resolveThemeMode(themeMode);
+
+  if (themeMode === "system") {
+    root.removeAttribute("data-theme");
+  } else {
+    root.setAttribute("data-theme", themeMode);
+  }
+  root.setAttribute("data-resolved-theme", resolved);
+
+  try {
+    if (themeMode === "system") {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    } else {
+      localStorage.setItem(THEME_STORAGE_KEY, themeMode);
+    }
+  } catch (error) {
+    /* storage unavailable: theme still applies for this session */
+  }
+
+  updateThemeToggleLabel();
+}
+
+function updateThemeToggleLabel() {
+  if (!themeToggleLabel) return;
+  const labels = currentLanguage === "es"
+    ? { system: "Sistema", light: "Claro", dark: "Oscuro" }
+    : { system: "System", light: "Light", dark: "Dark" };
+  themeToggleLabel.textContent = labels[themeMode] || labels.system;
+  if (themeToggle) {
+    const hint = currentLanguage === "es" ? "Tema" : "Theme";
+    themeToggle.setAttribute("aria-label", `${hint}: ${themeToggleLabel.textContent}`);
+    themeToggle.setAttribute("title", `${hint}: ${themeToggleLabel.textContent}`);
+  }
+}
+
+function cycleTheme() {
+  const next = THEME_MODES[(THEME_MODES.indexOf(themeMode) + 1) % THEME_MODES.length];
+  applyTheme(next);
+}
+
+function initTheme() {
+  applyTheme(readStoredTheme());
+  if (prefersDarkQuery) {
+    const onSystemChange = () => {
+      if (themeMode === "system") applyTheme("system");
+    };
+    if (typeof prefersDarkQuery.addEventListener === "function") {
+      prefersDarkQuery.addEventListener("change", onSystemChange);
+    } else if (typeof prefersDarkQuery.addListener === "function") {
+      prefersDarkQuery.addListener(onSystemChange);
+    }
+  }
+  if (themeToggle) {
+    themeToggle.addEventListener("click", cycleTheme);
+  }
+}
 
 const technicianDashboardMainProjectKeys = [
   "hosting y mantenimiento 2025-2026 - municipio de bayamon - programa wioa",
@@ -473,7 +582,7 @@ async function refreshAuthenticatedUser() {
   });
   const data = await parseJsonResponse(response);
 
-  console.info(`[auth] Session validation returned ${response.status}.`);
+  console.info(`[auth] Session válidation returned ${response.status}.`);
 
   if (!response.ok) {
     const error = new Error(translateServerMessage(data.message) || t("sessionValidationError"));
@@ -513,55 +622,68 @@ async function refreshWorkspace() {
 
 const translations = {
   es: {
-    documentTitle: "Solutions By Design - Service Billing System",
-    headerEyebrow: "Registro de horas y facturacion de servicios",
-    headerTitle: "Solutions By Design",
-    headerSubtitle: "Solutions By Design ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.",
+    documentTitle: "Solutions By Design, Inc. - SBD Service",
+    loginProductName: "SBD Service",
+    loginTagline: "Plataforma profesional para la gestión de servicios, horas, facturación y reportes.",
+    loginBenefit1Title: "Seguro",
+    loginBenefit1Sub: "Datos protegidos",
+    loginBenefit2Title: "Eficiente",
+    loginBenefit2Sub: "Optimiza tu tiempo",
+    loginBenefit3Title: "Confiable",
+    loginBenefit3Sub: "Información precisa",
+    loginLegal: "© 2026 Solutions By Design, Inc. Todos los derechos reservados.",
+    headerEyebrow: "Registro de horas y facturación de servicios",
+    headerTitle: "Solutions By Design, Inc.",
+    headerSubtitle: "Solutions By Design, Inc. ofrece una plataforma para registrar, administrar y supervisar servicios por hora de forma eficiente.",
     secureAccess: "Acceso seguro",
-    login: "Iniciar sesion",
-    password: "Contrasena",
-    passwordPlaceholder: "Tu contrasena",
+    login: "Iniciar sesión",
+    password: "Contraseña",
+    passwordPlaceholder: "Tu contraseña",
     tickets: "Registros de servicio",
     users: "Usuarios",
-    notifications: "Notificaciones",
+    notifications: "Notificaciónes",
     dashboard: "Resumen",
     reports: "Reportes",
     clients: "Clientes",
     projects: "Proyectos",
     invoices: "Facturas",
     manualInvoices: "Facturas",
-    manualInvoicesEyebrow: "Facturacion manual",
+    manualInvoicesEyebrow: "Facturación manual",
     manualInvoicePdfButton: "Generar factura PDF",
     manualInvoiceGenerating: "Generando factura PDF...",
     manualInvoiceReady: "Factura PDF generada correctamente.",
     manualInvoiceError: "No se pudo generar la factura PDF.",
-    manualInvoiceLineRequired: "Agrega al menos una linea valida antes de generar la factura.",
-    manualInvoiceLineInvalid: "Cada linea debe tener cantidad mayor que 0, descripcion y rate valido.",
+    manualInvoiceLineRequired: "Agrega al menos una línea válida antes de generar la factura.",
+    manualInvoiceLineInvalid: "Cada línea debe tener cantidad mayor que 0, descripción y rate válido.",
+    invoiceFieldRequired: "Este campo es obligatorio.",
+    invoiceQuantityPositive: "La cantidad debe ser mayor que 0.",
+    invoiceInvalidRate: "El rate no puede ser negativo.",
+    invoiceCompleteRequired: "Completa los campos obligatorios antes de generar la factura.",
     loading: "Cargando...",
     saving: "Guardando...",
     updating: "Actualizando...",
     processing: "Procesando...",
     exportingExcel: "Exportando Excel...",
-    unsavedChangesConfirm: "Los cambios no guardados se perderan. Deseas continuar?",
-    settings: "Configuracion",
+    unsavedChangesConfirm: "Los cambios no guardados se perderan. ¿Deseas continuar?",
+    settings: "Configuración",
     about: "Acerca de",
-    aboutEyebrow: "Orientacion",
+    aboutEyebrow: "Orientación",
     aboutTitle: "Acerca de",
-    aboutIntro: "El Programa de Registro de Horas y Facturacion de Servicios ayuda a registrar, consultar y revisar los servicios por hora de Solutions By Design.",
-    aboutPurposeEyebrow: "Proposito",
+    aboutIntro: "El Programa de Registro de Horas y Facturación de Servicios ayuda a registrar, consultar y revisar los servicios por hora de Solutions By Design, Inc.",
+    aboutPurposeEyebrow: "Propósito",
     aboutPurposeTitle: "Una herramienta para el trabajo diario",
-    aboutPurposeText: "El sistema centraliza clientes, proyectos, horas trabajadas, reportes y documentos de apoyo para que el equipo pueda administrar el trabajo con informacion clara y actualizada.",
+    aboutPurposeText: "El sistema centraliza clientes, proyectos, horas trabajadas, reportes y documentos de apoyo para que el equipo pueda administrar el trabajo con información clara y actualizada.",
     aboutModuleDashboardTitle: "Resumen",
-    aboutModuleDashboardText: "Muestra indicadores, horas y actividad reciente para revisar rapidamente el estado del trabajo.",
+    aboutModuleDashboardText: "Muestra indicadores, horas y actividad reciente para revisar rápidamente el estado del trabajo.",
     aboutModuleClientsProjectsTitle: "Clientes y proyectos",
     aboutModuleClientsProjectsText: "Organiza clientes, proyectos, contratos y asignaciones de Project Managers.",
     aboutModuleServiceRecordsTitle: "Registros de servicio",
-    aboutModuleServiceRecordsText: "Permite registrar, editar y consultar horas trabajadas por tecnico, cliente, proyecto, fecha y estado.",
+    aboutModuleServiceRecordsText: "Permite registrar, editar y consultar horas trabajadas por técnico, cliente, proyecto, fecha y estado.",
     aboutModuleReportsTitle: "Reportes y documentos",
     aboutModuleReportsText: "Genera reportes, PDF, Excel y facturas manuales para revision administrativa.",
-    aboutPermissionsTitle: "Acceso segun rol",
-    aboutPermissionsText: "Las opciones disponibles pueden cambiar segun el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la informacion y mantener un flujo de trabajo ordenado.",
-    aboutFooter: "Desarrollado para Solutions By Design.",
+    aboutPermissionsTitle: "Acceso según rol",
+    aboutPermissionsText: "Las opciones disponibles pueden cambiar según el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la información y mantener un flujo de trabajo ordenado.",
+    aboutFooter: "Desarrollado para Solutions By Design, Inc.",
     dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el resumen.",
     noDashboardData: "No hay datos para mostrar.",
@@ -580,7 +702,7 @@ const translations = {
       HoursByMonth: "Horas de servicio por mes",
       HoursByClient: "Horas de servicio por cliente",
       HoursByProject: "Horas por proyecto de servicio",
-      HoursByTechnician: "Horas de servicio por tecnico"
+      HoursByTechnician: "Horas de servicio por técnico"
     },
     dashboardSectionLabels: {
       hours: "HORAS",
@@ -604,10 +726,10 @@ const translations = {
       projectLabel: "Proyecto",
       selectProject: "Selecciona un proyecto",
       selectedPrompt: "Selecciona un proyecto para ver detalles.",
-      loading: "Cargando informacion del proyecto...",
-      loadError: "No se pudo cargar la informacion del proyecto.",
-      noProjectMatches: "No hay proyectos que coincidan con la busqueda.",
-      latestRecords: "Ultimos registros de servicio",
+      loading: "Cargando información del proyecto...",
+      loadError: "No se pudo cargar la información del proyecto.",
+      noProjectMatches: "No hay proyectos que coincidan con la búsqueda.",
+      latestRecords: "Últimos registros de servicio",
       recordsCount: "registros",
       noRecords: "No hay registros de servicio para este proyecto.",
       totalProjectHours: "Total horas del proyecto",
@@ -617,29 +739,29 @@ const translations = {
       canceledProjectHours: "Horas canceladas"
     },
     technicianDashboard: {
-      eyebrow: "Enfoque por tecnico",
-      title: "Panel de tecnico",
-      searchLabel: "Buscar tecnico",
-      searchPlaceholder: "Nombre del tecnico",
-      technicianLabel: "Tecnico",
+      eyebrow: "Enfoque por técnico",
+      title: "Panel de técnico",
+      searchLabel: "Buscar técnico",
+      searchPlaceholder: "Nombre del técnico",
+      technicianLabel: "Técnico",
       projectLabel: "Proyecto",
       dateFromLabel: "Fecha desde",
       dateToLabel: "Fecha hasta",
-      selectTechnician: "Selecciona un tecnico",
+      selectTechnician: "Selecciona un técnico",
       selectProject: "Selecciona un proyecto",
       allProjects: "Todos los proyectos",
-      selectedPrompt: "Selecciona un tecnico para ver sus estadisticas.",
-      loading: "Cargando informacion del tecnico...",
-      loadError: "No se pudo cargar la informacion del tecnico.",
-      noTechnicianMatches: "No hay tecnicos que coincidan con la busqueda.",
+      selectedPrompt: "Selecciona un técnico para ver sus estadísticas.",
+      loading: "Cargando información del técnico...",
+      loadError: "No se pudo cargar la información del técnico.",
+      noTechnicianMatches: "No hay técnicos que coincidan con la búsqueda.",
       hoursByProject: "Horas por proyecto",
       hoursByClient: "Horas por cliente",
       hoursByMonth: "Horas por mes",
-      latestRecords: "Ultimos registros de servicio",
+      latestRecords: "Últimos registros de servicio",
       recordsCount: "registros",
-      noRecords: "No hay registros de servicio para este tecnico.",
-      noProjectHours: "No hay horas por proyecto para este tecnico.",
-      noClientHours: "No hay horas por cliente para este tecnico.",
+      noRecords: "No hay registros de servicio para este técnico.",
+      noProjectHours: "No hay horas por proyecto para este técnico.",
+      noClientHours: "No hay horas por cliente para este técnico.",
       totalTechnicianHours: "Total horas trabajadas",
       currentMonthTechnicianHours: "Horas del mes actual",
       pendingTechnicianHours: "Horas pendientes",
@@ -647,15 +769,15 @@ const translations = {
       canceledTechnicianHours: "Horas canceladas",
       totalTechnicianRecords: "Total registros"
     },
-    clientsEyebrow: "Catalogo de clientes",
-    projectsEyebrow: "Catalogo de trabajo",
-    invoicesEyebrow: "Area de facturacion",
+    clientsEyebrow: "Catálogo de clientes",
+    projectsEyebrow: "Catálogo de trabajo",
+    invoicesEyebrow: "Área de facturación",
     settingsEyebrow: "Preferencias del sistema",
-    clientsFoundation: "La administracion de clientes esta lista para el flujo operativo de Solutions By Design.",
+    clientsFoundation: "La administración de clientes está lista para el flujo operativo de Solutions By Design, Inc.",
     addClient: "Agregar cliente",
     editClient: "Editar cliente",
     saveClient: "Guardar cliente",
-    clientSearchPlaceholder: "Cliente, email o telefono",
+    clientSearchPlaceholder: "Cliente, email o teléfono",
     clientsCount: "clientes",
     activeCount: "activos",
     inactiveCount: "inactivos",
@@ -664,7 +786,7 @@ const translations = {
     activeOnly: "Activos",
     inactiveOnly: "Inactivos",
     noClients: "No hay clientes para mostrar.",
-    noClientMatches: "No hay clientes que coincidan con la busqueda.",
+    noClientMatches: "No hay clientes que coincidan con la búsqueda.",
     loadClientsError: "No se pudieron cargar los clientes.",
     createClientSuccess: "Cliente creado correctamente.",
     updateClientSuccess: "Cliente actualizado correctamente.",
@@ -677,16 +799,16 @@ const translations = {
     deactivateClientConfirm: "¿Seguro que deseas desactivar este cliente? No se eliminarán sus registros históricos.",
     clientStatusError: "No se pudo actualizar el estado del cliente.",
     clientNameRequired: "El nombre del cliente es obligatorio.",
-    clientNotFound: "No se encontro el cliente seleccionado.",
-    deleteClientConfirm: "Seguro que deseas desactivar este cliente?",
+    clientNotFound: "No se encontró el cliente selecciónado.",
+    deleteClientConfirm: "¿Seguro que deseas desactivar este cliente?",
     createClientError: "No se pudo crear el cliente.",
     updateClientError: "No se pudo actualizar el cliente.",
     deleteClientError: "No se pudo desactivar el cliente.",
-    projectsFoundation: "La administracion de proyectos organizara el trabajo por cliente y descripcion antes de registrar servicios.",
+    projectsFoundation: "La administración de proyectos organizará el trabajo por cliente y descripción antes de registrar servicios.",
     addProject: "Agregar proyecto",
     editProject: "Editar proyecto",
     saveProject: "Guardar proyecto",
-    projectSearchPlaceholder: "Proyecto, cliente o descripcion",
+    projectSearchPlaceholder: "Proyecto, cliente o descripción",
     allClients: "Todos los clientes",
     selectClient: "Selecciona cliente",
     projectsCount: "proyectos",
@@ -706,18 +828,18 @@ const translations = {
     projectStatusError: "No se pudo actualizar el estado del proyecto.",
     projectClientRequired: "El cliente es obligatorio.",
     projectNameRequired: "El nombre del proyecto es obligatorio.",
-    projectRateRequired: "La configuracion interna del proyecto debe ser numerica.",
-    projectRateNegative: "La configuracion interna del proyecto no puede ser negativa.",
-    projectNotFound: "No se encontro el proyecto seleccionado.",
-    deleteProjectConfirm: "Seguro que deseas desactivar este proyecto?",
+    projectRateRequired: "La configuración interna del proyecto debe ser numérica.",
+    projectRateNegative: "La configuración interna del proyecto no puede ser negativa.",
+    projectNotFound: "No se encontró el proyecto selecciónado.",
+    deleteProjectConfirm: "¿Seguro que deseas desactivar este proyecto?",
     createProjectError: "No se pudo crear el proyecto.",
     updateProjectError: "No se pudo actualizar el proyecto.",
     deleteProjectError: "No se pudo desactivar el proyecto.",
     addServiceRecord: "Agregar registro de servicio",
     editServiceRecord: "Editar registro de servicio",
     saveServiceRecord: "Guardar registro",
-    serviceRecordSearchPlaceholder: "Tecnico, cliente, proyecto o descripcion",
-    allTechnicians: "Todos los tecnicos",
+    serviceRecordSearchPlaceholder: "Técnico, cliente, proyecto o descripción",
+    allTechnicians: "Todos los técnicos",
     allProjects: "Todos los proyectos",
     allStatuses: "Todos los estados",
     serviceRecordsCount: "registros",
@@ -728,15 +850,15 @@ const translations = {
     createServiceRecordSuccess: "Registro de servicio creado correctamente.",
     updateServiceRecordSuccess: "Registro de servicio actualizado correctamente.",
     cancelServiceRecordSuccess: "Registro de servicio cancelado correctamente.",
-    serviceRecordTechnicianRequired: "El tecnico es obligatorio.",
+    serviceRecordTechnicianRequired: "El técnico es obligatorio.",
     serviceRecordClientRequired: "El cliente es obligatorio.",
     serviceRecordProjectRequired: "El proyecto es obligatorio.",
     serviceRecordDateRequired: "La fecha del servicio es obligatoria.",
-    serviceRecordDescriptionRequired: "La descripcion del servicio es obligatoria.",
+    serviceRecordDescriptionRequired: "La descripción del servicio es obligatoria.",
     serviceRecordTimeError: "Las horas deben tener entrada y salida, y no pueden ser negativas.",
-    serviceRecordStatusInvalid: "El estado seleccionado no es valido.",
-    serviceRecordNotFound: "No se encontro el registro seleccionado.",
-    cancelServiceRecordConfirm: "Seguro que deseas cancelar este registro de servicio?",
+    serviceRecordStatusInvalid: "El estado selecciónado no es válido.",
+    serviceRecordNotFound: "No se encontró el registro selecciónado.",
+    cancelServiceRecordConfirm: "¿Seguro que deseas cancelar este registro de servicio?",
     createServiceRecordError: "No se pudo crear el registro de servicio.",
     updateServiceRecordError: "No se pudo actualizar el registro de servicio.",
     cancelServiceRecordError: "No se pudo cancelar el registro de servicio.",
@@ -756,17 +878,17 @@ const translations = {
     invoicePeriodFromRequired: "La fecha desde es obligatoria.",
     invoicePeriodToRequired: "La fecha hasta es obligatoria.",
     invoicePeriodInvalid: "La fecha desde no puede ser posterior a la fecha hasta.",
-    invoiceTaxRateInvalid: "La configuracion interna de la factura debe ser un numero no negativo.",
-    invoiceStatusInvalid: "El estado seleccionado no es valido.",
-    invoiceNotFound: "No se encontro la factura seleccionada.",
-    cancelInvoiceConfirm: "Seguro que deseas cancelar esta factura?",
+    invoiceTaxRateInvalid: "La configuración interna de la factura debe ser un número no negativo.",
+    invoiceStatusInvalid: "El estado selecciónado no es válido.",
+    invoiceNotFound: "No se encontró la factura selecciónada.",
+    cancelInvoiceConfirm: "¿Seguro que deseas cancelar esta factura?",
     generateInvoiceError: "No se pudo generar la factura.",
     updateInvoiceError: "No se pudo actualizar la factura.",
     cancelInvoiceError: "No se pudo cancelar la factura.",
     loadInvoiceDetailError: "No se pudo cargar el detalle de la factura.",
-    noInvoiceLines: "No hay lineas para esta factura.",
-    invoicesFoundation: "Las pantallas de facturas usaran horas registradas para generar encabezados, lineas y estados del documento.",
-    settingsFoundation: "Configuracion centralizara preferencias de cuenta, notificaciones, valores de flujo de trabajo y controles de migracion en una fase posterior.",
+    noInvoiceLines: "No hay líneas para esta factura.",
+    invoicesFoundation: "Las pantallas de facturas usarán horas registradas para generar encabezados, líneas y estados del documento.",
+    settingsFoundation: "Configuración centralizará preferencias de cuenta, notificaciones, valores de flujo de trabajo y controles de migración en una fase posterior.",
     createTicket: "Crear registro",
     addUser: "Agregar usuario",
     createUser: "Crear usuario",
@@ -777,9 +899,12 @@ const translations = {
     edit: "Editar",
     close: "Cerrar",
     delete: "Eliminar",
-    logout: "Cerrar sesion",
+    confirmTitle: "Confirmar acción",
+    confirmProceed: "Sí, continuar",
+    confirmCancel: "No, volver",
+    logout: "Cerrar sesión",
     search: "Buscar",
-    searchPlaceholder: "Nombre de usuario o descripcion",
+    searchPlaceholder: "Nombre de usuario o descripción",
     status: "Estado",
     priority: "Prioridad",
     user: "Usuario",
@@ -795,11 +920,11 @@ const translations = {
     generateReport: "Generar reporte",
     exportPdf: "Exportar PDF",
     exportExcel: "Exportar Excel",
-    analytics: "Analitica",
+    analytics: "Analítica",
     reportReady: "Reporte generado correctamente.",
-    reportNoResultsToast: "No se encontraron registros con los filtros seleccionados.",
+    reportNoResultsToast: "No se encontraron registros con los filtros selecciónados.",
     reportInitial: "Genera un reporte para ver resultados.",
-    noReportTickets: "No hay registros para los filtros seleccionados.",
+    noReportTickets: "No hay registros para los filtros selecciónados.",
     reportError: "No se pudo generar el reporte.",
     pdfReady: "PDF generado correctamente.",
     pdfNoData: "Genera un reporte con registros antes de exportar PDF.",
@@ -814,16 +939,16 @@ const translations = {
     resolve: "Marcar resuelta",
     markResolved: "Marcar como resuelta",
     deleteNotification: "Borrar",
-    deleteNotificationConfirm: "Seguro que deseas borrar esta notificacion?",
-    deleteNotificationSuccess: "Notificacion borrada correctamente.",
-    deleteNotificationError: "No se pudo borrar la notificacion.",
-    notificationMarkedReadSuccess: "Notificacion marcada como leida.",
-    temporaryPassword: "Asignar contrasena temporal",
-    showPassword: "Mostrar contrasena",
-    hidePassword: "Ocultar contrasena",
+    deleteNotificationConfirm: "¿Seguro que deseas borrar esta notificación?",
+    deleteNotificationSuccess: "Notificación borrada correctamente.",
+    deleteNotificationError: "No se pudo borrar la notificación.",
+    notificationMarkedReadSuccess: "Notificación marcada como leída.",
+    temporaryPassword: "Asignar contraseña temporal",
+    showPassword: "Mostrar contraseña",
+    hidePassword: "Ocultar contraseña",
     pending: "Pendiente",
     resolved: "Resuelto",
-    forgotSaved: "Solicitud recibida. Contacta a un administrador para restablecer tu contrasena.",
+    forgotSaved: "Solicitud recibida. Contacta a un administrador para restablecer tu contraseña.",
     forgotError: "No se pudo enviar la solicitud.",
     passwordResetResolvedSuccess: "Solicitud de recuperacion marcada como resuelta.",
     name: "Nombre",
@@ -831,8 +956,8 @@ const translations = {
     userNamePlaceholder: "Ej. Ana Gomez",
     creatingTicketAs: "Creando registro como:",
     authenticatedUser: "Usuario autenticado",
-    issueDescription: "Descripcion del servicio",
-    issuePlaceholder: "Ej. Servicio tecnico realizado al cliente.",
+    issueDescription: "Descripción del servicio",
+    issuePlaceholder: "Ej. Servicio técnico realizado al cliente.",
     newCase: "Nuevo registro",
     supportInbox: "Registro operativo",
     allTickets: "Todos los registros de servicio",
@@ -849,7 +974,7 @@ const translations = {
     backToLogin: "Volver al Login",
     enter: "Entrar al sistema",
     emailPlaceholder: "tu@email.com",
-    navigationLabel: "Navegacion principal",
+    navigationLabel: "Navegación principal",
     executiveSummary: "Resumen ejecutivo",
     activity: "Actividad",
     noNotifications: "No hay notificaciones.",
@@ -869,19 +994,19 @@ const translations = {
     progressTickets: "Registros En Progreso",
     closedTickets: "Registros Cerrados",
     totalUsers: "Total Usuarios",
-    latestNotifications: "Ultimas notificaciones",
+    latestNotifications: "Últimas notificaciones",
     myTickets: "Mis Registros",
     myOpenTickets: "Mis Registros Abiertos",
     myClosedTickets: "Mis Registros Cerrados",
-    myNotifications: "Mis Notificaciones",
+    myNotifications: "Mis Notificaciónes",
     readOnly: "Solo lectura",
     noAudit: "Sin auditoria",
     noTickets: "No hay registros de servicio.",
-    noTicketMatches: "No hay registros que coincidan con la busqueda o los filtros.",
+    noTicketMatches: "No hay registros que coincidan con la búsqueda o los filtros.",
     loadUsersError: "No se pudo cargar el panel de usuarios.",
     usersAdminOnly: "Panel disponible solo para administradores.",
     noUsers: "No hay usuarios registrados.",
-    noUserMatches: "No hay usuarios que coincidan con la busqueda y el estado seleccionado.",
+    noUserMatches: "No hay usuarios que coincidan con la búsqueda y el estado selecciónado.",
     userSearchPlaceholder: "Nombre, email o rol",
     usersCount: "usuarios",
     roleFilter: "Rol",
@@ -896,61 +1021,61 @@ const translations = {
     selectedManagerPlural: "Project Managers asignados",
     managerSearchPlaceholder: "Nombre o email",
     noAssignableManagers: "No hay Project Managers activos disponibles.",
-    noManagerMatches: "No hay Project Managers que coincidan con la busqueda.",
+    noManagerMatches: "No hay Project Managers que coincidan con la búsqueda.",
     removeManagerAssignment: "Quitar Project Manager",
     assignedAt: "Asignado el",
     assignedProjectsDetail: "Proyectos asignados",
     manageAssignments: "Administrar asignaciones",
-    userInformation: "Informacion del usuario",
+    userInformation: "Información del usuario",
     activeUser: "Usuario activo",
-    changeProjectManagerRoleConfirm: "Este usuario tiene proyectos asignados. Si cambias el rol, sus asignaciones activas se quitaran. Deseas continuar?",
+    changeProjectManagerRoleConfirm: "Este usuario tiene proyectos asignados. Si cambias el rol, sus asignaciones activas se quitarán. ¿Deseas continuar?",
     projectAssignmentsError: "No se pudieron cargar o guardar las asignaciones de proyectos.",
     projectAssignmentsLoading: "Cargando proyectos asignados...",
     assignmentSearch: "Buscar Project Managers",
     assignmentSearchPlaceholder: "Cliente o proyecto",
     selectVisibleProjects: "Seleccionar todos los proyectos visibles",
-    clearProjectSelection: "Limpiar seleccion",
-    selectedProjectSingular: "proyecto seleccionado",
-    selectedProjectPlural: "proyectos seleccionados",
+    clearProjectSelection: "Limpiar selección",
+    selectedProjectSingular: "proyecto selecciónado",
+    selectedProjectPlural: "proyectos selecciónados",
     noAssignableProjects: "No hay proyectos activos disponibles.",
-    noAssignmentMatches: "No hay proyectos que coincidan con la busqueda.",
+    noAssignmentMatches: "No hay proyectos que coincidan con la búsqueda.",
     removeProjectAssignment: "Quitar proyecto",
-    inactiveAssignmentsHelp: "Los proyectos inactivos asignados anteriormente se conservan por historial, pero no pueden seleccionarse como nuevas asignaciones.",
-    clearAssignedProjectsConfirm: "Seguro que deseas limpiar las asignaciones activas seleccionadas? Las asignaciones historicas inactivas se conservaran.",
+    inactiveAssignmentsHelp: "Los proyectos inactivos asignados anteriormente se conservan por historial, pero no pueden selecciónarse como nuevas asignaciones.",
+    clearAssignedProjectsConfirm: "¿Seguro que deseas limpiar las asignaciones activas selecciónadas? Las asignaciones históricas inactivas se conservaran.",
     projectManagerAssignmentsUpdatedSuccess: "Asignaciones actualizadas correctamente.",
     unassigned: "Sin asignar",
     registeredUsers: "usuarios registrados",
-    administration: "Administracion",
+    administration: "Administración",
     security: "Seguridad",
     fullName: "Nombre completo",
     fullNamePlaceholder: "Ej. Maria Lopez",
     role: "Rol",
-    tempPasswordPlaceholder: "Contrasena temporal",
-    newPassword: "Nueva contrasena",
+    tempPasswordPlaceholder: "Contraseña temporal",
+    newPassword: "Nueva contraseña",
     keepPasswordPlaceholder: "Dejar vacio para mantener",
     admin: "Administrador",
     closeEditor: "Cerrar editor",
     closeUserEditor: "Cerrar editor de usuario",
-    completeTicketFields: "Completa la descripcion del servicio.",
+    completeTicketFields: "Completa la descripción del servicio.",
     toastSuccessTitle: "Listo",
     toastErrorTitle: "Error",
     toastWarningTitle: "Atencion",
-    toastInfoTitle: "Informacion",
-    loginSuccessToast: "Inicio de sesion exitoso.",
+    toastInfoTitle: "Información",
+    loginSuccessToast: "Inicio de sesión exitoso.",
     loginWelcomeToast: "Bienvenido, {name}.",
-    loginInvalidToast: "Correo electronico o contrasena incorrectos.",
+    loginInvalidToast: "Correo electrónico o contraseña incorrectos.",
     loginInactiveToast: "Tu cuenta esta inactiva. Contacta al administrador.",
     loginConnectionToast: "No se pudo conectar con el servidor. Intentalo nuevamente.",
-    logoutSuccessToast: "Sesion cerrada correctamente.",
-    loginError: "No se pudo iniciar sesion.",
-    sessionValidationError: "No se pudo verificar la sesion. Intenta nuevamente.",
+    logoutSuccessToast: "Sesión cerrada correctamente.",
+    loginError: "No se pudo iniciar sesión.",
+    sessionValidationError: "No se pudo verificar la sesión. Intenta nuevamente.",
     loadTicketsError: "No se pudieron cargar los registros.",
     serverConnectionError: "No se pudo conectar con el servidor.",
     createTicketError: "No se pudo crear el registro.",
     createTicketAlertError: "Ocurrio un error al crear el registro.",
     createTicketSuccess: "Registro guardado correctamente.",
-    ticketNotFound: "No se encontro el registro seleccionado.",
-    userNotFound: "No se encontro el usuario seleccionado.",
+    ticketNotFound: "No se encontró el registro selecciónado.",
+    userNotFound: "No se encontró el usuario selecciónado.",
     createUserError: "No se pudo crear el usuario.",
     editUserError: "No se pudo editar el usuario.",
     createUserSuccess: "Usuario creado correctamente.",
@@ -959,9 +1084,9 @@ const translations = {
     deactivateUserSuccess: "Usuario desactivado correctamente.",
     userRoleUpdatedSuccess: "Rol actualizado correctamente.",
     projectManagerProjectsAssignedSuccess: "Proyectos asignados correctamente.",
-    temporaryPasswordSuccess: "Contrasena temporal asignada correctamente.",
+    temporaryPasswordSuccess: "Contraseña temporal asignada correctamente.",
     deleteUserError: "No se pudo actualizar el estado del usuario.",
-    deleteUserConfirm: "Seguro que deseas cambiar el estado de este usuario?",
+    deleteUserConfirm: "¿Seguro que deseas cambiar el estado de este usuario?",
     activateUser: "Activar",
     deactivateUser: "Desactivar",
     active: "Activo",
@@ -979,7 +1104,7 @@ const translations = {
     deleteTicketError: "No se pudo eliminar el registro.",
     deleteTicketAlertError: "Ocurrio un error al eliminar el registro.",
     deleteTicketSuccess: "Registro eliminado correctamente.",
-    deleteTicketConfirm: "Seguro que deseas eliminar este registro?",
+    deleteTicketConfirm: "¿Seguro que deseas eliminar este registro?",
     userNumber: "Usuario",
     notificationTypes: {
       TICKET_CREATED: "Registro de servicio creado",
@@ -987,7 +1112,7 @@ const translations = {
       TICKET_DELETED: "Registro de servicio eliminado",
       USER_CREATED: "Usuario creado",
       USER_UPDATED: "Usuario editado",
-      PASSWORD_RESET_REQUESTED: "Recuperacion de contrasena",
+      PASSWORD_RESET_REQUESTED: "Recuperación de contraseña",
       REPORT_GENERATED: "Reporte generado",
       SERVICE_RECORDS_PROCESSED: "Registros procesados"
     },
@@ -1030,10 +1155,19 @@ const translations = {
     }
   },
   en: {
-    documentTitle: "Solutions By Design - Service Billing System",
+    documentTitle: "Solutions By Design, Inc. - SBD Service",
+    loginProductName: "SBD Service",
+    loginTagline: "Professional platform for managing services, hours, billing, and reports.",
+    loginBenefit1Title: "Secure",
+    loginBenefit1Sub: "Protected data",
+    loginBenefit2Title: "Efficient",
+    loginBenefit2Sub: "Optimize your time",
+    loginBenefit3Title: "Reliable",
+    loginBenefit3Sub: "Accurate information",
+    loginLegal: "© 2026 Solutions By Design, Inc. All rights reserved.",
     headerEyebrow: "Service time tracking and billing",
-    headerTitle: "Solutions By Design",
-    headerSubtitle: "Solutions By Design provides a platform to record, manage, and monitor hourly service work efficiently.",
+    headerTitle: "Solutions By Design, Inc.",
+    headerSubtitle: "Solutions By Design, Inc. provides a platform to record, manage, and monitor hourly service work efficiently.",
     secureAccess: "Secure access",
     login: "Sign in",
     password: "Password",
@@ -1054,6 +1188,10 @@ const translations = {
     manualInvoiceError: "Invoice PDF could not be generated.",
     manualInvoiceLineRequired: "Add at least one valid line before generating the invoice.",
     manualInvoiceLineInvalid: "Each line must include quantity greater than 0, description, and a valid rate.",
+    invoiceFieldRequired: "This field is required.",
+    invoiceQuantityPositive: "Quantity must be greater than 0.",
+    invoiceInvalidRate: "Rate cannot be negative.",
+    invoiceCompleteRequired: "Complete the required fields before generating the invoice.",
     loading: "Loading...",
     saving: "Saving...",
     updating: "Updating...",
@@ -1064,7 +1202,7 @@ const translations = {
     about: "About",
     aboutEyebrow: "Orientation",
     aboutTitle: "About",
-    aboutIntro: "The Service Hours and Billing Registration Program helps Solutions By Design record, review, and manage hourly service work.",
+    aboutIntro: "The Service Hours and Billing Registration Program helps Solutions By Design, Inc. record, review, and manage hourly service work.",
     aboutPurposeEyebrow: "Purpose",
     aboutPurposeTitle: "A tool for daily work",
     aboutPurposeText: "The system centralizes clients, projects, worked hours, reports, and supporting documents so the team can manage work with clear and current information.",
@@ -1078,7 +1216,7 @@ const translations = {
     aboutModuleReportsText: "Generates reports, PDF, Excel, and manual invoices for administrative review.",
     aboutPermissionsTitle: "Role-based access",
     aboutPermissionsText: "Available options may change according to each user's role and permissions. Admin, Project Manager, and Technician/User accounts see different tools to protect information and keep work organized.",
-    aboutFooter: "Developed for Solutions By Design.",
+    aboutFooter: "Developed for Solutions By Design, Inc.",
     dashboardTitle: "Summary",
     dashboardLoadError: "Dashboard could not be loaded.",
     noDashboardData: "No data to display.",
@@ -1168,7 +1306,7 @@ const translations = {
     projectsEyebrow: "Work catalog",
     invoicesEyebrow: "Billing workspace",
     settingsEyebrow: "System preferences",
-    clientsFoundation: "Client management is ready for the Solutions By Design operational workflow.",
+    clientsFoundation: "Client management is ready for the Solutions By Design, Inc. operational workflow.",
     addClient: "Add Client",
     editClient: "Edit Client",
     saveClient: "Save Client",
@@ -1294,6 +1432,9 @@ const translations = {
     edit: "Edit",
     close: "Close",
     delete: "Delete",
+    confirmTitle: "Confirm action",
+    confirmProceed: "Yes, continue",
+    confirmCancel: "No, go back",
     logout: "Sign out",
     search: "Search",
     searchPlaceholder: "User name or issue description",
@@ -1365,7 +1506,7 @@ const translations = {
     requestReset: "Request reset",
     backToLogin: "Back to Login",
     enter: "Sign in",
-    emailPlaceholder: "your@email.com",
+    emailPlaceholder: "you@email.com",
     navigationLabel: "Main navigation",
     executiveSummary: "Executive summary",
     activity: "Activity",
@@ -1574,7 +1715,7 @@ async function checkSession() {
     currentUser = null;
     showLogin();
   } catch (error) {
-    console.error("[auth] Initial session validation failed.", error);
+    console.error("[auth] Initial session válidation failed.", error);
     if (error.status === 401) {
       currentUser = null;
       showLogin();
@@ -1862,6 +2003,7 @@ async function switchTab(tabName) {
 
   if (activeTab === "tickets") {
     await loadServiceRecordLookups();
+    resetServiceRecordsPage();
     await loadServiceRecords();
   }
 
@@ -2468,7 +2610,10 @@ function handleClientsTableClick(event) {
 async function toggleClientStatus(id, nextIsActive) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(t(nextIsActive ? "activateClientConfirm" : "deactivateClientConfirm"));
+  const confirmed = await confirmAction({
+    message: t(nextIsActive ? "activateClientConfirm" : "deactivateClientConfirm"),
+    danger: !nextIsActive
+  });
 
   if (!confirmed) return;
 
@@ -2764,7 +2909,7 @@ function renderProjectCurrentStatusBadge(selectedProject = null) {
   projectCurrentStatusBadge.innerHTML = `
     <span class="badge user-status-inactive">${escapeHTML(t("inactive"))}</span>
     <span>${escapeHTML(currentLanguage === "es"
-      ? "Este proyecto esta inactivo. Puedes editarlo sin reactivarlo."
+      ? "Este proyecto está inactivo. Puedes editarlo sin reactivarlo."
       : "This project is inactive. You can edit it without reactivating it.")}</span>
   `;
 }
@@ -2986,7 +3131,7 @@ function openProjectManagersDetail(projectIdValue) {
   projectManagersDetailList.innerHTML = managerNames.length
     ? managerNames.map((name) => `
       <li>
-        <span class="project-manager-check" aria-hidden="true">✓</span>
+        <span class="project-manager-check" aria-hidden="true">âœ“</span>
         <span>${escapeHTML(name)}</span>
       </li>
     `).join("")
@@ -3016,7 +3161,10 @@ async function manageProjectManagersFromDetail() {
 async function toggleProjectStatus(id, nextIsActive) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(t(nextIsActive ? "activateProjectConfirm" : "deactivateProjectConfirm"));
+  const confirmed = await confirmAction({
+    message: t(nextIsActive ? "activateProjectConfirm" : "deactivateProjectConfirm"),
+    danger: !nextIsActive
+  });
 
   if (!confirmed) return;
 
@@ -3176,6 +3324,15 @@ function renderServiceRecordOptions() {
   applySelectTranslations();
 }
 
+function resetServiceRecordsPage() {
+  serviceRecordsPage = 1;
+}
+
+function reloadServiceRecordsFromFilters() {
+  resetServiceRecordsPage();
+  loadServiceRecords();
+}
+
 async function loadServiceRecords() {
   const params = new URLSearchParams();
   const search = serviceRecordSearchInput.value.trim();
@@ -3186,6 +3343,10 @@ async function loadServiceRecords() {
   if (serviceRecordProjectFilter.value) params.set("projectId", serviceRecordProjectFilter.value);
   if (serviceRecordDateFilter.value) params.set("serviceDate", serviceRecordDateFilter.value);
   if (serviceRecordStatusFilter.value) params.set("status", serviceRecordStatusFilter.value);
+
+  if (!Number.isInteger(serviceRecordsPage) || serviceRecordsPage < 1) serviceRecordsPage = 1;
+  params.set("page", String(serviceRecordsPage));
+  params.set("pageSize", String(serviceRecordsPageSize));
 
   try {
     const response = await fetch(`/api/service-records?${params.toString()}`, {
@@ -3203,22 +3364,71 @@ async function loadServiceRecords() {
       throw new Error(translateServerMessage(data.message) || t("loadServiceRecordsError"));
     }
 
-    serviceRecords = data;
+    const pagination = data && data.pagination ? data.pagination : {};
+    serviceRecords = Array.isArray(data) ? data : (Array.isArray(data.records) ? data.records : []);
+    serviceRecordsTotal = Number.isFinite(Number(pagination.total)) ? Number(pagination.total) : serviceRecords.length;
+    serviceRecordsPageSize = Number(pagination.pageSize) || serviceRecordsPageSize;
+    serviceRecordsTotalPages = Number(pagination.totalPages) || 1;
+
+    // If a filter change left us past the last page, snap back and reload once.
+    if (serviceRecordsPage > serviceRecordsTotalPages) {
+      serviceRecordsPage = serviceRecordsTotalPages;
+      await loadServiceRecords();
+      return;
+    }
+
+    serviceRecordsPage = Number(pagination.page) || serviceRecordsPage;
     renderServiceRecords();
   } catch (error) {
     console.error(error);
     serviceRecords = [];
+    serviceRecordsTotal = 0;
+    serviceRecordsTotalPages = 1;
     showServiceRecordsTableMessage(t("loadServiceRecordsError"));
     showServiceRecordsMessage(error.message || t("loadServiceRecordsError"), "error");
+    renderServiceRecordsPagination();
   }
+}
+
+function renderServiceRecordsPagination() {
+  if (!serviceRecordsPagination) return;
+
+  const totalPages = Math.max(1, serviceRecordsTotalPages || 1);
+  const currentPage = Math.min(Math.max(1, serviceRecordsPage || 1), totalPages);
+  const hasMultiplePages = serviceRecordsTotal > serviceRecordsPageSize;
+
+  serviceRecordsPagination.hidden = !hasMultiplePages;
+
+  if (serviceRecordsPageStatus) {
+    serviceRecordsPageStatus.textContent = currentLanguage === "es"
+      ? `Página ${formatNumber(currentPage, 0)} de ${formatNumber(totalPages, 0)}`
+      : `Page ${formatNumber(currentPage, 0)} of ${formatNumber(totalPages, 0)}`;
+  }
+  if (serviceRecordsPrevPage) {
+    serviceRecordsPrevPage.disabled = currentPage <= 1;
+    serviceRecordsPrevPage.textContent = currentLanguage === "es" ? "‹ Anterior" : "‹ Previous";
+  }
+  if (serviceRecordsNextPage) {
+    serviceRecordsNextPage.disabled = currentPage >= totalPages;
+    serviceRecordsNextPage.textContent = currentLanguage === "es" ? "Siguiente ›" : "Next ›";
+  }
+}
+
+function goToServiceRecordsPage(nextPage) {
+  const totalPages = Math.max(1, serviceRecordsTotalPages || 1);
+  const target = Math.min(Math.max(1, nextPage), totalPages);
+  if (target === serviceRecordsPage) return;
+  serviceRecordsPage = target;
+  loadServiceRecords();
 }
 
 function renderServiceRecords() {
   if (!serviceRecordsTableBody) return;
 
-  serviceRecordsTotalCount.textContent = formatNumber(serviceRecords.length, 0);
+  serviceRecordsTotalCount.textContent = formatNumber(serviceRecordsTotal, 0);
   serviceRecordsTotalCount.parentElement.lastChild.textContent = ` ${t("serviceRecordsCount")}`;
   addServiceRecordButton.classList.toggle("hidden", !canCreateServiceRecords());
+  renderServiceRecordsPagination();
 
   if (serviceRecords.length === 0) {
     const hasFilters = serviceRecordSearchInput.value.trim()
@@ -3427,7 +3637,7 @@ function handleServiceRecordsTableClick(event) {
 async function cancelServiceRecord(id) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(t("cancelServiceRecordConfirm"));
+  const confirmed = await confirmAction({ message: t("cancelServiceRecordConfirm") });
 
   if (!confirmed) return;
 
@@ -3846,7 +4056,7 @@ function handleInvoicesTableClick(event) {
 async function cancelInvoice(id) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(t("cancelInvoiceConfirm"));
+  const confirmed = await confirmAction({ message: t("cancelInvoiceConfirm") });
 
   if (!confirmed) return;
 
@@ -3988,7 +4198,7 @@ async function resolvePasswordResetNotification(notificationId) {
 }
 
 async function deleteNotification(notificationId) {
-  if (!window.confirm(t("deleteNotificationConfirm"))) {
+  if (!(await confirmAction({ message: t("deleteNotificationConfirm") }))) {
     return;
   }
 
@@ -4265,8 +4475,8 @@ function renderDashboardProjectInfo(project) {
   const fields = [
     [labelText("Proyecto", "Project"), project.ProjectName],
     [labelText("Cliente", "Client"), project.ClientName],
-    [labelText("Descripcion", "Description"), project.Description],
-    [labelText("Numero de contrato", "Contract number"), project.ContractNumber],
+    [labelText("Descripción", "Description"), project.Description],
+    [labelText("Número de contrato", "Contract number"), project.ContractNumber],
     [labelText("Tipo de contrato", "Contract type"), translateContractType(project.ContractType)],
     [labelText("Fecha de comienzo", "Start date"), formatDateOnly(project.ContractStartDate)],
     [labelText("Fecha de vencimiento", "End date"), formatDateOnly(project.ContractEndDate)],
@@ -4681,7 +4891,7 @@ function renderDashboardTechnicianInfo(technician, records = []) {
   const allProjectsLabel = tNested("technicianDashboard", "allProjects");
   const allClientsLabel = currentLanguage === "es" ? "Todos los clientes" : "All clients";
   const fields = [
-    [currentLanguage === "es" ? "Tecnico" : "Technician", technician.FullName],
+    [currentLanguage === "es" ? "Técnico" : "Technician", technician.FullName],
     [currentLanguage === "es" ? "Cliente" : "Client", dashboardSelectedTechnicianProject ? firstRecord.ClientName || selectedProject?.ClientName : allClientsLabel],
     [currentLanguage === "es" ? "Proyecto" : "Project", dashboardSelectedTechnicianProject ? firstRecord.ProjectName || selectedProject?.ProjectName : allProjectsLabel]
   ];
@@ -5287,19 +5497,19 @@ function renderDashboardServiceRecordDetail(records, variant = "full") {
     ? [
       currentLanguage === "es" ? "Proyecto" : "Project",
       currentLanguage === "es" ? "Cliente" : "Client",
-      currentLanguage === "es" ? "Tecnico" : "Technician",
+      currentLanguage === "es" ? "Técnico" : "Technician",
       currentLanguage === "es" ? "Fecha" : "Date",
       currentLanguage === "es" ? "Horas" : "Hours",
-      currentLanguage === "es" ? "Descripcion" : "Description"
+      currentLanguage === "es" ? "Descripción" : "Description"
     ]
     : [
       currentLanguage === "es" ? "Fecha" : "Date",
-      currentLanguage === "es" ? "Tecnico" : "Technician",
+      currentLanguage === "es" ? "Técnico" : "Technician",
       currentLanguage === "es" ? "Cliente" : "Client",
       currentLanguage === "es" ? "Proyecto" : "Project",
       currentLanguage === "es" ? "Horas" : "Hours",
       currentLanguage === "es" ? "Estado" : "Status",
-      currentLanguage === "es" ? "Descripcion" : "Description"
+      currentLanguage === "es" ? "Descripción" : "Description"
     ];
   const rows = records.map((record) => variant === "status" ? `
     <tr>
@@ -5375,7 +5585,7 @@ function renderDashboardClientsDetail(records) {
     currentLanguage === "es" ? "Proyectos activos" : "Active projects",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Registros" : "Records",
-    currentLanguage === "es" ? "Ultima fecha" : "Last date"
+    currentLanguage === "es" ? "Última fecha" : "Last date"
   ];
   const rows = Array.from(rowsByClient.values())
     .sort(sortDashboardClientRows)
@@ -5392,86 +5602,6 @@ function renderDashboardClientsDetail(records) {
   renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay clientes activos para mostrar." : "No active clients to display.");
 }
 
-function renderDashboardClientBarDetail(clientName) {
-  const records = getDashboardActiveServiceRecords()
-    .filter((record) => normalizeDashboardKey(record.ClientName) === normalizeDashboardKey(clientName));
-  const rowsByProject = new Map();
-
-  records.forEach((record) => {
-    const key = normalizeDashboardKey(record.ProjectName);
-    const existing = rowsByProject.get(key) || {
-      ProjectName: record.ProjectName || "",
-      ClientName: record.ClientName || "",
-      TotalHours: 0,
-      TotalRecords: 0,
-      LastServiceDate: ""
-    };
-
-    existing.TotalHours += Number(record.TotalHours || 0);
-    existing.TotalRecords += 1;
-    if (!existing.LastServiceDate || String(record.ServiceDate || "") > existing.LastServiceDate) {
-      existing.LastServiceDate = String(record.ServiceDate || "");
-    }
-    rowsByProject.set(key, existing);
-  });
-
-  const headers = [
-    currentLanguage === "es" ? "Proyecto" : "Project",
-    currentLanguage === "es" ? "Cliente" : "Client",
-    currentLanguage === "es" ? "Horas" : "Hours",
-    currentLanguage === "es" ? "Registros" : "Records",
-    currentLanguage === "es" ? "Ultima fecha" : "Last date"
-  ];
-  const rows = Array.from(rowsByProject.values())
-    .sort(sortDashboardProjectRows)
-    .map((project) => `
-      <tr>
-        <td>${escapeHTML(project.ProjectName || "")}</td>
-        <td>${escapeHTML(project.ClientName || "")}</td>
-        <td>${formatNumber(project.TotalHours)}</td>
-        <td>${formatNumber(project.TotalRecords, 0)}</td>
-        <td>${escapeHTML(formatDateOnly(project.LastServiceDate) || "-")}</td>
-      </tr>
-    `);
-
-  dashboardDetailPanel.classList.remove("hidden");
-  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Cliente: ${clientName}` : `Client: ${clientName}`;
-  dashboardDetailMessage.textContent = "";
-  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay proyectos activos para este cliente." : "No active projects for this client.");
-}
-
-function renderDashboardProjectBarDetail(projectName) {
-  const records = getDashboardActiveServiceRecords()
-    .filter((record) => normalizeDashboardKey(record.ProjectName) === normalizeDashboardKey(projectName));
-  const totalHours = sumDashboardHours(records);
-  const clientName = records[0]?.ClientName || "";
-  const headers = [
-    currentLanguage === "es" ? "Cliente" : "Client",
-    currentLanguage === "es" ? "Proyecto" : "Project",
-    currentLanguage === "es" ? "Fecha" : "Date",
-    currentLanguage === "es" ? "Tecnico" : "Technician",
-    currentLanguage === "es" ? "Horas" : "Hours",
-    currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
-  ];
-  const rows = records.slice(0, 20).map((record) => `
-    <tr>
-      <td>${escapeHTML(record.ClientName || "")}</td>
-      <td>${escapeHTML(record.ProjectName || "")}</td>
-      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
-      <td>${escapeHTML(record.TechnicianName || "")}</td>
-      <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
-      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
-    </tr>
-  `);
-
-  dashboardDetailPanel.classList.remove("hidden");
-  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Proyecto: ${projectName}` : `Project: ${projectName}`;
-  dashboardDetailMessage.textContent = `${clientName}${clientName ? " · " : ""}${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"}`;
-  renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay registros activos para este proyecto." : "No active records for this project.");
-}
-
 function getDashboardLastServiceDate(records) {
   return records.reduce((latest, record) => {
     const serviceDate = String(record.ServiceDate || "");
@@ -5481,12 +5611,12 @@ function getDashboardLastServiceDate(records) {
 
 function getDashboardTechnicianProjectDetailHeaders() {
   return [
-    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Técnico" : "Technician",
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Proyecto" : "Project",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Registros" : "Records",
-    currentLanguage === "es" ? "Ultima fecha" : "Last date"
+    currentLanguage === "es" ? "Última fecha" : "Last date"
   ];
 }
 
@@ -5609,70 +5739,15 @@ function renderDashboardClientBarDetail(clientName) {
   const records = getDashboardActiveServiceRecords()
     .filter((record) => normalizeDashboardKey(record.ClientName) === normalizeDashboardKey(clientName));
   const totalHours = sumDashboardHours(records);
-  const projectCount = new Set(records.map((record) => normalizeDashboardKey(record.ProjectName))).size;
-  const technicianCount = new Set(records.map((record) => normalizeDashboardKey(record.TechnicianName))).size;
-  const lastServiceDate = getDashboardLastServiceDate(records);
-  const rows = getDashboardTechnicianProjectDetailRows(records).map(renderDashboardTechnicianProjectDetailRow);
-
-  dashboardDetailPanel.classList.remove("hidden");
-  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Cliente: ${clientName}` : `Client: ${clientName}`;
-  dashboardDetailMessage.textContent = `${formatNumber(projectCount, 0)} ${currentLanguage === "es" ? "proyectos" : "projects"} · ${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos" : "technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima fecha" : "Last date"}: ${formatDateOnly(lastServiceDate) || "-"}`;
-  renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay proyectos activos para este cliente." : "No active projects for this client.");
-  scrollDashboardDetailIntoView();
-}
-
-function renderDashboardProjectBarDetail(projectName) {
-  const records = getDashboardActiveServiceRecords()
-    .filter((record) => normalizeDashboardKey(record.ProjectName) === normalizeDashboardKey(projectName));
-  const totalHours = sumDashboardHours(records);
-  const clientName = records[0]?.ClientName || "";
-  const technicianCount = new Set(records.map((record) => normalizeDashboardKey(record.TechnicianName))).size;
-  const lastServiceDate = getDashboardLastServiceDate(records);
-  const technicianRows = getDashboardTechnicianProjectDetailRows(records).map(renderDashboardTechnicianProjectDetailRow);
-  const serviceRecordHeaders = [
-    currentLanguage === "es" ? "Fecha" : "Date",
-    currentLanguage === "es" ? "Tecnico" : "Technician",
-    currentLanguage === "es" ? "Horas" : "Hours",
-    currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
-  ];
-  const serviceRecordRows = records.slice(0, 10).map((record) => `
-    <tr>
-      <td>${escapeHTML(formatDateOnly(record.ServiceDate))}</td>
-      <td>${escapeHTML(record.TechnicianName || "")}</td>
-      <td>${formatNumber(record.TotalHours)}</td>
-      <td><span class="badge ${getServiceRecordStatusClass(record.Status)}">${escapeHTML(translateServiceRecordStatus(record.Status))}</span></td>
-      <td class="ticket-description">${escapeHTML(cleanDisplayText(record.ServiceDescription))}</td>
-      <td></td>
-    </tr>
-  `);
-  const rows = [
-    ...technicianRows,
-    `<tr class="detail-section-row"><td colspan="6">${escapeHTML(currentLanguage === "es" ? "Ultimos registros de servicio relacionados" : "Latest related service records")}</td></tr>`,
-    `<tr class="detail-subheader-row">${serviceRecordHeaders.map((header) => `<th>${escapeHTML(header)}</th>`).join("")}<th></th></tr>`,
-    ...serviceRecordRows
-  ];
-
-  dashboardDetailPanel.classList.remove("hidden");
-  dashboardDetailTitle.textContent = currentLanguage === "es" ? `Proyecto: ${projectName}` : `Project: ${projectName}`;
-  dashboardDetailMessage.textContent = `${clientName}${clientName ? " · " : ""}${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos" : "technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima fecha" : "Last date"}: ${formatDateOnly(lastServiceDate) || "-"}`;
-  renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay registros activos para este proyecto." : "No active records for this project.");
-  scrollDashboardDetailIntoView();
-}
-
-function renderDashboardClientBarDetail(clientName) {
-  const records = getDashboardActiveServiceRecords()
-    .filter((record) => normalizeDashboardKey(record.ClientName) === normalizeDashboardKey(clientName));
-  const totalHours = sumDashboardHours(records);
   const projectRows = getDashboardProjectRows(records);
   const technicianCount = new Set(records.map((record) => normalizeDashboardKey(record.TechnicianName))).size;
   const lastServiceDate = getDashboardLastServiceDate(records);
   const headers = [
     currentLanguage === "es" ? "Proyecto" : "Project",
     currentLanguage === "es" ? "Horas" : "Hours",
-    currentLanguage === "es" ? "Tecnicos" : "Technicians",
+    currentLanguage === "es" ? "Técnicos" : "Technicians",
     currentLanguage === "es" ? "Registros" : "Records",
-    currentLanguage === "es" ? "Ultima actividad" : "Last activity",
+    currentLanguage === "es" ? "Última actividad" : "Last activity",
     currentLanguage === "es" ? "Cliente" : "Client"
   ];
   const rows = projectRows.map((project) => `
@@ -5688,7 +5763,7 @@ function renderDashboardClientBarDetail(clientName) {
 
   openDashboardDetailPanel(
     currentLanguage === "es" ? `Cliente: ${clientName}` : `Client: ${clientName}`,
-    `${formatNumber(projectRows.length, 0)} ${currentLanguage === "es" ? "proyectos activos" : "active projects"} · ${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos" : "technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima actividad" : "Last activity"}: ${formatDateOnly(lastServiceDate) || "-"}`
+    `${formatNumber(projectRows.length, 0)} ${currentLanguage === "es" ? "proyectos activos" : "active projects"} · ${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "técnicos" : "technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Última actividad" : "Last activity"}: ${formatDateOnly(lastServiceDate) || "-"}`
   );
   renderDashboardDetailTable(headers, rows, currentLanguage === "es" ? "No hay proyectos activos para este cliente." : "No active projects for this client.");
   scrollDashboardDetailIntoView();
@@ -5704,23 +5779,23 @@ function renderDashboardProjectBarDetail(projectName) {
   const technicianRows = getDashboardTechnicianProjectDetailRows(records).map(renderDashboardTechnicianProjectDetailRow);
   const recordHeaders = [
     currentLanguage === "es" ? "Fecha" : "Date",
-    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Técnico" : "Technician",
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
+    currentLanguage === "es" ? "Descripción" : "Description"
   ];
   const recordRows = renderDashboardServiceRecordRows(records.slice(0, 10), ["date", "technician", "client", "hours", "status", "description"]);
   const rows = [
     ...technicianRows,
-    renderDashboardDetailSection(currentLanguage === "es" ? "Ultimos registros de servicio relacionados" : "Latest related service records"),
+    renderDashboardDetailSection(currentLanguage === "es" ? "Últimos registros de servicio relacionados" : "Latest related service records"),
     renderDashboardDetailSubheader(recordHeaders, 6),
     ...recordRows
   ];
 
   openDashboardDetailPanel(
     currentLanguage === "es" ? `Proyecto: ${projectName}` : `Project: ${projectName}`,
-    `${clientName}${clientName ? " · " : ""}${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos asignados" : "assigned technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima actividad" : "Last activity"}: ${formatDateOnly(lastServiceDate) || "-"}`
+    `${clientName}${clientName ? " · " : ""}${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "técnicos asignados" : "assigned technicians"} · ${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Última actividad" : "Last activity"}: ${formatDateOnly(lastServiceDate) || "-"}`
   );
   renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay registros activos para este proyecto." : "No active records for this project.");
   scrollDashboardDetailIntoView();
@@ -5735,17 +5810,17 @@ function renderDashboardMonthBarDetail(month) {
   const technicianCount = new Set(records.map((record) => normalizeDashboardKey(record.TechnicianName))).size;
   const headers = [
     currentLanguage === "es" ? "Fecha" : "Date",
-    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Técnico" : "Technician",
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Proyecto" : "Project",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
+    currentLanguage === "es" ? "Descripción" : "Description"
   ];
 
   openDashboardDetailPanel(
     currentLanguage === "es" ? `Mes: ${month}` : `Month: ${month}`,
-    `${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${formatNumber(projectCount, 0)} ${currentLanguage === "es" ? "proyectos" : "projects"} · ${formatNumber(clientCount, 0)} ${currentLanguage === "es" ? "clientes" : "clients"} · ${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "tecnicos" : "technicians"}`
+    `${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${formatNumber(projectCount, 0)} ${currentLanguage === "es" ? "proyectos" : "projects"} · ${formatNumber(clientCount, 0)} ${currentLanguage === "es" ? "clientes" : "clients"} · ${formatNumber(technicianCount, 0)} ${currentLanguage === "es" ? "técnicos" : "technicians"}`
   );
   renderDashboardDetailTable(headers, renderDashboardServiceRecordRows(records.slice(0, 20), ["date", "technician", "client", "project", "hours", "status", "description"]), currentLanguage === "es" ? "No hay registros activos para este mes." : "No active records for this month.");
   scrollDashboardDetailIntoView();
@@ -5763,16 +5838,16 @@ function renderDashboardTechnicianBarDetail(technicianName) {
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Registros" : "Records",
-    currentLanguage === "es" ? "Ultima actividad" : "Last activity",
-    currentLanguage === "es" ? "Tecnico" : "Technician"
+    currentLanguage === "es" ? "Última actividad" : "Last activity",
+    currentLanguage === "es" ? "Técnico" : "Technician"
   ];
   const clientHeaders = [
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Proyectos" : "Projects",
     currentLanguage === "es" ? "Registros" : "Records",
-    currentLanguage === "es" ? "Ultima actividad" : "Last activity",
-    currentLanguage === "es" ? "Tecnico" : "Technician"
+    currentLanguage === "es" ? "Última actividad" : "Last activity",
+    currentLanguage === "es" ? "Técnico" : "Technician"
   ];
   const recordHeaders = [
     currentLanguage === "es" ? "Fecha" : "Date",
@@ -5780,7 +5855,7 @@ function renderDashboardTechnicianBarDetail(technicianName) {
     currentLanguage === "es" ? "Proyecto" : "Project",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
+    currentLanguage === "es" ? "Descripción" : "Description"
   ];
   const rows = [
     renderDashboardDetailSection(currentLanguage === "es" ? "Horas por proyecto" : "Hours by project"),
@@ -5807,16 +5882,16 @@ function renderDashboardTechnicianBarDetail(technicianName) {
         <td>${escapeHTML(technicianName)}</td>
       </tr>
     `),
-    renderDashboardDetailSection(currentLanguage === "es" ? "Ultimos registros de servicio" : "Latest service records"),
+    renderDashboardDetailSection(currentLanguage === "es" ? "Últimos registros de servicio" : "Latest service records"),
     renderDashboardDetailSubheader(recordHeaders, 6),
     ...renderDashboardServiceRecordRows(records.slice(0, 12), ["date", "client", "project", "hours", "status", "description"])
   ];
 
   openDashboardDetailPanel(
-    currentLanguage === "es" ? `Tecnico: ${technicianName}` : `Technician: ${technicianName}`,
-    `${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(projectRows.length, 0)} ${currentLanguage === "es" ? "proyectos" : "projects"} · ${formatNumber(clientRows.length, 0)} ${currentLanguage === "es" ? "clientes" : "clients"} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Ultima actividad" : "Last activity"}: ${formatDateOnly(lastServiceDate) || "-"}`
+    currentLanguage === "es" ? `Técnico: ${technicianName}` : `Technician: ${technicianName}`,
+    `${formatDashboardMetric(totalHours, "hours")} · ${formatNumber(projectRows.length, 0)} ${currentLanguage === "es" ? "proyectos" : "projects"} · ${formatNumber(clientRows.length, 0)} ${currentLanguage === "es" ? "clientes" : "clients"} · ${formatNumber(records.length, 0)} ${currentLanguage === "es" ? "registros" : "records"} · ${currentLanguage === "es" ? "Última actividad" : "Last activity"}: ${formatDateOnly(lastServiceDate) || "-"}`
   );
-  renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay registros activos para este tecnico." : "No active records for this technician.");
+  renderDashboardDetailTable(getDashboardTechnicianProjectDetailHeaders(), rows, currentLanguage === "es" ? "No hay registros activos para este técnico." : "No active records for this technician.");
   scrollDashboardDetailIntoView();
 }
 
@@ -6087,7 +6162,7 @@ function showToast(type = "info", message = "", options = {}) {
       ${options.title === false ? "" : `<strong class="toast-title"></strong>`}
       <p class="toast-message"></p>
     </div>
-    <button type="button" class="toast-close" aria-label="${escapeHTMLAttribute(currentLanguage === "es" ? "Cerrar notificacion" : "Close notification")}">&times;</button>
+    <button type="button" class="toast-close" aria-label="${escapeHTMLAttribute(currentLanguage === "es" ? "Cerrar notificación" : "Close notification")}">&times;</button>
   `;
 
   const titleElement = toast.querySelector(".toast-title");
@@ -6194,6 +6269,79 @@ function confirmDiscardFormChanges(form) {
   return !isFormDirty(form) || confirm(t("unsavedChangesConfirm"));
 }
 
+// Branded, in-app replacement for window.confirm(). Same yes/no contract:
+// resolves true when the user proceeds, false when they cancel / dismiss.
+function confirmAction(options = {}) {
+  const message = typeof options === "string" ? options : (options.message || "");
+
+  return new Promise((resolve) => {
+    if (!confirmDialog) {
+      resolve(window.confirm(message));
+      return;
+    }
+
+    const titleElement = confirmDialog.querySelector("#confirmDialogTitle");
+    const messageElement = confirmDialog.querySelector("#confirmDialogMessage");
+    const confirmButton = confirmDialog.querySelector("#confirmDialogConfirm");
+    const cancelButton = confirmDialog.querySelector("#confirmDialogCancel");
+
+    if (titleElement) titleElement.textContent = options.title || t("confirmTitle");
+    if (messageElement) messageElement.textContent = message;
+    if (confirmButton) {
+      confirmButton.textContent = options.confirmLabel || t("confirmProceed");
+      confirmButton.classList.toggle("confirm-dialog-danger", options.danger !== false);
+    }
+    if (cancelButton) cancelButton.textContent = options.cancelLabel || t("confirmCancel");
+
+    const previouslyFocused = document.activeElement;
+    let settled = false;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      confirmDialog.classList.add("hidden");
+      confirmButton?.removeEventListener("click", onConfirm);
+      cancelButton?.removeEventListener("click", onCancel);
+      confirmDialog.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeydown, true);
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
+      resolve(result);
+    };
+
+    const onConfirm = () => finish(true);
+    const onCancel = () => finish(false);
+    const onBackdrop = (event) => {
+      if (event.target === confirmDialog) finish(false);
+    };
+    const onKeydown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finish(false);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        finish(true);
+      } else if (event.key === "Tab") {
+        const focusable = [cancelButton, confirmButton].filter(Boolean);
+        if (focusable.length < 2) return;
+        event.preventDefault();
+        const current = focusable.indexOf(document.activeElement);
+        const step = event.shiftKey ? focusable.length - 1 : 1;
+        focusable[(current + step + focusable.length) % focusable.length].focus();
+      }
+    };
+
+    confirmButton?.addEventListener("click", onConfirm);
+    cancelButton?.addEventListener("click", onCancel);
+    confirmDialog.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeydown, true);
+
+    confirmDialog.classList.remove("hidden");
+    requestAnimationFrame(() => cancelButton?.focus());
+  });
+}
+
 function setText(selector, text) {
   const element = document.querySelector(selector);
 
@@ -6292,7 +6440,7 @@ function translateServerMessage(message) {
 
   if (currentLanguage === "es") {
     const spanishMessages = {
-      "Email y password son obligatorios.": "Email y contrasena son obligatorios.",
+      "Email y password son obligatorios.": "Email y contraseña son obligatorios.",
       "Error al obtener tickets.": "Error al cargar registros.",
       "Error al crear ticket.": "Error al crear registro.",
       "Error al editar ticket.": "Error al editar registro.",
@@ -6304,23 +6452,23 @@ function translateServerMessage(message) {
   }
 
   const messages = {
-    "Debes iniciar sesion.": "You must sign in.",
+    "Debes iniciar sesión.": "You must sign in.",
     "No tienes permisos de administrador.": "You do not have administrator permissions.",
     "Email y password son obligatorios.": "Email and password are required.",
-    "Credenciales invalidas.": "Invalid credentials.",
-    "Error al iniciar sesion.": "Error signing in.",
-    "Error al cerrar sesion.": "Error signing out.",
+    "Credenciales inválidas.": "Invalid credentials.",
+    "Error al iniciar sesión.": "Error signing in.",
+    "Error al cerrar sesión.": "Error signing out.",
     "Error al obtener notificaciones.": "Error loading notifications.",
-    "ID de notificacion invalido.": "Invalid notification ID.",
-    "Notificacion no encontrada.": "Notification not found.",
-    "Error al marcar notificacion.": "Error marking notification.",
-    "Error al borrar notificacion.": "Error deleting notification.",
+    "ID de notificación inválido.": "Invalid notification ID.",
+    "Notificación no encontrada.": "Notification not found.",
+    "Error al marcar notificación.": "Error marking notification.",
+    "Error al borrar notificación.": "Error deleting notification.",
     "Error al obtener usuarios.": "Error loading users.",
     "Todos los campos son obligatorios.": "All fields are required.",
-    "Rol invalido.": "Invalid role.",
+    "Rol inválido.": "Invalid role.",
     "Ya existe un usuario con ese email.": "A user with that email already exists.",
     "Error al crear usuario.": "Error creating user.",
-    "ID de usuario invalido.": "Invalid user ID.",
+    "ID de usuario inválido.": "Invalid user ID.",
     "Nombre, email y rol son obligatorios.": "Name, email, and role are required.",
     "Usuario no encontrado.": "User not found.",
     "Error al editar usuario.": "Error editing user.",
@@ -6328,17 +6476,17 @@ function translateServerMessage(message) {
     "Error al eliminar usuario.": "Error deleting user.",
     "Error al obtener tickets.": "Error loading records.",
     "Error al crear ticket.": "Error creating record.",
-    "ID de ticket invalido.": "Invalid ticket ID.",
+    "ID de ticket inválido.": "Invalid ticket ID.",
     "Ticket no encontrado.": "Ticket not found.",
     "Error al editar ticket.": "Error editing record.",
     "Error al cerrar ticket.": "Error closing record.",
     "Error al eliminar ticket.": "Error deleting record.",
     "Email es obligatorio.": "Email is required.",
-    "ID de solicitud invalido.": "Invalid request ID.",
+    "ID de solicitud inválido.": "Invalid request ID.",
     "Solicitud no encontrada.": "Request not found.",
-    "No se encontro la solicitud asociada.": "The linked request was not found.",
-    "Solicitud recibida. Contacta a un administrador para restablecer tu contrasena.": "Request received. Contact an administrator to reset your password.",
-    "Formato de fecha invalido. Usa YYYY-MM-DD.": "Invalid date format. Use YYYY-MM-DD.",
+    "No se encontró la solicitud asociada.": "The linked request was not found.",
+    "Solicitud recibida. Contacta a un administrador para restablecer tu contraseña.": "Request received. Contact an administrator to reset your password.",
+    "Formato de fecha inválido. Usa YYYY-MM-DD.": "Invalid date format. Use YYYY-MM-DD.",
     "Error al generar reporte.": "Error generating report.",
     "No hay registros para generar el Excel.": "There are no records to export to Excel.",
     "Error al exportar Excel.": "Error exporting Excel.",
@@ -6469,6 +6617,16 @@ function applyStaticLanguage() {
   setText('label[for="loginPassword"]', t("password"));
   setPlaceholder("#loginPassword", t("passwordPlaceholder"));
 
+  setText("#loginAsideTitle", t("loginProductName"));
+  setText("#loginAsideDesc", t("loginTagline"));
+  setText("#loginBenefit1Title", t("loginBenefit1Title"));
+  setText("#loginBenefit1Sub", t("loginBenefit1Sub"));
+  setText("#loginBenefit2Title", t("loginBenefit2Title"));
+  setText("#loginBenefit2Sub", t("loginBenefit2Sub"));
+  setText("#loginBenefit3Title", t("loginBenefit3Title"));
+  setText("#loginBenefit3Sub", t("loginBenefit3Sub"));
+  setText("#loginLegal", t("loginLegal"));
+
   setText("#forgotPasswordForm .section-title .eyebrow", t("secureAccess"));
   setText("#forgotPasswordTitle", t("recoverPassword"));
   setText('label[for="forgotEmail"]', "Email");
@@ -6495,7 +6653,7 @@ function applyStaticLanguage() {
   setText('label[for="statusFilter"]', t("status"));
   setText('label[for="priorityFilter"]', t("priority"));
   setText('label[for="serviceRecordSearchInput"]', t("search"));
-  setText('label[for="serviceRecordTechnicianFilter"]', labelText("Tecnico", "Technician"));
+  setText('label[for="serviceRecordTechnicianFilter"]', labelText("Técnico", "Technician"));
   setText('label[for="serviceRecordClientFilter"]', labelText("Cliente", "Client"));
   setText('label[for="serviceRecordProjectFilter"]', labelText("Proyecto", "Project"));
   setText('label[for="serviceRecordDateFilter"]', t("date"));
@@ -6503,7 +6661,7 @@ function applyStaticLanguage() {
   setPlaceholder("#searchInput", t("searchPlaceholder"));
   setPlaceholder("#serviceRecordSearchInput", t("serviceRecordSearchPlaceholder"));
   setText("#serviceRecordModal .section-title .eyebrow", t("tickets"));
-  setText('label[for="serviceRecordTechnicianId"]', labelText("Tecnico", "Technician"));
+  setText('label[for="serviceRecordTechnicianId"]', labelText("Técnico", "Technician"));
   setText('label[for="serviceRecordDate"]', t("date"));
   setText('label[for="serviceRecordClientId"]', labelText("Cliente", "Client"));
   setText('label[for="serviceRecordProjectId"]', labelText("Proyecto", "Project"));
@@ -6512,7 +6670,7 @@ function applyStaticLanguage() {
   setText('label[for="afternoonStart"]', labelText("Entrada tarde", "Afternoon start"));
   setText('label[for="afternoonEnd"]', labelText("Salida tarde", "Afternoon end"));
   setText('label[for="serviceRecordStatus"]', t("status"));
-  setText('label[for="serviceDescription"]', labelText("Descripcion del servicio", "Service description"));
+  setText('label[for="serviceDescription"]', labelText("Descripción del servicio", "Service description"));
   setAriaLabel("#closeServiceRecordModal", t("closeEditor"));
 
   const ticketStatLabels = document.querySelectorAll("#ticketsTabPanel .stats-grid .stat-card span");
@@ -6538,8 +6696,8 @@ function applyStaticLanguage() {
   if (chartEyebrows[3]) chartEyebrows[3].textContent = tNested("dashboardSectionLabels", "technicians");
   setText("#recentServiceRecordsTitle", tNested("dashboardActivity", "ServiceRecords"));
   setText("#dashboardTechnicianDescriptionModal .section-title .eyebrow", tNested("technicianDashboard", "title"));
-  setText("#dashboard-technician-description-title", currentLanguage === "es" ? "Editar descripcion" : "Edit description");
-  setText('label[for="dashboardTechnicianDescriptionText"]', currentLanguage === "es" ? "Descripcion" : "Description");
+  setText("#dashboard-technician-description-title", currentLanguage === "es" ? "Editar descripción" : "Edit description");
+  setText('label[for="dashboardTechnicianDescriptionText"]', currentLanguage === "es" ? "Descripción" : "Description");
   setButtonText(dashboardTechnicianDescriptionForm?.querySelector(".btn-primary"), t("saveChanges"));
   setAriaLabel("#closeDashboardTechnicianDescriptionModal", t("closeEditor"));
   setText("#recentClientsTitle", tNested("dashboardActivity", "Clients"));
@@ -6556,11 +6714,11 @@ function applyStaticLanguage() {
   setText("#dashboardProjectRecordsTitle", tNested("projectDashboard", "latestRecords"));
   setTableHeaders(".project-dashboard-panel table", [
     currentLanguage === "es" ? "Fecha" : "Date",
-    currentLanguage === "es" ? "Tecnico" : "Technician",
+    currentLanguage === "es" ? "Técnico" : "Technician",
     currentLanguage === "es" ? "Cliente" : "Client",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description",
+    currentLanguage === "es" ? "Descripción" : "Description",
     t("actions")
   ]);
   setText(".technician-dashboard-panel .section-title .eyebrow", tNested("technicianDashboard", "eyebrow"));
@@ -6586,7 +6744,7 @@ function applyStaticLanguage() {
     currentLanguage === "es" ? "Proyecto" : "Project",
     currentLanguage === "es" ? "Horas" : "Hours",
     currentLanguage === "es" ? "Estado" : "Status",
-    currentLanguage === "es" ? "Descripcion" : "Description"
+    currentLanguage === "es" ? "Descripción" : "Description"
   ]);
 
   setText("#clientsTabPanel .section-title .eyebrow", t("clientsEyebrow"));
@@ -6604,8 +6762,8 @@ function applyStaticLanguage() {
   setText('label[for="clientName"]', labelText("Cliente", "Client name"));
   setText('label[for="clientContactName"]', labelText("Contacto", "Contact name"));
   setText('label[for="clientEmail"]', "Email");
-  setText('label[for="clientPhone"]', labelText("Telefono", "Phone"));
-  setText('label[for="clientBillingName"]', labelText("Nombre para facturacion", "Billing name"));
+  setText('label[for="clientPhone"]', labelText("Teléfono", "Phone"));
+  setText('label[for="clientBillingName"]', labelText("Nombre para facturación", "Billing name"));
   setText('label[for="clientTaxId"]', labelText("ID contributivo", "Tax ID"));
   document.querySelectorAll(".checkbox-field span").forEach((element) => {
     element.textContent = labelText("Activo", "Active");
@@ -6627,13 +6785,13 @@ function applyStaticLanguage() {
   setText("#project-basic-eyebrow", t("projects"));
   setText("#project-contract-eyebrow", labelText("Contrato", "Contract"));
   setText("#project-contract-summary-eyebrow", labelText("Contrato", "Contract"));
-  setText("#project-basic-title", labelText("Informacion basica del proyecto", "Project information"));
+  setText("#project-basic-title", labelText("Información básica del proyecto", "Project information"));
   setText('label[for="projectClientId"]', labelText("Cliente", "Client"));
   setText('label[for="projectName"]', labelText("Proyecto", "Project name"));
-  setText('label[for="projectDescription"]', labelText("Descripcion", "Description"));
-  setText("#project-contract-title", labelText("Informacion del contrato", "Contract Information"));
+  setText('label[for="projectDescription"]', labelText("Descripción", "Description"));
+  setText("#project-contract-title", labelText("Información del contrato", "Contract Information"));
   setText("#project-contract-summary-title", labelText("Resumen del contrato", "Contract summary"));
-  setText('label[for="projectContractNumber"]', labelText("Numero de contrato", "Contract number"));
+  setText('label[for="projectContractNumber"]', labelText("Número de contrato", "Contract number"));
   setText('label[for="projectContractType"]', labelText("Tipo de contrato", "Contract type"));
   setText('label[for="projectSignedBy"]', labelText("Firmado por", "Signed by"));
   setText('label[for="projectContractStartDate"]', labelText("Fecha de comienzo", "Start date"));
@@ -6651,16 +6809,16 @@ function applyStaticLanguage() {
   setText("#invoices-title", t("invoices"));
   setText('label[for="invoiceSearchInput"]', t("search"));
   setText('label[for="invoiceClientFilter"]', labelText("Cliente", "Client"));
-  setText('label[for="invoiceFromFilter"]', labelText("Periodo desde", "Period from"));
-  setText('label[for="invoiceToFilter"]', labelText("Periodo hasta", "Period to"));
+  setText('label[for="invoiceFromFilter"]', labelText("Período desde", "Period from"));
+  setText('label[for="invoiceToFilter"]', labelText("Período hasta", "Period to"));
   setText('label[for="invoiceStatusFilter"]', t("status"));
   setPlaceholder("#invoiceSearchInput", t("invoiceSearchPlaceholder"));
   if (invoiceStatusFilter.options[0]) invoiceStatusFilter.options[0].textContent = t("allStatuses");
   setText("#invoiceGenerateModal .section-title .eyebrow", t("invoices"));
   setText("#invoice-generate-title", t("generateInvoice"));
   setText('label[for="invoiceGenerateClientId"]', labelText("Cliente", "Client"));
-  setText('label[for="invoiceGeneratePeriodFrom"]', labelText("Periodo desde", "Period from"));
-  setText('label[for="invoiceGeneratePeriodTo"]', labelText("Periodo hasta", "Period to"));
+  setText('label[for="invoiceGeneratePeriodFrom"]', labelText("Período desde", "Period from"));
+  setText('label[for="invoiceGeneratePeriodTo"]', labelText("Período hasta", "Period to"));
   setText('label[for="invoiceGenerateNotes"]', labelText("Notas", "Notes"));
   setAriaLabel("#closeInvoiceGenerateModal", t("closeEditor"));
   setText("#invoiceStatusModal .section-title .eyebrow", t("invoices"));
@@ -6668,16 +6826,16 @@ function applyStaticLanguage() {
   setText('label[for="invoiceStatusValue"]', t("status"));
   setText('label[for="invoiceStatusNotes"]', labelText("Notas", "Notes"));
   setAriaLabel("#closeInvoiceStatusModal", t("closeEditor"));
-  setText("#invoiceDetailModal .section-title .eyebrow", labelText("Lineas", "Lines"));
+  setText("#invoiceDetailModal .section-title .eyebrow", labelText("Líneas", "Lines"));
   setText("#invoice-detail-title", labelText("Detalle de factura", "Invoice Detail"));
   setAriaLabel("#closeInvoiceDetailModal", t("closeEditor"));
   setText("#settingsTabPanel .section-title .eyebrow", t("settingsEyebrow"));
   setText("#settings-title", t("settings"));
   setText("#settingsTabPanel .foundation-copy", t("settingsFoundation"));
   setText("#settingsTabPanel .foundation-card:nth-of-type(1) h3", labelText("Cuenta", "Account"));
-  setText("#settingsTabPanel .foundation-card:nth-of-type(1) p", labelText("Revisa la sesion actual y opciones de flujo de contrasenas.", "Review session details and password workflow options."));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(1) p", labelText("Revisa la sesión actual y opciones de flujo de contraseñas.", "Review session details and password workflow options."));
   setText("#settingsTabPanel .foundation-card:nth-of-type(2) h3", t("notifications"));
-  setText("#settingsTabPanel .foundation-card:nth-of-type(2) p", labelText("Mantiene alertas administrativas disponibles mientras evolucionan los modulos.", "Keep administrative alerts available while the modules evolve."));
+  setText("#settingsTabPanel .foundation-card:nth-of-type(2) p", labelText("Mantiene alertas administrativas disponibles mientras evolucionan los módulos.", "Keep administrative alerts available while the modules evolve."));
   setText("#settingsTabPanel .foundation-card:nth-of-type(3) h3", labelText("Valores por defecto", "Workflow defaults"));
   setText("#settingsTabPanel .foundation-card:nth-of-type(3) p", labelText("Prepara preferencias de registros de servicio y controles internos futuros.", "Prepare service record preferences and future internal controls."));
 
@@ -6732,7 +6890,7 @@ function applyStaticLanguage() {
   setText("#reportsTitle", t("reports"));
   setText('label[for="reportFrom"]', t("dateFrom"));
   setText('label[for="reportTo"]', t("dateTo"));
-  setText('label[for="reportTechnician"]', currentLanguage === "es" ? "Tecnico" : "Technician");
+  setText('label[for="reportTechnician"]', currentLanguage === "es" ? "Técnico" : "Technician");
   setText('label[for="reportClient"]', currentLanguage === "es" ? "Cliente" : "Client");
   setText('label[for="reportProject"]', currentLanguage === "es" ? "Proyecto" : "Project");
   setText('label[for="reportStatus"]', t("status"));
@@ -6752,22 +6910,52 @@ function applyStaticLanguage() {
   setText('label[for="manualInvoiceTerms"]', "Terms");
   setText('label[for="manualInvoiceDueDate"]', currentLanguage === "es" ? "Fecha de vencimiento" : "Due Date");
   setText('label[for="manualInvoiceProject"]', currentLanguage === "es" ? "Proyecto" : "Project");
-  setText("#manualInvoiceLinesTitle", currentLanguage === "es" ? "Lineas de factura" : "Invoice lines");
-  setText(".manual-invoice-lines .section-title .eyebrow", currentLanguage === "es" ? "Lineas" : "Lines");
-  addManualInvoiceLineButton.textContent = currentLanguage === "es" ? "+ Agregar linea" : "+ Add line";
+  setText("#manualInvoiceServiceDetailTitle", currentLanguage === "es" ? "Informaci\u00f3n editable del servicio" : "Editable service information");
+  setText(".manual-invoice-service-detail .section-title .eyebrow", currentLanguage === "es" ? "DETALLE DEL SERVICIO" : "SERVICE DETAIL");
+  setText('label[for="manualInvoiceServiceDescription"]', currentLanguage === "es" ? "Descripci\u00f3n principal del servicio" : "Main service description");
+  setText('label[for="manualInvoiceServicePeriod"]', currentLanguage === "es" ? "Mes / per\u00edodo del servicio" : "Service month / period");
+  setText('label[for="manualInvoiceAccountNumbers"]', currentLanguage === "es" ? "N\u00fameros de cuentas" : "Account numbers");
+  setText('label[for="manualInvoiceContractNumber"]', currentLanguage === "es" ? "N\u00famero de contrato" : "Contract number");
+  setText('label[for="manualInvoiceContractStart"]', currentLanguage === "es" ? "Fecha de vigencia desde" : "Effective date from");
+  setText('label[for="manualInvoiceContractEnd"]', currentLanguage === "es" ? "Fecha de vigencia hasta" : "Effective date to");
+  setText('label[for="manualInvoiceContractedHours"]', currentLanguage === "es" ? "Horas contratadas" : "Contracted hours");
+  setText('label[for="manualInvoiceInitialAvailableHours"]', currentLanguage === "es" ? "Horas disponibles iniciales" : "Initial available hours");
+  setText('label[for="manualInvoiceWorkedHours"]', currentLanguage === "es" ? "Horas trabajadas" : "Worked hours");
+  setText('label[for="manualInvoiceFinalAvailableHours"]', currentLanguage === "es" ? "Horas disponibles finales" : "Final available hours");
+  setText("#manualInvoiceLinesTitle", currentLanguage === "es" ? "Líneas de factura" : "Invoice lines");
+  setText(".manual-invoice-lines .section-title .eyebrow", currentLanguage === "es" ? "Líneas" : "Lines");
+  addManualInvoiceLineButton.textContent = currentLanguage === "es" ? "+ Agregar línea" : "+ Add line";
+  setText("#manualInvoiceCertificationsTitle", currentLanguage === "es" ? "Textos de certificaci\u00f3n" : "Certification texts");
+  setText(".manual-invoice-certifications .section-title .eyebrow", currentLanguage === "es" ? "CERTIFICACIONES" : "CERTIFICATIONS");
+  setText('label[for="manualInvoiceShowCertification1"] span', currentLanguage === "es" ? "Mostrar Certificación 1 en PDF" : "Show Certification 1 in PDF");
+  setText('label[for="manualInvoiceCertification1"]', currentLanguage === "es" ? "CERTIFICACI\u00d3N 1" : "CERTIFICATION 1");
+  setText('label[for="manualInvoiceShowCertification2"] span', currentLanguage === "es" ? "Mostrar Certificación 2 en PDF" : "Show Certification 2 in PDF");
+  setText('label[for="manualInvoiceCertification2"]', currentLanguage === "es" ? "CERTIFICACI\u00d3N 2" : "CERTIFICATION 2");
   setText("#manualInvoiceSignaturesTitle", currentLanguage === "es" ? "Firmas de factura" : "Invoice signatures");
   setText(".manual-invoice-signatures .section-title .eyebrow", currentLanguage === "es" ? "Firmas" : "Signatures");
+  setText('label[for="manualInvoiceShowSignature1"] span', currentLanguage === "es" ? "Mostrar Firma 1 en PDF" : "Show Signature 1 in PDF");
   setText('label[for="manualInvoiceSignature1Name"]', currentLanguage === "es" ? "Firma 1 - Nombre" : "Signature 1 - Name");
   setText('label[for="manualInvoiceSignature1Title"]', currentLanguage === "es" ? "Firma 1 - Cargo" : "Signature 1 - Title");
+  setText('label[for="manualInvoiceShowSignature2"] span', currentLanguage === "es" ? "Mostrar Firma 2 en PDF" : "Show Signature 2 in PDF");
   setText('label[for="manualInvoiceSignature2Name"]', currentLanguage === "es" ? "Firma 2 - Nombre" : "Signature 2 - Name");
   setText('label[for="manualInvoiceSignature2Title"]', currentLanguage === "es" ? "Firma 2 - Cargo" : "Signature 2 - Title");
+  setText("#manualInvoiceFinalMessageTitle", currentLanguage === "es" ? "Mensaje final de factura" : "Final invoice message");
+  setText(".manual-invoice-final-message .section-title .eyebrow", currentLanguage === "es" ? "Mensaje" : "Message");
+  setText('label[for="manualInvoiceFinalMessage"]', currentLanguage === "es" ? "Mensaje final de factura" : "Final invoice message");
   const manualInvoiceLineHeaders = document.querySelectorAll(".manual-invoice-line-header span");
   if (manualInvoiceLineHeaders.length >= 4) {
     manualInvoiceLineHeaders[0].textContent = currentLanguage === "es" ? "Cantidad" : "Quantity";
-    manualInvoiceLineHeaders[1].textContent = currentLanguage === "es" ? "Descripcion" : "Description";
+    manualInvoiceLineHeaders[1].textContent = currentLanguage === "es" ? "Descripción" : "Description";
     manualInvoiceLineHeaders[2].textContent = "Rate";
     manualInvoiceLineHeaders[3].textContent = "Amount";
+    // Quantity and Description are the only line fields the existing validation
+    // actually blocks on, so only those carry the required asterisk.
+    appendRequiredMark(manualInvoiceLineHeaders[0]);
+    appendRequiredMark(manualInvoiceLineHeaders[1]);
   }
+  markRequiredManualInvoiceHeaderLabels();
+  retranslateManualInvoiceLineErrors();
+  retranslateManualInvoiceHeaderErrors();
   generateManualInvoicePdfButton.textContent = t("manualInvoicePdfButton");
   renderManualInvoiceLines();
 
@@ -6815,7 +7003,7 @@ function applyStaticLanguage() {
   renderUserProjectAssignmentOptions(editUserProjectAssignments);
 
   setTableHeaders(".service-records-panel table", [
-    labelText("Tecnico", "Technician"),
+    labelText("Técnico", "Technician"),
     labelText("Cliente", "Client"),
     labelText("Proyecto", "Project"),
     t("date"),
@@ -6824,23 +7012,24 @@ function applyStaticLanguage() {
     labelText("Entrada PM", "PM start"),
     labelText("Salida PM", "PM end"),
     labelText("Horas", "Hours"),
-    labelText("Descripcion", "Description"),
+    labelText("Descripción", "Description"),
     t("status"),
     t("actions")
   ]);
   setTableHeaders("#legacyTicketsWorkspace table", ["ID", t("issue"), t("priority"), t("status"), t("date"), t("reportedBy"), t("actions")]);
-  setTableHeaders("#clientsTabPanel table", [labelText("Cliente", "Client"), labelText("Contacto", "Contact"), "Email", labelText("Telefono", "Phone"), labelText("Facturacion", "Billing"), labelText("ID contributivo", "Tax ID"), t("status"), t("actions")]);
-  setTableHeaders("#projectsTabPanel table", [labelText("Proyecto", "Project"), labelText("Cliente", "Client"), labelText("Descripcion", "Description"), labelText("Contrato", "Contract"), labelText("Horas contratadas", "Contracted hours"), labelText("Horas usadas", "Used hours"), labelText("Horas restantes", "Remaining hours"), labelText("Vence", "End date"), labelText("Estado del contrato", "Contract status"), "Project Manager", t("status"), t("actions")]);
+  setTableHeaders("#clientsTabPanel table", [labelText("Cliente", "Client"), labelText("Contacto", "Contact"), "Email", labelText("Teléfono", "Phone"), labelText("Facturación", "Billing"), labelText("ID contributivo", "Tax ID"), t("status"), t("actions")]);
+  setTableHeaders("#projectsTabPanel table", [labelText("Proyecto", "Project"), labelText("Cliente", "Client"), labelText("Descripción", "Description"), labelText("Contrato", "Contract"), labelText("Horas contratadas", "Contracted hours"), labelText("Horas usadas", "Used hours"), labelText("Horas restantes", "Remaining hours"), labelText("Vence", "End date"), labelText("Estado del contrato", "Contract status"), "Project Manager", t("status"), t("actions")]);
   setTableHeaders("#invoicesTabPanel table", [labelText("Factura", "Invoice"), labelText("Cliente", "Client"), labelText("Fecha", "Date"), labelText("Desde", "From"), labelText("Hasta", "To"), t("status"), t("actions")]);
-  setTableHeaders("#invoiceDetailModal table", [t("date"), labelText("Proyecto", "Project"), labelText("Descripcion", "Description"), labelText("Horas", "Hours")]);
+  setTableHeaders("#invoiceDetailModal table", [t("date"), labelText("Proyecto", "Project"), labelText("Descripción", "Description"), labelText("Horas", "Hours")]);
   setTableHeaders("#notificationsTabPanel table", [t("message"), t("type"), t("date"), t("status"), t("actions")]);
   setTableHeaders('[aria-labelledby="users-table-title"] table', ["ID", t("fullName"), "Email", t("role"), t("assignedProjects"), t("status"), t("date"), t("createdBy"), t("actions")]);
   setTableHeaders("#usersTabPanel .password-resets-panel table", ["ID", t("name"), "Email", t("date"), t("status"), t("actions")]);
-  setTableHeaders("#reportsTabPanel table", ["ID", currentLanguage === "es" ? "Tecnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripcion del servicio" : "Service description"]);
+  setTableHeaders("#reportsTabPanel table", ["ID", currentLanguage === "es" ? "Técnico" : "Technician", currentLanguage === "es" ? "Cliente" : "Client", currentLanguage === "es" ? "Proyecto" : "Project", t("date"), currentLanguage === "es" ? "Horas" : "Hours", t("status"), currentLanguage === "es" ? "Descripción del servicio" : "Service description"]);
 }
 
 function applyLanguage() {
   languageToggle.textContent = currentLanguage === "es" ? "English" : "Espa\u00f1ol";
+  updateThemeToggleLabel();
   applyStaticLanguage();
   applySelectTranslations();
   setButtonText(document.querySelector('[data-tab="dashboard"]'), t("dashboard"));
@@ -7488,6 +7677,19 @@ function updateManualInvoiceSummary() {
   manualInvoiceTaxRate.disabled = !totals.applyTax;
 }
 
+function resizeManualInvoiceDescription(textarea) {
+  if (!textarea) return;
+
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.max(textarea.scrollHeight, 150)}px`;
+}
+
+function resizeManualInvoiceDescriptions() {
+  manualInvoiceLinesBody
+    ?.querySelectorAll(".manual-invoice-line-description")
+    .forEach(resizeManualInvoiceDescription);
+}
+
 function renderManualInvoiceLines() {
   if (!manualInvoiceLinesBody) return;
 
@@ -7497,11 +7699,11 @@ function renderManualInvoiceLines() {
 
   manualInvoiceLinesBody.innerHTML = manualInvoiceLines.map((line) => `
     <div class="manual-invoice-line" data-line-id="${line.id}">
-      <input type="number" class="manual-invoice-line-quantity" min="0" step="0.01" value="${escapeHTML(String(line.quantity || ""))}" aria-label="${currentLanguage === "es" ? "Cantidad" : "Quantity"}">
-      <textarea class="manual-invoice-line-description" rows="2" aria-label="${currentLanguage === "es" ? "Descripcion" : "Description"}">${escapeHTML(line.description || "")}</textarea>
+      <input type="number" class="manual-invoice-line-quantity" min="0" step="0.01" aria-required="true" value="${escapeHTML(String(line.quantity || ""))}" aria-label="${currentLanguage === "es" ? "Cantidad" : "Quantity"}">
+      <textarea class="manual-invoice-line-description" rows="8" aria-required="true" aria-label="${currentLanguage === "es" ? "Descripción" : "Description"}">${escapeHTML(line.description || "")}</textarea>
       <input type="number" class="manual-invoice-line-rate" min="0" step="0.01" value="${escapeHTML(String(line.rate || ""))}" aria-label="Rate">
       <output class="manual-invoice-line-amount">${formatManualInvoiceCurrency(calculateManualInvoiceLineAmount(line))}</output>
-      <button type="button" class="icon-button manual-invoice-line-remove" aria-label="${currentLanguage === "es" ? "Eliminar linea" : "Remove line"}" ${manualInvoiceLines.length === 1 ? "disabled" : ""}>
+      <button type="button" class="icon-button manual-invoice-line-remove" aria-label="${currentLanguage === "es" ? "Eliminar línea" : "Remove line"}" ${manualInvoiceLines.length === 1 ? "disabled" : ""}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18 6 6 18"/>
           <path d="m6 6 12 12"/>
@@ -7511,6 +7713,7 @@ function renderManualInvoiceLines() {
   `).join("");
 
   updateManualInvoiceSummary();
+  resizeManualInvoiceDescriptions();
 }
 
 function updateManualInvoiceLine(lineId, field, value) {
@@ -7532,11 +7735,93 @@ function removeManualInvoiceLine(lineId) {
   renderManualInvoiceLines();
 }
 
+const MANUAL_INVOICE_SPANISH_MONTHS = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+];
+
+// manualInvoiceContractStart/End are native <input type="date"> fields, so their
+// .value is always ISO (YYYY-MM-DD) or "". This turns that ISO value into the
+// same "d/monthname/yyyy" text the service-detail description already used
+// (e.g. "4/mayo/2026"), so the generated PDF text is unaffected by the switch
+// from free text to a real date picker.
+function formatManualInvoiceContractDate(isoValue) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoValue || "").trim());
+  if (!match) return "";
+
+  const [, year, month, day] = match;
+  const monthName = MANUAL_INVOICE_SPANISH_MONTHS[Number(month) - 1];
+  if (!monthName) return "";
+
+  return `${Number(day)}/${monthName}/${year}`;
+}
+
+// Safe, exact-match deduplication for the free-text "Account numbers" list.
+// Keeps the first occurrence of every line, in the order the user typed them;
+// never merges or fuzzy-matches different account numbers.
+function dedupeManualInvoiceAccountNumbers(rawText) {
+  const seen = new Set();
+  const lines = [];
+
+  String(rawText || "").split(/\r\n|\r|\n/).forEach((rawLine) => {
+    const trimmed = rawLine.trim();
+    if (!trimmed) return;
+
+    const comparisonKey = trimmed.replace(/;+\s*$/, "");
+    if (seen.has(comparisonKey)) return;
+
+    seen.add(comparisonKey);
+    lines.push(trimmed);
+  });
+
+  return lines.join("\n");
+}
+
+function buildManualInvoiceServiceDetailDescription() {
+  const serviceDescription = manualInvoiceServiceDescription.value.trim();
+  const servicePeriod = manualInvoiceServicePeriod.value.trim();
+  const accountNumbers = dedupeManualInvoiceAccountNumbers(manualInvoiceAccountNumbers.value);
+  const contractNumber = manualInvoiceContractNumber.value.trim();
+  const contractStart = formatManualInvoiceContractDate(manualInvoiceContractStart.value);
+  const contractEnd = formatManualInvoiceContractDate(manualInvoiceContractEnd.value);
+  const contractedHours = manualInvoiceContractedHours.value.trim();
+  const initialAvailableHours = manualInvoiceInitialAvailableHours.value.trim();
+  const workedHours = manualInvoiceWorkedHours.value.trim();
+  const finalAvailableHours = manualInvoiceFinalAvailableHours.value.trim();
+  const sections = [];
+
+  if (serviceDescription || servicePeriod) {
+    sections.push(`${serviceDescription || "Servicios Profesionales"}${servicePeriod ? ` en el mes de ${servicePeriod}` : ""}`);
+  }
+
+  if (accountNumbers) {
+    sections.push(`N\u00fameros de cuentas:\n${accountNumbers}`);
+  }
+
+  [
+    contractNumber ? `N\u00famero de contrato: ${contractNumber}` : "",
+    contractStart || contractEnd ? `Fecha de vigencia: ${contractStart || "N/A"} - ${contractEnd || "N/A"}` : "",
+    contractedHours ? `Horas Contratadas: ${contractedHours}` : "",
+    initialAvailableHours ? `Horas Disponibles: ${initialAvailableHours}` : "",
+    workedHours ? `Horas Trabajadas: ${workedHours}` : "",
+    finalAvailableHours ? `Horas Disponibles: ${finalAvailableHours}` : ""
+  ].filter(Boolean).forEach((line) => sections.push(line));
+
+  return sections.join("\n\n");
+}
+
+function combineManualInvoiceDescription(additionalDescription) {
+  return [
+    buildManualInvoiceServiceDetailDescription(),
+    String(additionalDescription || "").trim()
+  ].filter(Boolean).join("\n\n");
+}
+
 function getManualInvoicePayloadLines() {
   return manualInvoiceLines
-    .map((line) => ({
+    .map((line, index) => ({
       quantity: Number(line.quantity) || 0,
-      description: String(line.description || "").trim(),
+      description: index === 0 ? combineManualInvoiceDescription(line.description) : String(line.description || "").trim(),
       rate: Number(line.rate) || 0,
       amount: calculateManualInvoiceLineAmount(line)
     }))
@@ -7557,6 +7842,242 @@ function getManualInvoiceLinesValidationMessage(lines) {
   return hasInvalidLine ? t("manualInvoiceLineInvalid") : "";
 }
 
+/* ── Invoice line required-field / validation UX ──────────────────────────────
+   Visual + a11y layer only. It mirrors the EXISTING checks in
+   getManualInvoicePayloadLines() + getManualInvoiceLinesValidationMessage();
+   it never decides whether the PDF is generated. */
+
+function appendRequiredMark(el) {
+  if (!el || el.querySelector(".required-mark")) return;
+  const mark = document.createElement("span");
+  mark.className = "required-mark";
+  mark.setAttribute("aria-hidden", "true");
+  mark.textContent = " *";
+  el.appendChild(mark);
+}
+
+function getManualInvoiceLineErrorNode(row) {
+  let node = row.querySelector(".manual-invoice-line-error");
+  if (!node) {
+    node = document.createElement("p");
+    node.className = "manual-invoice-line-error";
+    node.id = `manualInvoiceLineError-${row.dataset.lineId || Math.random().toString(36).slice(2)}`;
+    row.appendChild(node);
+  }
+  return node;
+}
+
+function renderManualInvoiceLineErrorText(node) {
+  const keys = (node.dataset.errKeys || "").split(",").filter(Boolean);
+  node.textContent = keys.map((key) => t(key)).join(" ");
+}
+
+function retranslateManualInvoiceLineErrors() {
+  manualInvoiceLinesBody
+    ?.querySelectorAll(".manual-invoice-line-error")
+    .forEach(renderManualInvoiceLineErrorText);
+}
+
+function clearManualInvoiceLineFieldError(field) {
+  if (!field || !field.classList.contains("input-error")) return;
+  field.classList.remove("input-error");
+  field.removeAttribute("aria-invalid");
+  field.removeAttribute("aria-describedby");
+}
+
+function clearManualInvoiceLineErrors() {
+  manualInvoiceLinesBody
+    ?.querySelectorAll(".input-error")
+    .forEach(clearManualInvoiceLineFieldError);
+  manualInvoiceLinesBody
+    ?.querySelectorAll(".manual-invoice-line-error")
+    .forEach((node) => node.remove());
+}
+
+function getManualInvoiceRowChecks(index) {
+  const line = manualInvoiceLines[index] || {};
+  const quantity = Number(line.quantity) || 0;
+  const rate = Number(line.rate) || 0;
+  const description = index === 0
+    ? combineManualInvoiceDescription(line.description)
+    : String(line.description || "").trim();
+  const amount = calculateManualInvoiceLineAmount(line);
+  const quantityRaw = String(line.quantity ?? "").trim();
+
+  return {
+    counts: quantity > 0 || Boolean(description) || rate > 0 || amount > 0,
+    quantityOk: Number.isFinite(quantity) && quantity > 0,
+    quantityKey: quantityRaw === "" ? "invoiceFieldRequired" : "invoiceQuantityPositive",
+    descriptionOk: Boolean(description),
+    rateOk: Number.isFinite(rate) && rate >= 0
+  };
+}
+
+function markManualInvoiceLineErrors() {
+  const rows = [...manualInvoiceLinesBody.querySelectorAll(".manual-invoice-line")];
+  const anyCounts = manualInvoiceLines.some((_, index) => getManualInvoiceRowChecks(index).counts);
+  let firstInvalidField = null;
+
+  const flag = (row, selector, key) => {
+    const field = row.querySelector(selector);
+    if (!field) return;
+    field.classList.add("input-error");
+    field.setAttribute("aria-invalid", "true");
+    const node = getManualInvoiceLineErrorNode(row);
+    const keys = new Set((node.dataset.errKeys || "").split(",").filter(Boolean));
+    keys.add(key);
+    node.dataset.errKeys = [...keys].join(",");
+    renderManualInvoiceLineErrorText(node);
+    field.setAttribute("aria-describedby", node.id);
+    if (!firstInvalidField) firstInvalidField = field;
+  };
+
+  rows.forEach((row, index) => {
+    const checks = getManualInvoiceRowChecks(index);
+    // Only inspect lines that the existing filter would keep. If NO line counts
+    // at all, guide the user on the first row.
+    if (!checks.counts && !(!anyCounts && index === 0)) return;
+
+    if (!checks.quantityOk) flag(row, ".manual-invoice-line-quantity", checks.quantityKey);
+    if (!checks.descriptionOk) flag(row, ".manual-invoice-line-description", "invoiceFieldRequired");
+    if (!checks.rateOk) flag(row, ".manual-invoice-line-rate", "invoiceInvalidRate");
+  });
+
+  return firstInvalidField;
+}
+
+function revalidateManualInvoiceLineRow(row) {
+  if (!row) return;
+  const rows = [...manualInvoiceLinesBody.querySelectorAll(".manual-invoice-line")];
+  const index = rows.indexOf(row);
+  if (index < 0) return;
+
+  const checks = getManualInvoiceRowChecks(index);
+  const map = [
+    [".manual-invoice-line-quantity", checks.quantityOk],
+    [".manual-invoice-line-description", checks.descriptionOk],
+    [".manual-invoice-line-rate", checks.rateOk]
+  ];
+
+  map.forEach(([selector, ok]) => {
+    if (ok) clearManualInvoiceLineFieldError(row.querySelector(selector));
+  });
+
+  const node = row.querySelector(".manual-invoice-line-error");
+  if (node) {
+    const remaining = [];
+    if (row.querySelector(".manual-invoice-line-quantity.input-error")) remaining.push(checks.quantityKey);
+    if (row.querySelector(".manual-invoice-line-description.input-error")) remaining.push("invoiceFieldRequired");
+    if (row.querySelector(".manual-invoice-line-rate.input-error")) remaining.push("invoiceInvalidRate");
+
+    if (remaining.length === 0) {
+      node.remove();
+    } else {
+      node.dataset.errKeys = remaining.join(",");
+      renderManualInvoiceLineErrorText(node);
+    }
+  }
+
+  maybeClearManualInvoiceValidationSummary();
+}
+
+/* ── Invoice header required fields (Invoice # / Date / Project / Bill To) ─────
+   None of these are enforced by the backend, but every real manual invoice
+   needs them, so they are required here in the FORM validation only — before
+   the PDF request. Same asterisk / .input-error / message / a11y system as the
+   invoice lines. Calculations, payload shape and the PDF are untouched. */
+
+function getManualInvoiceRequiredHeaderFields() {
+  return [
+    { field: manualInvoiceNumber, labelSelector: 'label[for="manualInvoiceNumber"]' },
+    { field: manualInvoiceDate, labelSelector: 'label[for="manualInvoiceDate"]' },
+    { field: manualInvoiceProject, labelSelector: 'label[for="manualInvoiceProject"]' },
+    { field: manualInvoiceBillTo, labelSelector: 'label[for="manualInvoiceBillTo"]' }
+  ].filter((entry) => entry.field);
+}
+
+function markRequiredManualInvoiceHeaderLabels() {
+  getManualInvoiceRequiredHeaderFields().forEach(({ labelSelector }) => {
+    appendRequiredMark(document.querySelector(labelSelector));
+  });
+}
+
+function getManualInvoiceHeaderErrorNode(field) {
+  const group = field.closest(".form-group");
+  if (!group) return null;
+  let node = group.querySelector(".manual-invoice-field-error");
+  if (!node) {
+    node = document.createElement("p");
+    node.className = "manual-invoice-field-error";
+    node.id = `manualInvoiceFieldError-${field.id}`;
+    group.appendChild(node);
+  }
+  return node;
+}
+
+function retranslateManualInvoiceHeaderErrors() {
+  document
+    .querySelectorAll("#manualInvoiceForm .manual-invoice-field-error")
+    .forEach((node) => { node.textContent = t("invoiceFieldRequired"); });
+}
+
+function clearManualInvoiceHeaderFieldError(field) {
+  if (!field) return;
+  field.classList.remove("input-error");
+  field.removeAttribute("aria-invalid");
+  field.removeAttribute("aria-describedby");
+  field.closest(".form-group")?.querySelector(".manual-invoice-field-error")?.remove();
+}
+
+function clearManualInvoiceHeaderErrors() {
+  getManualInvoiceRequiredHeaderFields().forEach(({ field }) => clearManualInvoiceHeaderFieldError(field));
+}
+
+function markManualInvoiceHeaderErrors() {
+  let firstInvalidField = null;
+
+  getManualInvoiceRequiredHeaderFields().forEach(({ field }) => {
+    if (String(field.value || "").trim() !== "") return;
+
+    field.classList.add("input-error");
+    field.setAttribute("aria-invalid", "true");
+    const node = getManualInvoiceHeaderErrorNode(field);
+    if (node) {
+      node.textContent = t("invoiceFieldRequired");
+      field.setAttribute("aria-describedby", node.id);
+    }
+    if (!firstInvalidField) firstInvalidField = field;
+  });
+
+  return firstInvalidField;
+}
+
+function revalidateManualInvoiceHeaderField(field) {
+  if (!field || !field.classList.contains("input-error")) return;
+  if (String(field.value || "").trim() === "") return;
+  clearManualInvoiceHeaderFieldError(field);
+  maybeClearManualInvoiceValidationSummary();
+}
+
+function maybeClearManualInvoiceValidationSummary() {
+  if (manualInvoiceForm.querySelector(".input-error")) return;
+  const validationMessages = [
+    t("manualInvoiceLineInvalid"),
+    t("manualInvoiceLineRequired"),
+    t("invoiceCompleteRequired")
+  ];
+  if (validationMessages.includes(manualInvoiceMessage.textContent)) {
+    manualInvoiceMessage.textContent = "";
+  }
+}
+
+function focusFirstManualInvoiceInvalidField(field) {
+  if (!field) return;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  field.focus({ preventScroll: true });
+  field.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+}
+
 async function generateManualInvoicePdf(event) {
   event.preventDefault();
   manualInvoiceMessage.textContent = "";
@@ -7565,9 +8086,17 @@ async function generateManualInvoicePdf(event) {
   const totals = getManualInvoiceTotals();
   const validationMessage = getManualInvoiceLinesValidationMessage(lines);
 
-  if (validationMessage) {
-    manualInvoiceMessage.textContent = validationMessage;
-    showToast("warning", validationMessage);
+  clearManualInvoiceHeaderErrors();
+  clearManualInvoiceLineErrors();
+
+  const headerFirstInvalid = markManualInvoiceHeaderErrors();
+  const lineFirstInvalid = validationMessage ? markManualInvoiceLineErrors() : null;
+
+  if (headerFirstInvalid || validationMessage) {
+    const summary = headerFirstInvalid ? t("invoiceCompleteRequired") : validationMessage;
+    manualInvoiceMessage.textContent = summary;
+    showToast("warning", summary);
+    focusFirstManualInvoiceInvalidField(headerFirstInvalid || lineFirstInvalid);
     return;
   }
 
@@ -7585,16 +8114,29 @@ async function generateManualInvoicePdf(event) {
     subtotal: totals.subtotal,
     taxAmount: totals.taxAmount,
     total: totals.total,
+    certifications: [
+      {
+        text: manualInvoiceCertification1.value.trim(),
+        show: manualInvoiceShowCertification1?.checked !== false
+      },
+      {
+        text: manualInvoiceCertification2.value.trim(),
+        show: manualInvoiceShowCertification2?.checked !== false
+      }
+    ],
     signatures: [
       {
         name: manualInvoiceSignature1Name.value.trim(),
-        title: manualInvoiceSignature1Title.value.trim()
+        title: manualInvoiceSignature1Title.value.trim(),
+        show: manualInvoiceShowSignature1?.checked !== false
       },
       {
         name: manualInvoiceSignature2Name.value.trim(),
-        title: manualInvoiceSignature2Title.value.trim()
+        title: manualInvoiceSignature2Title.value.trim(),
+        show: manualInvoiceShowSignature2?.checked !== false
       }
-    ]
+    ],
+    finalMessage: manualInvoiceFinalMessage?.value.trim() || ""
   };
   const originalButtonText = generateManualInvoicePdfButton.textContent;
   const controller = new AbortController();
@@ -8069,7 +8611,7 @@ async function updateUser(event) {
     && normalizeClientRole(existingUser.Role) === "ProjectManager"
     && role !== "ProjectManager"
     && Number(existingUser.AssignedProjectCount || 0) > 0
-    && !confirm(t("changeProjectManagerRoleConfirm"))
+    && !(await confirmAction({ message: t("changeProjectManagerRoleConfirm") }))
   ) {
     return;
   }
@@ -8119,7 +8661,7 @@ async function updateUser(event) {
 }
 
 async function toggleUserStatus(userId, nextIsActive) {
-  const confirmed = confirm(t("deleteUserConfirm"));
+  const confirmed = await confirmAction({ message: t("deleteUserConfirm"), danger: !nextIsActive });
 
   if (!confirmed) {
     return;
@@ -8201,7 +8743,7 @@ async function closeTicket(ticketId) {
 }
 
 async function deleteTicket(ticketId) {
-  const confirmed = confirm(t("deleteTicketConfirm"));
+  const confirmed = await confirmAction({ message: t("deleteTicketConfirm") });
 
   if (!confirmed) {
     return;
@@ -8493,15 +9035,25 @@ projectModal.addEventListener("click", (event) => {
   }
 });
 addServiceRecordButton.addEventListener("click", () => openServiceRecordEditor("create"));
-serviceRecordSearchInput.addEventListener("input", loadServiceRecords);
-serviceRecordTechnicianFilter.addEventListener("change", loadServiceRecords);
+let serviceRecordsSearchTimer = null;
+serviceRecordSearchInput.addEventListener("input", () => {
+  window.clearTimeout(serviceRecordsSearchTimer);
+  serviceRecordsSearchTimer = window.setTimeout(reloadServiceRecordsFromFilters, 300);
+});
+serviceRecordTechnicianFilter.addEventListener("change", reloadServiceRecordsFromFilters);
 serviceRecordClientFilter.addEventListener("change", () => {
   renderServiceRecordOptions();
-  loadServiceRecords();
+  reloadServiceRecordsFromFilters();
 });
-serviceRecordProjectFilter.addEventListener("change", loadServiceRecords);
-serviceRecordDateFilter.addEventListener("change", loadServiceRecords);
-serviceRecordStatusFilter.addEventListener("change", loadServiceRecords);
+serviceRecordProjectFilter.addEventListener("change", reloadServiceRecordsFromFilters);
+serviceRecordDateFilter.addEventListener("change", reloadServiceRecordsFromFilters);
+serviceRecordStatusFilter.addEventListener("change", reloadServiceRecordsFromFilters);
+if (serviceRecordsPrevPage) {
+  serviceRecordsPrevPage.addEventListener("click", () => goToServiceRecordsPage(serviceRecordsPage - 1));
+}
+if (serviceRecordsNextPage) {
+  serviceRecordsNextPage.addEventListener("click", () => goToServiceRecordsPage(serviceRecordsPage + 1));
+}
 serviceRecordsTableBody.addEventListener("click", handleServiceRecordsTableClick);
 serviceRecordForm.addEventListener("submit", saveServiceRecord);
 closeServiceRecordModal.addEventListener("click", closeServiceRecordEditor);
@@ -8584,6 +9136,26 @@ manualInvoiceForm.addEventListener("submit", generateManualInvoicePdf);
 addManualInvoiceLineButton.addEventListener("click", addManualInvoiceLine);
 manualInvoiceApplyTax.addEventListener("change", updateManualInvoiceSummary);
 manualInvoiceTaxRate.addEventListener("input", updateManualInvoiceSummary);
+getManualInvoiceRequiredHeaderFields().forEach(({ field }) => {
+  const clearOnFix = () => revalidateManualInvoiceHeaderField(field);
+  field.addEventListener("input", clearOnFix);
+  field.addEventListener("change", clearOnFix);
+});
+function dedupeManualInvoiceAccountNumbersField() {
+  const deduped = dedupeManualInvoiceAccountNumbers(manualInvoiceAccountNumbers.value);
+  if (deduped !== manualInvoiceAccountNumbers.value) {
+    manualInvoiceAccountNumbers.value = deduped;
+  }
+}
+
+// Normalize once on load (whatever the field starts with — the shipped default
+// or anything already present in it), immediately after a paste, and again on
+// blur, so duplicates never survive in the field regardless of how they got in.
+dedupeManualInvoiceAccountNumbersField();
+manualInvoiceAccountNumbers.addEventListener("blur", dedupeManualInvoiceAccountNumbersField);
+manualInvoiceAccountNumbers.addEventListener("paste", () => {
+  window.setTimeout(dedupeManualInvoiceAccountNumbersField, 0);
+});
 manualInvoiceLinesBody.addEventListener("input", (event) => {
   const row = event.target.closest(".manual-invoice-line");
   if (!row) return;
@@ -8596,6 +9168,7 @@ manualInvoiceLinesBody.addEventListener("input", (event) => {
 
   if (event.target.classList.contains("manual-invoice-line-description")) {
     updateManualInvoiceLine(lineId, "description", event.target.value);
+    resizeManualInvoiceDescription(event.target);
   }
 
   if (event.target.classList.contains("manual-invoice-line-rate")) {
@@ -8607,6 +9180,9 @@ manualInvoiceLinesBody.addEventListener("input", (event) => {
   if (line && amountOutput) {
     amountOutput.textContent = formatManualInvoiceCurrency(calculateManualInvoiceLineAmount(line));
   }
+
+  // Drop the red error state as soon as the field satisfies the existing rule.
+  revalidateManualInvoiceLineRow(row);
 });
 manualInvoiceLinesBody.addEventListener("click", (event) => {
   const removeButton = event.target.closest(".manual-invoice-line-remove");
@@ -8717,5 +9293,6 @@ window.addEventListener("beforeunload", (event) => {
   }
 });
 
+initTheme();
 applyLanguage();
 checkSession();

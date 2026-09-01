@@ -117,7 +117,7 @@ app.post("/api/forgot-password", async (req, res) => {
     );
 
     res.status(201).json({
-      message: "Solicitud recibida. Contacta a un administrador para restablecer tu contrasena."
+      message: "Solicitud recibida. Contacta a un administrador para restablecer tu contraseña."
     });
   } catch (error) {
     poolPromise = null;
@@ -149,7 +149,7 @@ app.put("/api/password-resets/:id/resolve", requireAdmin, async (req, res) => {
   const requestId = Number(req.params.id);
 
   if (!Number.isInteger(requestId)) {
-    return res.status(400).json({ message: "ID de solicitud invalido." });
+    return res.status(400).json({ message: "ID de solicitud inválido." });
   }
 
   try {
@@ -552,7 +552,7 @@ function getServiceRecordPayload(body) {
   }
 
   if (!timeError && totalMinutes <= 0) {
-    timeError = "Debes registrar al menos un intervalo de horas valido.";
+    timeError = "Debes registrar al menos un intervalo de horas válido.";
   }
 
   const rawStatus = getValue("status", "Status");
@@ -576,15 +576,15 @@ function getServiceRecordPayload(body) {
 
 function getServiceRecordValidationError(serviceRecord) {
   if (!Number.isInteger(serviceRecord.technicianUserId) || serviceRecord.technicianUserId <= 0) {
-    return "TechnicianUserID es obligatorio y debe ser valido.";
+    return "TechnicianUserID es obligatorio y debe ser válido.";
   }
 
   if (!Number.isInteger(serviceRecord.clientId) || serviceRecord.clientId <= 0) {
-    return "ClientID es obligatorio y debe ser valido.";
+    return "ClientID es obligatorio y debe ser válido.";
   }
 
   if (!Number.isInteger(serviceRecord.projectId) || serviceRecord.projectId <= 0) {
-    return "ProjectID es obligatorio y debe ser valido.";
+    return "ProjectID es obligatorio y debe ser válido.";
   }
 
   if (!isValidServiceDate(serviceRecord.serviceDate)) {
@@ -809,7 +809,7 @@ function getInvoiceValidationError(invoice, requireInvoiceNumber = true) {
   }
 
   if (!Number.isInteger(invoice.clientId) || invoice.clientId <= 0) {
-    return "ClientID es obligatorio y debe ser valido.";
+    return "ClientID es obligatorio y debe ser válido.";
   }
 
   if (!isValidServiceDate(invoice.invoiceDate)) {
@@ -865,7 +865,7 @@ function getSqlErrorMessage(error) {
 
 function requireAuth(req, res, next) {
   if (!req.session.user) {
-    return res.status(401).json({ message: "Debes iniciar sesion." });
+    return res.status(401).json({ message: "Debes iniciar sesión." });
   }
 
   next();
@@ -873,7 +873,7 @@ function requireAuth(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!req.session.user) {
-    return res.status(401).json({ message: "Debes iniciar sesion." });
+    return res.status(401).json({ message: "Debes iniciar sesión." });
   }
 
   if (req.session.user.Role !== "Admin") {
@@ -885,7 +885,7 @@ function requireAdmin(req, res, next) {
 
 function requireAdminOrTechnician(req, res, next) {
   if (!req.session.user) {
-    return res.status(401).json({ message: "Debes iniciar sesion." });
+    return res.status(401).json({ message: "Debes iniciar sesión." });
   }
 
   if (!isSupportedRole(req.session.user.Role)) {
@@ -970,7 +970,7 @@ async function syncUserProjectAssignmentsInTransaction(transaction, userId, proj
   const normalizedProjectIds = normalizeProjectIds(projectIds);
 
   if (normalizedProjectIds === null) {
-    const error = new Error("projectIds debe ser una lista de IDs de proyecto validos.");
+    const error = new Error("projectIds debe ser una lista de IDs de proyecto válidos.");
     error.statusCode = 400;
     throw error;
   }
@@ -1015,7 +1015,7 @@ async function syncUserProjectAssignmentsInTransaction(transaction, userId, proj
     `);
 
     if (Number(validationResult.recordset[0]?.ValidProjectCount) !== normalizedProjectIds.length) {
-      const error = new Error("Uno o mas proyectos no existen, estan inactivos o no tienen una asignacion historica activa.");
+      const error = new Error("Uno o más proyectos no existen, están inactivos o no tienen una asignación histórica activa.");
       error.statusCode = 400;
       throw error;
     }
@@ -1080,7 +1080,7 @@ async function syncProjectManagerAssignments(transaction, projectId, userIds, as
   const normalizedUserIds = normalizeProjectIds(userIds);
 
   if (normalizedUserIds === null) {
-    const error = new Error("projectManagerUserIds debe ser una lista de UserID validos.");
+    const error = new Error("projectManagerUserIds debe ser una lista de UserID válidos.");
     error.statusCode = 400;
     throw error;
   }
@@ -1100,7 +1100,7 @@ async function syncProjectManagerAssignments(transaction, projectId, userIds, as
     `);
 
     if (Number(validationResult.recordset[0]?.ValidManagerCount) !== normalizedUserIds.length) {
-      const error = new Error("Uno o mas Project Managers no existen, estan inactivos o tienen un rol invalido.");
+      const error = new Error("Uno o más Project Managers no existen, están inactivos o tienen un rol inválido.");
       error.statusCode = 400;
       throw error;
     }
@@ -1357,7 +1357,7 @@ async function createAdminServiceRecordsProcessedNotifications(pool, records) {
   });
 
   for (const group of groupedRecords.values()) {
-    const message = `Registros procesados: Tecnico ${group.TechnicianName} | Proyecto ${group.ProjectName} | Cliente ${group.ClientName} | Fecha ${group.ServiceDate} | Cantidad ${group.Count}`;
+    const message = `Registros procesados: Técnico ${group.TechnicianName} | Proyecto ${group.ProjectName} | Cliente ${group.ClientName} | Fecha ${group.ServiceDate} | Cantidad ${group.Count}`;
 
     for (const admin of admins) {
       await createNotification(pool, Number(admin.UserID), message.slice(0, 300), "SERVICE_RECORDS_PROCESSED");
@@ -1690,9 +1690,9 @@ async function validateServiceRecordReferences(pool, serviceRecord) {
 
   const validation = result.recordset[0];
 
-  if (!validation.TechnicianExists) return "El tecnico no existe o esta inactivo.";
-  if (!validation.ClientExists) return "El cliente no existe o esta inactivo.";
-  if (!validation.ProjectExists) return "El proyecto no existe, esta inactivo o no pertenece al cliente.";
+  if (!validation.TechnicianExists) return "El técnico no existe o está inactivo.";
+  if (!validation.ClientExists) return "El cliente no existe o está inactivo.";
+  if (!validation.ProjectExists) return "El proyecto no existe, está inactivo o no pertenece al cliente.";
   return null;
 }
 
@@ -1704,7 +1704,7 @@ async function getFilteredReportTickets(pool, filters) {
   const { from, to, status, priority } = filters;
 
   if (!isValidDateString(from) || !isValidDateString(to)) {
-    const error = new Error("Formato de fecha invalido. Usa YYYY-MM-DD.");
+    const error = new Error("Formato de fecha inválido. Usa YYYY-MM-DD.");
     error.statusCode = 400;
     throw error;
   }
@@ -1814,7 +1814,7 @@ function cleanReportText(value) {
 }
 
 function formatReportTime(value) {
-  if (!value) return "—";
+  if (!value) return "â€”";
 
   const timeValue = String(value).trim();
   const match = timeValue.match(/^(\d{1,2}):(\d{2})/);
@@ -1881,7 +1881,7 @@ function getServiceHoursReportFilters(req) {
     const value = Number(rawValue);
 
     if (!Number.isInteger(value) || value <= 0) {
-      return { error: `${name} invalido.`, statusCode: 400 };
+      return { error: `${name} inválido.`, statusCode: 400 };
     }
 
     numericFilters[name] = value;
@@ -1891,7 +1891,7 @@ function getServiceHoursReportFilters(req) {
     const sessionUserId = Number(req.session.user.UserID);
 
     if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
-      return { error: "Los tecnicos solo pueden ver sus propios registros.", statusCode: 403 };
+      return { error: "Los técnicos solo pueden ver sus propios registros.", statusCode: 403 };
     }
 
     numericFilters.TechnicianUserID = sessionUserId;
@@ -2065,7 +2065,7 @@ function drawServiceHoursPdf(records, filters, generatedAt, outputStream, option
     if (logoPath) {
       document.image(logoPath, x, y, { fit: [width, height] });
     } else {
-      document.fillColor(navy).font("Helvetica-Bold").fontSize(12).text("Solutions By Design", x, y + 8, {
+      document.fillColor(navy).font("Helvetica-Bold").fontSize(12).text("Solutions By Design, Inc.", x, y + 8, {
         width,
         align: "left"
       });
@@ -2453,10 +2453,10 @@ function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
   };
   const periodLabel = filters.from || filters.to
     ? `${filters.from || "Inicio"} al ${filters.to || "Actual"}`
-    : "Todos los periodos";
+    : "Todos los períodos";
   const clientLabel = scopeLabel("ClientName", filters.numericFilters?.ClientID, "Todos los clientes");
   const projectLabel = scopeLabel("ProjectName", filters.numericFilters?.ProjectID, "Todos los proyectos");
-  const technicianLabel = scopeLabel("TechnicianName", filters.numericFilters?.TechnicianUserID, "Todos los tecnicos");
+  const technicianLabel = scopeLabel("TechnicianName", filters.numericFilters?.TechnicianUserID, "Todos los técnicos");
   const statusLabel = filters.status || "Todos los estados";
   const generatedLabel = new Intl.DateTimeFormat("en-US", {
     month: "2-digit",
@@ -2466,8 +2466,8 @@ function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
     minute: "2-digit"
   }).format(generatedAt);
 
-  workbook.creator = "Solutions By Design";
-  workbook.company = "Solutions By Design";
+  workbook.creator = "Solutions By Design, Inc.";
+  workbook.company = "Solutions By Design, Inc.";
   workbook.subject = "Service hours report";
   workbook.title = "Desglose de servicios prestados";
   workbook.created = generatedAt;
@@ -2500,7 +2500,7 @@ function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
       editAs: "oneCell"
     });
   } else {
-    worksheet.getCell("A1").value = "Solutions By Design";
+    worksheet.getCell("A1").value = "Solutions By Design, Inc.";
     worksheet.getCell("A1").font = { bold: true, size: 18, color: { argb: navy } };
     worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "center" };
   }
@@ -2511,12 +2511,12 @@ function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
   worksheet.getCell("D1").alignment = { vertical: "middle", horizontal: "left" };
 
   worksheet.mergeCells("D2:M2");
-  worksheet.getCell("D2").value = "Solutions By Design | Reporte de horas de servicio";
+  worksheet.getCell("D2").value = "Solutions By Design, Inc. | Reporte de horas de servicio";
   worksheet.getCell("D2").font = { size: 10, color: { argb: muted } };
 
   const metadataRows = [
-    [3, "D", "H", `Periodo: ${periodLabel}`, "I", "M", `Estado: ${statusLabel}`],
-    [4, "D", "H", `Cliente: ${clientLabel}`, "I", "M", `Tecnico: ${technicianLabel}`],
+    [3, "D", "H", `Período: ${periodLabel}`, "I", "M", `Estado: ${statusLabel}`],
+    [4, "D", "H", `Cliente: ${clientLabel}`, "I", "M", `Técnico: ${technicianLabel}`],
     [5, "D", "H", `Proyecto: ${projectLabel}`, "I", "M", `Generado: ${generatedLabel}`]
   ];
 
@@ -2553,8 +2553,8 @@ function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
   worksheet.getRow(6).height = 24;
 
   const headers = [
-    "Registro", "Fecha", "Orden", "Tecnico", "Cliente", "Proyecto",
-    "Entrada AM", "Salida AM", "Entrada PM", "Salida PM", "Horas", "Estado", "Descripcion del servicio"
+    "Registro", "Fecha", "Orden", "Técnico", "Cliente", "Proyecto",
+    "Entrada AM", "Salida AM", "Entrada PM", "Salida PM", "Horas", "Estado", "Descripción del servicio"
   ];
   const headerRowNumber = 7;
   const headerRow = worksheet.getRow(headerRowNumber);
@@ -2653,7 +2653,7 @@ function createServiceHoursExcelWorkbook(records, filters, generatedAt) {
   worksheet.autoFilter = `A${headerRowNumber}:M${headerRowNumber}`;
   worksheet.pageSetup.printTitlesRow = `${headerRowNumber}:${headerRowNumber}`;
   worksheet.pageSetup.printArea = `A1:M${totalRowNumber}`;
-  worksheet.headerFooter.oddFooter = "&LSolutions By Design&C&P de &N&RReporte de horas";
+  worksheet.headerFooter.oddFooter = "&LSolutions By Design, Inc.&C&P de &N&RReporte de horas";
   worksheet.headerFooter.evenFooter = worksheet.headerFooter.oddFooter;
 
   worksheet.columns.forEach((column, columnIndex) => {
@@ -2768,22 +2768,47 @@ function normalizeManualInvoiceSignatures(invoice) {
   const sourceSignatures = Array.isArray(invoice.signatures) ? invoice.signatures : [];
   const signatures = sourceSignatures.slice(0, 2).map((signature) => ({
     name: cleanManualInvoiceValue(signature?.name, ""),
-    title: cleanManualInvoiceValue(signature?.title, "")
+    title: cleanManualInvoiceValue(signature?.title, ""),
+    show: signature?.show !== false && signature?.show !== "false"
   }));
 
   while (signatures.length < 2) {
-    signatures.push({ name: "", title: "" });
+    signatures.push({ name: "", title: "", show: true });
   }
 
   return signatures;
 }
 
+function normalizeManualInvoiceCertifications(invoice) {
+  const sourceCertifications = Array.isArray(invoice.certifications) ? invoice.certifications : [];
+  const certifications = sourceCertifications.slice(0, 2).map((certification) => {
+    if (certification && typeof certification === "object") {
+      return {
+        text: cleanManualInvoiceValue(certification.text, ""),
+        show: certification.show !== false && certification.show !== "false"
+      };
+    }
+
+    return {
+      text: cleanManualInvoiceValue(certification, ""),
+      show: true
+    };
+  });
+
+  while (certifications.length < 2) {
+    certifications.push({ text: "", show: true });
+  }
+
+  return certifications;
+}
+
 function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
-  const document = new PDFDocument({ margin: 42, size: "LETTER", bufferPages: true });
-  const margin = 42;
+  const document = new PDFDocument({ margin: 34, size: "LETTER", bufferPages: true });
+  const margin = 34;
   const pageWidth = 612;
   const pageHeight = 792;
   const contentWidth = pageWidth - margin * 2;
+  const companyName = "Solutions By Design, Inc.";
   const navy = "#17365d";
   const slate = "#111827";
   const muted = "#4b5563";
@@ -2796,6 +2821,9 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   const poNumber = cleanManualInvoiceValue(invoice.poNumber);
   const terms = cleanManualInvoiceValue(invoice.terms);
   const project = cleanManualInvoiceValue(invoice.project);
+  const finalMessage = Object.prototype.hasOwnProperty.call(invoice, "finalMessage")
+    ? cleanManualInvoiceValue(invoice.finalMessage, "")
+    : "\u00a1Es un placer trabajar con ustedes!";
   const invoiceLines = normalizeManualInvoiceLines(invoice);
   const subtotal = invoiceLines.reduce((sum, line) => sum + line.amount, 0);
   const taxRate = Math.max(0, Number(invoice.taxRate) || 0);
@@ -2803,10 +2831,23 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   const taxAmount = applyTax ? subtotal * (taxRate / 100) : 0;
   const total = subtotal + taxAmount;
   const signatures = normalizeManualInvoiceSignatures(invoice);
+  const certifications = normalizeManualInvoiceCertifications(invoice);
   const logoCandidates = [
     path.join(__dirname, "assets", "logo-horizontal.png")
   ];
   const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
+  const fontRegularPath = "C:\\Windows\\Fonts\\arial.ttf";
+  const fontBoldPath = "C:\\Windows\\Fonts\\arialbd.ttf";
+  const regularFont = fs.existsSync(fontRegularPath) ? "InvoiceRegular" : "Helvetica";
+  const boldFont = fs.existsSync(fontBoldPath) ? "InvoiceBold" : "Helvetica-Bold";
+
+  if (regularFont === "InvoiceRegular") {
+    document.registerFont(regularFont, fontRegularPath);
+  }
+
+  if (boldFont === "InvoiceBold") {
+    document.registerFont(boldFont, fontBoldPath);
+  }
 
   document.on("error", (error) => {
     console.error("[manual-invoice-pdf] Error de PDFKit:", error);
@@ -2821,7 +2862,7 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   const drawBrand = () => {
     if (logoPath) {
       try {
-        document.image(logoPath, margin, 38, { fit: [224, 108] });
+        document.image(logoPath, margin, 30, { fit: [208, 74] });
         console.log("[manual-invoice-pdf] Logo cargado");
         return;
       } catch (error) {
@@ -2830,39 +2871,32 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
     }
 
     console.log("[manual-invoice-pdf] Logo no disponible, usando fallback tipografico");
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(18).text("Solutions By Design", margin, 48, {
+    document.fillColor(navy).font(boldFont).fontSize(18).text(companyName, margin, 48, {
       width: 230
     });
-    document.fillColor(muted).font("Helvetica").fontSize(8.5).text("Professional services and technology solutions", margin, 72, {
+    document.fillColor(muted).font(regularFont).fontSize(8.5).text("Professional services and technology solutions", margin, 72, {
       width: 230
     });
   };
 
   const drawFooter = () => {
     const range = document.bufferedPageRange();
-    const generatedLabel = new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric"
-    }).format(generatedAt);
 
     for (let index = 0; index < range.count; index += 1) {
       document.switchToPage(range.start + index);
-      const footerBottom = document.page.height - document.page.margins.bottom;
-      const footerLineY = footerBottom - 30;
-      const footerTextY = footerBottom - 20;
+      const footerLineY = document.page.height - document.page.margins.bottom;
+      const footerTextY = footerLineY + 8;
 
       document.save();
       document.moveTo(margin, footerLineY).lineTo(pageWidth - margin, footerLineY).strokeColor(border).lineWidth(0.5).stroke();
-      document.fillColor(muted).font("Helvetica").fontSize(8).text("Solutions By Design", margin, footerTextY, {
-        width: 160,
-        height: 10,
+      document.fillColor(muted).font(regularFont).fontSize(7.2).text(companyName, margin, footerTextY, {
+        width: 180,
+        height: 8,
         lineBreak: false
       });
       document.text(`Page ${index + 1} of ${range.count}`, pageWidth - margin - 120, footerTextY, {
         width: 120,
-        height: 10,
+        height: 8,
         align: "right",
         lineBreak: false
       });
@@ -2871,43 +2905,43 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
   };
 
   drawBrand();
-  document.fillColor(muted).font("Helvetica").fontSize(8.8).text(
+  document.fillColor(muted).font(regularFont).fontSize(7.8).text(
     "50 Calle Isabel II STE 103\nBayamón, PR 00961-6355\nTel. (787) 946-1534\nFax (787) 946-7830",
-    margin + 176,
-    62,
+    margin + 164,
+    50,
     {
       width: 180,
       align: "left",
-      lineGap: 2
+      lineGap: 0.5
     }
   );
-  document.fillColor(navy).font("Helvetica-Bold").fontSize(26).text("INVOICE", pageWidth - margin - 190, 44, {
+  document.fillColor(navy).font(boldFont).fontSize(23).text("INVOICE", pageWidth - margin - 190, 32, {
     width: 190,
     align: "right"
   });
-  document.fillColor(slate).font("Helvetica-Bold").fontSize(10).text(`Invoice #: ${invoiceNumber}`, pageWidth - margin - 190, 78, {
+  document.fillColor(slate).font(boldFont).fontSize(9).text(`Invoice #: ${invoiceNumber}`, pageWidth - margin - 190, 63, {
     width: 190,
     align: "right"
   });
-  document.fillColor(muted).font("Helvetica").fontSize(9).text(`Date: ${invoiceDate}`, pageWidth - margin - 190, 94, {
+  document.fillColor(muted).font(regularFont).fontSize(8.2).text(`Date: ${invoiceDate}`, pageWidth - margin - 190, 77, {
     width: 190,
     align: "right"
   });
 
-  let y = 190;
-  document.rect(margin, y, contentWidth, 94).strokeColor(border).lineWidth(0.8).stroke();
-  document.rect(margin, y, 250, 24).fill(soft);
-  document.fillColor(navy).font("Helvetica-Bold").fontSize(9).text("Bill To", margin + 12, y + 8, {
+  let y = 118;
+  document.rect(margin, y, contentWidth, 66).strokeColor(border).lineWidth(0.8).stroke();
+  document.rect(margin, y, 244, 18).fill(soft);
+  document.fillColor(navy).font(boldFont).fontSize(8).text("Bill To", margin + 10, y + 5, {
     width: 220
   });
-  document.fillColor(slate).font("Helvetica").fontSize(9).text(billTo, margin + 12, y + 34, {
-    width: 226,
-    height: 48,
-    lineGap: 2
+  document.fillColor(slate).font(regularFont).fontSize(8).text(billTo, margin + 10, y + 24, {
+    width: 222,
+    height: 36,
+    lineGap: 0.5
   });
 
-  const metaX = margin + 270;
-  const metaColWidth = (contentWidth - 270) / 2;
+  const metaX = margin + 264;
+  const metaColWidth = (contentWidth - 264) / 2;
   const metaRows = [
     ["P.O. No.", poNumber],
     ["Terms", terms],
@@ -2917,93 +2951,423 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
 
   metaRows.forEach((row, index) => {
     const rowX = metaX + (index % 2) * metaColWidth;
-    const rowY = y + Math.floor(index / 2) * 47;
+    const rowY = y + Math.floor(index / 2) * 31;
 
-    document.fillColor(navy).font("Helvetica-Bold").fontSize(8).text(row[0], rowX, rowY + 10, {
+    document.fillColor(navy).font(boldFont).fontSize(7.2).text(row[0], rowX, rowY + 6, {
       width: metaColWidth - 12
     });
-    document.fillColor(slate).font("Helvetica").fontSize(9).text(row[1], rowX, rowY + 25, {
+    document.fillColor(slate).font(regularFont).fontSize(7.8).text(row[1], rowX, rowY + 18, {
       width: metaColWidth - 12,
-      height: 18,
+      height: 13,
       ellipsis: true
     });
   });
 
-  y += 126;
+  y += 78;
   const columns = [
-    { label: "Quantity", width: 78, align: "right" },
-    { label: "Description", width: contentWidth - 272, align: "left" },
-    { label: "Rate", width: 92, align: "right" },
-    { label: "Amount", width: 102, align: "right" }
+    { label: "Quantity", width: 62, align: "right" },
+    { label: "Description", width: contentWidth - 220, align: "left" },
+    { label: "Rate", width: 72, align: "right" },
+    { label: "Amount", width: 86, align: "right" }
   ];
-  const footerSafeBottom = pageHeight - margin - 42;
+  const footerLineY = pageHeight - margin;
+  const footerSafeBottom = footerLineY - 30;
   const pageBottom = footerSafeBottom;
+  let bodyTextSize = 9.5;
+  let bodyLineGap = 0;
+  let certificationTextSize = 9.5;
+  let headingTextSize = 9.5;
+  let signatureRowHeight = 48;
+  let signatureNameSize = 9.5;
+  let signatureTitleSize = 9.0;
+  let signatureTopWritingSpace = 22;
+  let certificationToSignatureGap = 3;
+  let signatureToNextCertificationGap = 3;
+  let descriptionBottomPadding = 7;
+  const tableToSummaryGap = 4;
   const ensureInvoiceSpace = (requiredHeight) => {
-    if (y + requiredHeight <= pageBottom) return;
-    document.addPage({ margin });
-    y = margin;
+    if (y + requiredHeight <= pageBottom) return false;
+    return false;
   };
 
   const drawInvoiceLinesHeader = () => {
     let x = margin;
 
-    document.rect(margin, y, contentWidth, 24).fill(navy);
+    document.rect(margin, y, contentWidth, 18).fill(navy);
     columns.forEach((column) => {
-      document.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8.5).text(column.label, x + 8, y + 8, {
+      document.fillColor("#ffffff").font(boldFont).fontSize(7.4).text(column.label, x + 6, y + 5, {
         width: column.width - 16,
         align: column.align
       });
       x += column.width;
     });
-    y += 24;
+    y += 18;
   };
 
+  const certificationBlocks = certifications.map((certification, index) => ({
+    certification: certification.show === false ? "" : certification.text,
+    signature: signatures[index]?.show === false ? { name: "", title: "", show: false } : signatures[index]
+  }));
+  const hasCertificationContent = certificationBlocks.some((block) => (
+    block.certification || block.signature?.name || block.signature?.title
+  ));
+  const descriptionColumnX = margin + columns[0].width;
+  const descriptionCellX = descriptionColumnX + 8;
+  const descriptionCellWidth = columns[1].width - 16;
+
+  const getTextHeight = (text, width, options = {}) => {
+    if (!text) return 0;
+
+    return document.font(options.font || regularFont).fontSize(options.size || 8).heightOfString(text, {
+      width,
+      lineGap: options.lineGap ?? 2
+    });
+  };
+
+  const splitTextForHeight = (text, width, maxHeight, options = {}) => {
+    const source = String(text || "");
+
+    if (!source) return { fit: "", rest: "" };
+
+    if (getTextHeight(source, width, options) <= maxHeight) {
+      return { fit: source, rest: "" };
+    }
+
+    let low = 1;
+    let high = source.length;
+    let best = 0;
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const candidate = source.slice(0, mid);
+
+      if (getTextHeight(candidate, width, options) <= maxHeight) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    if (best <= 0) {
+      return { fit: source.slice(0, 1), rest: source.slice(1).trimStart() };
+    }
+
+    const naturalBreak = Math.max(
+      source.lastIndexOf("\n", best),
+      source.lastIndexOf(" ", best)
+    );
+    const splitAt = naturalBreak > Math.max(1, best * 0.55) ? naturalBreak : best;
+
+    return {
+      fit: source.slice(0, splitAt).trimEnd(),
+      rest: source.slice(splitAt).trimStart()
+    };
+  };
+
+  const ensureContentSpace = (requiredHeight = 34) => {
+    if (y + requiredHeight <= pageBottom) return;
+  };
+
+  const drawInvoiceRowSegment = ({
+    height,
+    rowIndex,
+    drawDescription,
+    showNumbers,
+    line,
+    minHeight = 24,
+    drawBorder = true
+  }) => {
+    const rowHeight = Math.max(minHeight, height);
+
+    ensureContentSpace(rowHeight);
+
+    const rowFill = rowIndex % 2 === 0 ? "#fbfdff" : "#ffffff";
+    if (!drawBorder) {
+      document.rect(margin, y - 0.2, contentWidth, rowHeight + 0.4).fill(rowFill);
+    } else if (rowIndex % 2 === 0) {
+      document.rect(margin, y, contentWidth, rowHeight).fill(rowFill);
+    }
+
+    if (drawBorder) {
+      document.rect(margin, y, contentWidth, rowHeight).strokeColor(border).lineWidth(0.6).stroke();
+    }
+
+    if (showNumbers && line) {
+      let x = margin;
+      [
+        formatManualInvoiceQuantity(line.quantity),
+        null,
+        formatManualInvoiceMoney(line.rate),
+        formatManualInvoiceMoney(line.amount)
+      ].forEach((value, valueIndex) => {
+        const column = columns[valueIndex];
+
+        if (value !== null) {
+          document.fillColor(slate).font(regularFont).fontSize(7.6).text(value, x + 6, y + 7, {
+            width: column.width - 12,
+            height: rowHeight - 12,
+            align: column.align,
+            lineGap: 0
+          });
+        }
+        x += column.width;
+      });
+    }
+
+    drawDescription(y, rowHeight);
+    y += rowHeight;
+  };
+
+  const drawTextInDescription = (text, rowIndex, line, showNumbers, options = {}) => {
+    let remaining = String(text || "");
+    let firstSegment = true;
+
+    while (remaining) {
+      ensureContentSpace(34);
+
+      const maxTextHeight = Math.max(10, pageBottom - y - 8);
+      const split = splitTextForHeight(remaining, descriptionCellWidth, maxTextHeight, options);
+      const chunk = split.fit || remaining.slice(0, 1);
+      const textHeight = getTextHeight(chunk, descriptionCellWidth, options);
+
+      drawInvoiceRowSegment({
+        height: textHeight + 6,
+        rowIndex,
+        line,
+        showNumbers: showNumbers && firstSegment,
+        minHeight: showNumbers && firstSegment ? 20 : 12,
+        drawBorder: options.drawBorder !== false,
+        drawDescription: (rowY, rowHeight) => {
+          document.fillColor(options.color || slate)
+            .font(options.font || regularFont)
+            .fontSize(options.size || 8)
+            .text(chunk, descriptionCellX, rowY + 3, {
+              width: descriptionCellWidth,
+              height: rowHeight - 6,
+              align: "left",
+              lineGap: options.lineGap ?? 2
+            });
+        }
+      });
+
+      remaining = split.rest;
+      firstSegment = false;
+    }
+  };
+
+  const drawSignatureInDescription = (signature, rowIndex) => {
+    const signatureLineWidth = Math.min(208, descriptionCellWidth * 0.66);
+    const dateLineWidth = 86;
+    const dateX = descriptionCellX + descriptionCellWidth - dateLineWidth;
+
+    drawInvoiceRowSegment({
+      height: signatureRowHeight,
+      rowIndex,
+      showNumbers: false,
+      minHeight: signatureRowHeight,
+      drawBorder: false,
+      drawDescription: (rowY) => {
+        const contentY = rowY + signatureTopWritingSpace;
+
+        document.moveTo(descriptionCellX, contentY).lineTo(descriptionCellX + signatureLineWidth, contentY).strokeColor(border).lineWidth(0.6).stroke();
+        document.moveTo(dateX, contentY).lineTo(dateX + dateLineWidth, contentY).strokeColor(border).lineWidth(0.6).stroke();
+        document.fillColor(slate).font(regularFont).fontSize(signatureNameSize).text(signature.name || "", descriptionCellX, contentY + 4, {
+          width: signatureLineWidth,
+          align: "left",
+          lineBreak: false
+        });
+        document.fillColor(muted).font(regularFont).fontSize(signatureTitleSize).text(signature.title || "", descriptionCellX, contentY + 16, {
+          width: signatureLineWidth,
+          align: "left",
+          height: 12
+        });
+        document.fillColor(muted).font(regularFont).fontSize(signatureTitleSize).text("Fecha", dateX, contentY + 4, {
+          width: dateLineWidth,
+          align: "center",
+          lineBreak: false
+        });
+      }
+    });
+  };
+
+  const drawDescriptionSpacer = (height, rowIndex) => {
+    drawInvoiceRowSegment({
+      height,
+      rowIndex,
+      showNumbers: false,
+      minHeight: height,
+      drawBorder: false,
+      drawDescription: () => {}
+    });
+  };
+
+  const measureTextRowHeight = (text, options = {}, showNumbers = false) => {
+    const textHeight = getTextHeight(text, descriptionCellWidth, options);
+    return Math.max(showNumbers ? 19 : 12, textHeight + 4);
+  };
+
+  const measureInvoiceBodyHeight = () => {
+    let measuredHeight = 0;
+
+    invoiceLines.forEach((line, index) => {
+      measuredHeight += measureTextRowHeight(line.description || "N/A", {
+        font: regularFont,
+        size: bodyTextSize,
+        lineGap: bodyLineGap
+      }, true);
+
+      if (index === invoiceLines.length - 1 && hasCertificationContent) {
+        measuredHeight += measureTextRowHeight("CERTIFICO", {
+          font: boldFont,
+          size: headingTextSize,
+          lineGap: 0
+        });
+
+        certificationBlocks.forEach((block, blockIndex) => {
+          const certification = block.certification || "";
+          const signature = block.signature || { name: "", title: "", show: false };
+          const hasSignature = certification || signature.name || signature.title;
+          const hasNextBlock = certificationBlocks.slice(blockIndex + 1).some((nextBlock) => (
+            nextBlock.certification || nextBlock.signature?.name || nextBlock.signature?.title
+          ));
+
+          if (!hasSignature) return;
+
+          if (certification) {
+            measuredHeight += measureTextRowHeight(certification, {
+              font: regularFont,
+              size: certificationTextSize,
+              lineGap: 0
+            });
+          }
+
+          if (blockIndex === 0 && certification && (signature.name || signature.title)) {
+            measuredHeight += certificationToSignatureGap;
+          }
+
+          measuredHeight += signatureRowHeight;
+
+          if (blockIndex === 0 && hasNextBlock) {
+            measuredHeight += signatureToNextCertificationGap;
+          }
+        });
+
+        measuredHeight += descriptionBottomPadding;
+      }
+    });
+
+    return measuredHeight;
+  };
+
+  const fitInvoiceBodyToSinglePage = () => {
+    const headerHeight = 18;
+    const finalMessageHeight = finalMessage ? 18 : 0;
+    const summaryHeight = 60 + finalMessageHeight;
+    const availableBodyHeight = Math.max(160, pageBottom - y - headerHeight - summaryHeight);
+    const compactLevels = [
+      { body: 9.5, gap: 0, cert: 9.5, heading: 9.5, signature: 48, topSpace: 22, certGap: 2, nextGap: 2, bottomPad: 6, name: 9.5, title: 9.0 },
+      { body: 9.5, gap: 0, cert: 9.5, heading: 9.5, signature: 46, topSpace: 20, certGap: 2, nextGap: 2, bottomPad: 5, name: 9.5, title: 9.0 }
+    ];
+
+    for (const level of compactLevels) {
+      bodyTextSize = level.body;
+      bodyLineGap = level.gap;
+      certificationTextSize = level.cert;
+      headingTextSize = level.heading;
+      signatureRowHeight = level.signature;
+      signatureTopWritingSpace = level.topSpace;
+      certificationToSignatureGap = level.certGap;
+      signatureToNextCertificationGap = level.nextGap;
+      descriptionBottomPadding = level.bottomPad;
+      signatureNameSize = level.name;
+      signatureTitleSize = level.title;
+
+      if (measureInvoiceBodyHeight() <= availableBodyHeight) {
+        return;
+      }
+    }
+  };
+
+  fitInvoiceBodyToSinglePage();
+
   drawInvoiceLinesHeader();
+  const descriptionUStartY = y;
 
   invoiceLines.forEach((line, index) => {
-    document.font("Helvetica").fontSize(9);
-    const descriptionHeight = document.heightOfString(line.description || "N/A", {
-      width: columns[1].width - 16,
-      lineGap: 2
+    const includeCertification = index === invoiceLines.length - 1;
+    const description = line.description || "N/A";
+
+    drawTextInDescription(description, index, line, true, {
+      font: regularFont,
+      size: bodyTextSize,
+      lineGap: bodyLineGap,
+      color: slate,
+      drawBorder: false
     });
-    const rowHeight = Math.max(34, descriptionHeight + 18);
 
-    if (y + rowHeight > pageBottom) {
-      ensureInvoiceSpace(rowHeight + 24);
-      drawInvoiceLinesHeader();
-    }
-
-    if (index % 2 === 0) {
-      document.rect(margin, y, contentWidth, rowHeight).fill("#fbfdff");
-    }
-    document.rect(margin, y, contentWidth, rowHeight).strokeColor(border).lineWidth(0.6).stroke();
-
-    let x = margin;
-    [
-      formatManualInvoiceQuantity(line.quantity),
-      line.description || "N/A",
-      formatManualInvoiceMoney(line.rate),
-      formatManualInvoiceMoney(line.amount)
-    ].forEach((value, valueIndex) => {
-      const column = columns[valueIndex];
-
-      document.fillColor(slate).font("Helvetica").fontSize(valueIndex === 1 ? 9 : 8.8).text(value, x + 8, y + 10, {
-        width: column.width - 16,
-        height: rowHeight - 18,
-        align: column.align,
-        lineGap: valueIndex === 1 ? 2 : 0
+    if (includeCertification && hasCertificationContent) {
+      drawTextInDescription("CERTIFICO", index, null, false, {
+        font: boldFont,
+        size: headingTextSize,
+        lineGap: 0,
+        color: navy,
+        drawBorder: false
       });
-      x += column.width;
-    });
 
-    y += rowHeight;
+      certificationBlocks.forEach((block, blockIndex) => {
+        const certification = block.certification || "";
+        const signature = block.signature || { name: "", title: "", show: false };
+        const hasSignature = certification || signature.name || signature.title;
+        const hasNextBlock = certificationBlocks.slice(blockIndex + 1).some((nextBlock) => (
+          nextBlock.certification || nextBlock.signature?.name || nextBlock.signature?.title
+        ));
+
+        if (!hasSignature) return;
+
+        if (certification) {
+          drawTextInDescription(certification, index, null, false, {
+            font: regularFont,
+            size: certificationTextSize,
+            lineGap: 0,
+            color: slate,
+            drawBorder: false
+          });
+        }
+
+        if (blockIndex === 0 && certification && (signature.name || signature.title)) {
+          drawDescriptionSpacer(certificationToSignatureGap, index);
+        }
+
+        drawSignatureInDescription(signature, index);
+
+        if (blockIndex === 0 && hasNextBlock) {
+          drawDescriptionSpacer(signatureToNextCertificationGap, index);
+        }
+      });
+
+      drawDescriptionSpacer(descriptionBottomPadding, index);
+    }
   });
 
-  y += 10;
-  ensureInvoiceSpace(156);
-  const summaryX = pageWidth - margin - 230;
-  const summaryLabelWidth = 118;
-  const summaryValueWidth = 112;
+  const tableBodyEndY = Math.max(y, footerLineY - 120);
+  let tableLineX = margin;
+
+  document.save();
+  document.strokeColor(navy).lineWidth(0.6);
+  document.moveTo(tableLineX, descriptionUStartY).lineTo(tableLineX, tableBodyEndY).stroke();
+  columns.forEach((column) => {
+    tableLineX += column.width;
+    document.moveTo(tableLineX, descriptionUStartY).lineTo(tableLineX, tableBodyEndY).stroke();
+  });
+  document.moveTo(margin, tableBodyEndY).lineTo(pageWidth - margin, tableBodyEndY).stroke();
+  document.restore();
+
+  y = tableBodyEndY + tableToSummaryGap;
+  ensureInvoiceSpace(58);
+  const summaryX = pageWidth - margin - 212;
+  const summaryLabelWidth = 108;
+  const summaryValueWidth = 104;
   const summaryRows = [
     ["Subtotal", formatManualInvoiceMoney(subtotal), false],
     [`IVU (${formatManualInvoiceQuantity(applyTax ? taxRate : 0)}%)`, formatManualInvoiceMoney(taxAmount), false],
@@ -3012,77 +3376,39 @@ function drawManualInvoicePdf(invoice, generatedAt, outputStream) {
 
   document.moveTo(summaryX, y).lineTo(pageWidth - margin, y).strokeColor(border).lineWidth(0.7).stroke();
   summaryRows.forEach((row, index) => {
-    const rowY = y + 8 + index * 24;
+    const rowY = y + 5 + index * 18;
     const isTotal = row[2];
 
     if (isTotal) {
-      document.rect(summaryX, rowY - 5, summaryLabelWidth + summaryValueWidth, 24).fill(soft).strokeColor(border).stroke();
+      document.rect(summaryX, rowY - 3, summaryLabelWidth + summaryValueWidth, 19).fill(soft).strokeColor(border).stroke();
     }
 
-    document.fillColor(isTotal ? navy : muted).font("Helvetica-Bold").fontSize(isTotal ? 10.5 : 9).text(row[0], summaryX + 8, rowY, {
+    document.fillColor(isTotal ? navy : muted).font(boldFont).fontSize(isTotal ? 9 : 7.8).text(row[0], summaryX + 8, rowY, {
       width: summaryLabelWidth - 12,
       align: "left",
       lineBreak: false
     });
-    document.fillColor(slate).font("Helvetica-Bold").fontSize(isTotal ? 10.5 : 9).text(row[1], summaryX + summaryLabelWidth, rowY, {
+    document.fillColor(slate).font(boldFont).fontSize(isTotal ? 9 : 7.8).text(row[1], summaryX + summaryLabelWidth, rowY, {
       width: summaryValueWidth - 8,
       align: "right",
       lineBreak: false
     });
   });
 
-  y += 92;
-  ensureInvoiceSpace(78);
-  document.fillColor(navy).font("Helvetica-Bold").fontSize(10).text("Certificación", margin, y, {
-    width: contentWidth
-  });
-  document.fillColor(slate).font("Helvetica").fontSize(9).text(
-    "Certificamos que los servicios descritos fueron ofrecidos según los términos acordados y están listos para revisión administrativa.",
-    margin,
-    y + 18,
-    { width: contentWidth, lineGap: 2 }
-  );
+  if (finalMessage) {
+    const messageY = footerLineY - 18;
 
-  y += 88;
-  const signatureLineWidth = 210;
-  const signatureDateWidth = 112;
-  const signatureBlockGap = contentWidth - signatureLineWidth - signatureDateWidth;
-  const signatureDateX = margin + signatureLineWidth + signatureBlockGap;
-
-  signatures.forEach((signature) => {
-    ensureInvoiceSpace(64);
-
-    document.moveTo(margin, y).lineTo(margin + signatureLineWidth, y).strokeColor(border).lineWidth(0.7).stroke();
-    document.moveTo(signatureDateX, y).lineTo(signatureDateX + signatureDateWidth, y).strokeColor(border).lineWidth(0.7).stroke();
-
-    if (signature.name) {
-      document.fillColor(slate).font("Helvetica").fontSize(9).text(signature.name, margin, y + 8, {
-        width: signatureLineWidth,
-        align: "center",
-        lineBreak: false
-      });
-    }
-
-    if (signature.title) {
-      document.fillColor(muted).font("Helvetica").fontSize(8).text(signature.title, margin, y + 22, {
-        width: signatureLineWidth,
-        align: "center",
-        lineBreak: false
-      });
-    }
-
-    document.fillColor(muted).font("Helvetica").fontSize(8).text("Fecha", signatureDateX, y + 8, {
-      width: signatureDateWidth,
-      align: "center",
-      lineBreak: false
+    document.fillColor("#000000").font(regularFont).fontSize(8.6).text(finalMessage, margin, messageY, {
+      width: contentWidth - 230,
+      height: 12,
+      lineBreak: false,
+      ellipsis: true
     });
-
-    y += 68;
-  });
+  }
 
   drawFooter();
   const finalPageRange = document.bufferedPageRange();
-  console.log(`[manual-invoice-pdf] Paginas antes de doc.end(): ${finalPageRange.count}`);
+  console.log(`[manual-invoice-pdf] Páginas antes de doc.end(): ${finalPageRange.count}`);
   console.log("[manual-invoice-pdf] Contenido agregado");
   console.log("[manual-invoice-pdf] doc.end() ejecutado");
   document.end();
@@ -3193,7 +3519,7 @@ app.post("/api/login", async (req, res) => {
 
     if (result.recordset.length === 0) {
       console.info("[auth] Login rejected: user not found.");
-      return res.status(401).json({ message: "Credenciales invalidas." });
+      return res.status(401).json({ message: "Credenciales inválidas." });
     }
 
     const user = result.recordset[0];
@@ -3206,7 +3532,7 @@ app.post("/api/login", async (req, res) => {
 
     if (!passwordMatches) {
       console.info(`[auth] Login rejected for user ${user.UserID}: invalid credentials.`);
-      return res.status(401).json({ message: "Credenciales invalidas." });
+      return res.status(401).json({ message: "Credenciales inválidas." });
     }
 
     await regenerateSession(req, mapUser(user));
@@ -3215,7 +3541,7 @@ app.post("/api/login", async (req, res) => {
   } catch (error) {
     poolPromise = null;
     console.error(error);
-    res.status(500).json({ message: "Error al iniciar sesion." });
+    res.status(500).json({ message: "Error al iniciar sesión." });
   }
 });
 
@@ -3223,7 +3549,7 @@ app.post("/api/logout", requireAuth, (req, res) => {
   req.session.destroy((error) => {
     if (error) {
       console.error(error);
-      return res.status(500).json({ message: "Error al cerrar sesion." });
+      return res.status(500).json({ message: "Error al cerrar sesión." });
     }
 
     res.clearCookie("connect.sid");
@@ -3254,7 +3580,7 @@ app.get("/api/me", async (req, res) => {
   } catch (error) {
     poolPromise = null;
     console.error(`[auth] Session validation failed for user ${req.session.user?.UserID || "unknown"}.`, error);
-    res.status(500).json({ message: "Error al verificar sesion." });
+    res.status(500).json({ message: "Error al verificar sesión." });
   }
 });
 
@@ -3297,7 +3623,7 @@ app.put("/api/notifications/:id/read", requireAuth, async (req, res) => {
   const notificationId = Number(req.params.id);
 
   if (!Number.isInteger(notificationId)) {
-    return res.status(400).json({ message: "ID de notificacion invalido." });
+    return res.status(400).json({ message: "ID de notificación inválido." });
   }
 
   try {
@@ -3319,14 +3645,14 @@ app.put("/api/notifications/:id/read", requireAuth, async (req, res) => {
     `);
 
     if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({ message: "Notificacion no encontrada." });
+      return res.status(404).json({ message: "Notificación no encontrada." });
     }
 
     res.status(204).send();
   } catch (error) {
     poolPromise = null;
     console.error(error);
-    res.status(500).json({ message: "Error al marcar notificacion." });
+    res.status(500).json({ message: "Error al marcar notificación." });
   }
 });
 
@@ -3334,7 +3660,7 @@ app.delete("/api/notifications/:id", requireAdmin, async (req, res) => {
   const notificationId = Number(req.params.id);
 
   if (!Number.isInteger(notificationId)) {
-    return res.status(400).json({ message: "ID de notificacion invalido." });
+    return res.status(400).json({ message: "ID de notificación inválido." });
   }
 
   try {
@@ -3347,14 +3673,14 @@ app.delete("/api/notifications/:id", requireAdmin, async (req, res) => {
       `);
 
     if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({ message: "Notificacion no encontrada." });
+      return res.status(404).json({ message: "Notificación no encontrada." });
     }
 
     res.status(204).send();
   } catch (error) {
     poolPromise = null;
     console.error(error);
-    res.status(500).json({ message: "Error al borrar notificacion." });
+    res.status(500).json({ message: "Error al borrar notificación." });
   }
 });
 
@@ -3362,7 +3688,7 @@ app.put("/api/notifications/:id/resolve-password-reset", requireAdmin, async (re
   const notificationId = Number(req.params.id);
 
   if (!Number.isInteger(notificationId)) {
-    return res.status(400).json({ message: "ID de notificacion invalido." });
+    return res.status(400).json({ message: "ID de notificación inválido." });
   }
 
   try {
@@ -3381,7 +3707,7 @@ app.put("/api/notifications/:id/resolve-password-reset", requireAdmin, async (re
     const notification = notificationResult.recordset[0];
 
     if (!notification) {
-      return res.status(404).json({ message: "Notificacion no encontrada." });
+      return res.status(404).json({ message: "Notificación no encontrada." });
     }
 
     const requestId = getPasswordResetRequestIdFromMessage(notification.Message);
@@ -3500,11 +3826,11 @@ app.post("/api/users", requireAdmin, async (req, res) => {
   }
 
   if (!isSupportedRole(role)) {
-    return res.status(400).json({ message: "Rol invalido." });
+    return res.status(400).json({ message: "Rol inválido." });
   }
 
   if (projectIds === null) {
-    return res.status(400).json({ message: "projectIds debe ser una lista valida." });
+    return res.status(400).json({ message: "projectIds debe ser una lista válida." });
   }
 
   if (role !== "ProjectManager" && projectIds.length > 0) {
@@ -3577,7 +3903,7 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
   const projectIds = hasProjectIds ? normalizeProjectIds(req.body?.projectIds) : [];
 
   if (!Number.isInteger(userId)) {
-    return res.status(400).json({ message: "ID de usuario invalido." });
+    return res.status(400).json({ message: "ID de usuario inválido." });
   }
 
   if (!fullName || !email || !role) {
@@ -3585,11 +3911,11 @@ app.put("/api/users/:id", requireAdmin, async (req, res) => {
   }
 
   if (!isSupportedRole(role)) {
-    return res.status(400).json({ message: "Rol invalido." });
+    return res.status(400).json({ message: "Rol inválido." });
   }
 
   if (hasProjectIds && projectIds === null) {
-    return res.status(400).json({ message: "projectIds debe ser una lista valida." });
+    return res.status(400).json({ message: "projectIds debe ser una lista válida." });
   }
 
   if (role !== "ProjectManager" && projectIds.length > 0) {
@@ -3679,7 +4005,7 @@ app.get("/api/users/:id/project-assignments", requireAdmin, async (req, res) => 
   const userId = Number(req.params.id);
 
   if (!Number.isInteger(userId) || userId <= 0) {
-    return res.status(400).json({ message: "ID de usuario invalido." });
+    return res.status(400).json({ message: "ID de usuario inválido." });
   }
 
   try {
@@ -3720,11 +4046,11 @@ app.put("/api/users/:id/project-assignments", requireAdmin, async (req, res) => 
   const projectIds = normalizeProjectIds(req.body?.projectIds);
 
   if (!Number.isInteger(userId) || userId <= 0) {
-    return res.status(400).json({ message: "ID de usuario invalido." });
+    return res.status(400).json({ message: "ID de usuario inválido." });
   }
 
   if (projectIds === null) {
-    return res.status(400).json({ message: "projectIds debe ser una lista valida." });
+    return res.status(400).json({ message: "projectIds debe ser una lista válida." });
   }
 
   try {
@@ -3744,7 +4070,7 @@ async function updateUserActiveStatus(req, res) {
   const isActive = parseOptionalBoolean(req.body?.isActive ?? req.body?.IsActive);
 
   if (!Number.isInteger(userId)) {
-    return res.status(400).json({ message: "ID de usuario invalido." });
+    return res.status(400).json({ message: "ID de usuario inválido." });
   }
 
   if (Number(req.session.user.UserID) === userId && isActive !== true) {
@@ -3876,7 +4202,7 @@ app.get("/api/clients/:id", requireAuth, async (req, res) => {
   const clientId = Number(req.params.id);
 
   if (!Number.isInteger(clientId) || clientId <= 0) {
-    return res.status(400).json({ message: "ID de cliente invalido." });
+    return res.status(400).json({ message: "ID de cliente inválido." });
   }
 
   try {
@@ -3962,7 +4288,7 @@ app.put("/api/clients/:id", requireAdmin, async (req, res) => {
   const client = getClientPayload(req.body || {});
 
   if (!Number.isInteger(clientId) || clientId <= 0) {
-    return res.status(400).json({ message: "ID de cliente invalido." });
+    return res.status(400).json({ message: "ID de cliente inválido." });
   }
 
   if (!client.clientName) {
@@ -4018,7 +4344,7 @@ app.put("/api/clients/:id/status", requireAdmin, async (req, res) => {
   const isActive = req.body?.IsActive;
 
   if (!Number.isInteger(clientId) || clientId <= 0) {
-    return res.status(400).json({ message: "ID de cliente invalido." });
+    return res.status(400).json({ message: "ID de cliente inválido." });
   }
 
   if (typeof isActive !== "boolean") {
@@ -4054,7 +4380,7 @@ app.delete("/api/clients/:id", requireAdmin, async (req, res) => {
   const clientId = Number(req.params.id);
 
   if (!Number.isInteger(clientId) || clientId <= 0) {
-    return res.status(400).json({ message: "ID de cliente invalido." });
+    return res.status(400).json({ message: "ID de cliente inválido." });
   }
 
   try {
@@ -4089,7 +4415,7 @@ app.get("/api/projects", requireAuth, async (req, res) => {
   const clientId = hasClientFilter ? Number(rawClientId) : null;
 
   if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
-    return res.status(400).json({ message: "ClientID invalido." });
+    return res.status(400).json({ message: "ClientID inválido." });
   }
 
   if (!["active", "inactive", "all"].includes(status)) {
@@ -4180,7 +4506,7 @@ app.get("/api/projects/:id", requireAuth, async (req, res) => {
   const projectId = Number(req.params.id);
 
   if (!Number.isInteger(projectId) || projectId <= 0) {
-    return res.status(400).json({ message: "ID de proyecto invalido." });
+    return res.status(400).json({ message: "ID de proyecto inválido." });
   }
 
   try {
@@ -4206,7 +4532,7 @@ app.get("/api/projects/:id/contract-status", requireAuth, async (req, res) => {
   const projectId = Number(req.params.id);
 
   if (!Number.isInteger(projectId) || projectId <= 0) {
-    return res.status(400).json({ message: "ID de proyecto invalido." });
+    return res.status(400).json({ message: "ID de proyecto inválido." });
   }
 
   try {
@@ -4252,7 +4578,7 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
   const project = getProjectPayload(req.body || {});
 
   if (!Number.isInteger(project.clientId) || project.clientId <= 0) {
-    return res.status(400).json({ message: "ClientID es obligatorio y debe ser valido." });
+    return res.status(400).json({ message: "ClientID es obligatorio y debe ser válido." });
   }
 
   if (!project.projectName) {
@@ -4264,7 +4590,7 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
   }
 
   if (project.projectManagerUserIds === null) {
-    return res.status(400).json({ message: "projectManagerUserIds debe ser una lista de UserID validos." });
+    return res.status(400).json({ message: "projectManagerUserIds debe ser una lista de UserID válidos." });
   }
 
   const contractValidationMessage = getProjectContractValidationMessage(project);
@@ -4278,7 +4604,7 @@ app.post("/api/projects", requireAdmin, async (req, res) => {
     const activeClient = await getClientById(pool, project.clientId);
 
     if (!activeClient) {
-      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+      return res.status(400).json({ message: "El cliente no existe o está inactivo." });
     }
 
     const transaction = new sql.Transaction(pool);
@@ -4370,7 +4696,7 @@ app.put("/api/projects/:id/status", requireAdmin, async (req, res) => {
   const isActive = req.body?.IsActive;
 
   if (!Number.isInteger(projectId) || projectId <= 0) {
-    return res.status(400).json({ message: "ID de proyecto invalido." });
+    return res.status(400).json({ message: "ID de proyecto inválido." });
   }
 
   if (typeof isActive !== "boolean") {
@@ -4417,11 +4743,11 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
   const project = getProjectPayload(req.body || {});
 
   if (!Number.isInteger(projectId) || projectId <= 0) {
-    return res.status(400).json({ message: "ID de proyecto invalido." });
+    return res.status(400).json({ message: "ID de proyecto inválido." });
   }
 
   if (!Number.isInteger(project.clientId) || project.clientId <= 0) {
-    return res.status(400).json({ message: "ClientID es obligatorio y debe ser valido." });
+    return res.status(400).json({ message: "ClientID es obligatorio y debe ser válido." });
   }
 
   if (!project.projectName) {
@@ -4433,7 +4759,7 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
   }
 
   if (project.projectManagerUserIds === null) {
-    return res.status(400).json({ message: "projectManagerUserIds debe ser una lista de UserID validos." });
+    return res.status(400).json({ message: "projectManagerUserIds debe ser una lista de UserID válidos." });
   }
 
   const contractValidationMessage = getProjectContractValidationMessage(project);
@@ -4456,7 +4782,7 @@ app.put("/api/projects/:id", requireAdmin, async (req, res) => {
       && Number(existingProject.ClientID) === project.clientId;
 
     if (!activeClient && !canKeepInactiveClient) {
-      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+      return res.status(400).json({ message: "El cliente no existe o está inactivo." });
     }
 
     const transaction = new sql.Transaction(pool);
@@ -4551,7 +4877,7 @@ app.delete("/api/projects/:id", requireAdmin, async (req, res) => {
   const projectId = Number(req.params.id);
 
   if (!Number.isInteger(projectId) || projectId <= 0) {
-    return res.status(400).json({ message: "ID de proyecto invalido." });
+    return res.status(400).json({ message: "ID de proyecto inválido." });
   }
 
   try {
@@ -4592,7 +4918,7 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
     const value = Number(rawValue);
 
     if (!Number.isInteger(value) || value <= 0) {
-      return res.status(400).json({ message: `${name} invalido.` });
+      return res.status(400).json({ message: `${name} inválido.` });
     }
 
     numericFilters[name] = value;
@@ -4618,6 +4944,14 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
   if (status && !SERVICE_RECORD_STATUSES.has(status)) {
     return res.status(400).json({ message: "Status debe ser Recorded, Billed o Canceled." });
   }
+
+  const SERVICE_RECORDS_PAGE_SIZE_DEFAULT = 50;
+  const SERVICE_RECORDS_PAGE_SIZE_MAX = 200;
+  let pageSize = Number.parseInt(req.query.pageSize, 10);
+  if (!Number.isFinite(pageSize) || pageSize <= 0) pageSize = SERVICE_RECORDS_PAGE_SIZE_DEFAULT;
+  pageSize = Math.min(pageSize, SERVICE_RECORDS_PAGE_SIZE_MAX);
+  let page = Number.parseInt(req.query.page, 10);
+  if (!Number.isFinite(page) || page < 1) page = 1;
 
   try {
     const pool = await getPool();
@@ -4659,7 +4993,20 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
     addProjectManagerScope(request, whereClauses, req.session.user, "sr");
 
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const fromSql = `
+      FROM dbo.ServiceRecords sr
+      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
+      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
+      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
+      ${whereSql}
+    `;
+
+    request.input("PageSize", sql.Int, pageSize);
+    request.input("PageOffset", sql.Int, (page - 1) * pageSize);
+
     const result = await request.query(`
+      SELECT COUNT(*) AS Total ${fromSql};
+
       SELECT
         sr.ServiceRecordID,
         sr.TechnicianUserID,
@@ -4679,15 +5026,18 @@ app.get("/api/service-records", requireAdminOrTechnician, async (req, res) => {
         sr.InvoiceID,
         sr.CreatedAt,
         sr.UpdatedAt
-      FROM dbo.ServiceRecords sr
-      INNER JOIN dbo.Users technician ON technician.UserID = sr.TechnicianUserID
-      INNER JOIN dbo.Clients client ON client.ClientID = sr.ClientID
-      INNER JOIN dbo.Projects project ON project.ProjectID = sr.ProjectID
-      ${whereSql}
+      ${fromSql}
       ORDER BY sr.ServiceDate DESC, sr.ServiceRecordID DESC
+      OFFSET @PageOffset ROWS FETCH NEXT @PageSize ROWS ONLY;
     `);
 
-    res.json(result.recordset.map(mapServiceRecord));
+    const total = Number(result.recordsets[0]?.[0]?.Total || 0);
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    res.json({
+      records: (result.recordsets[1] || []).map(mapServiceRecord),
+      pagination: { total, page, pageSize, totalPages }
+    });
   } catch (error) {
     poolPromise = null;
     console.error(error);
@@ -4699,7 +5049,7 @@ app.get("/api/service-records/:id", requireAdminOrTechnician, async (req, res) =
   const serviceRecordId = Number(req.params.id);
 
   if (!Number.isInteger(serviceRecordId) || serviceRecordId <= 0) {
-    return res.status(400).json({ message: "ID de registro de servicio invalido." });
+    return res.status(400).json({ message: "ID de registro de servicio inválido." });
   }
 
   try {
@@ -4822,7 +5172,7 @@ app.put("/api/service-records/:id", requireAdminOrTechnician, async (req, res) =
   const serviceRecord = getServiceRecordPayload(req.body || {});
 
   if (!Number.isInteger(serviceRecordId) || serviceRecordId <= 0) {
-    return res.status(400).json({ message: "ID de registro de servicio invalido." });
+    return res.status(400).json({ message: "ID de registro de servicio inválido." });
   }
 
   const validationError = getServiceRecordValidationError(serviceRecord);
@@ -4849,7 +5199,7 @@ app.put("/api/service-records/:id", requireAdminOrTechnician, async (req, res) =
       }
 
       if (Number(serviceRecord.technicianUserId) !== sessionUserId) {
-        return res.status(403).json({ message: "No puedes cambiar el tecnico del registro." });
+        return res.status(403).json({ message: "No puedes cambiar el técnico del registro." });
       }
 
       if (serviceRecord.status && serviceRecord.status !== previousRecord.Status) {
@@ -4918,7 +5268,7 @@ app.delete("/api/service-records/:id", requireAdmin, async (req, res) => {
   const serviceRecordId = Number(req.params.id);
 
   if (!Number.isInteger(serviceRecordId) || serviceRecordId <= 0) {
-    return res.status(400).json({ message: "ID de registro de servicio invalido." });
+    return res.status(400).json({ message: "ID de registro de servicio inválido." });
   }
 
   try {
@@ -4955,7 +5305,7 @@ app.get("/api/invoices", requireAuth, requireInvoiceReadAccess, async (req, res)
   const periodTo = String(req.query.periodTo || req.query.PeriodTo || "").trim();
 
   if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
-    return res.status(400).json({ message: "ClientID invalido." });
+    return res.status(400).json({ message: "ClientID inválido." });
   }
 
   if (status && !INVOICE_STATUSES.has(status)) {
@@ -5070,7 +5420,7 @@ app.post("/api/invoices/generate", requireAdmin, async (req, res) => {
     const activeClient = await getClientById(pool, invoice.clientId);
 
     if (!activeClient) {
-      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+      return res.status(400).json({ message: "El cliente no existe o está inactivo." });
     }
 
     const billableResult = await pool.request()
@@ -5242,7 +5592,7 @@ app.post("/api/invoices/generate", requireAdmin, async (req, res) => {
     console.error(error);
 
     if (error.number === 2627 || error.number === 2601) {
-      return res.status(409).json({ message: "Ya existe una factura con ese numero." });
+      return res.status(409).json({ message: "Ya existe una factura con ese número." });
     }
 
     res.status(500).json({ message: "Error al generar la factura." });
@@ -5253,7 +5603,7 @@ app.get("/api/invoices/:id", requireAuth, requireInvoiceReadAccess, async (req, 
   const invoiceId = Number(req.params.id);
 
   if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
-    return res.status(400).json({ message: "ID de factura invalido." });
+    return res.status(400).json({ message: "ID de factura inválido." });
   }
 
   try {
@@ -5307,7 +5657,7 @@ app.post("/api/invoices", requireAdmin, async (req, res) => {
     const activeClient = await getClientById(pool, invoice.clientId);
 
     if (!activeClient) {
-      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+      return res.status(400).json({ message: "El cliente no existe o está inactivo." });
     }
 
     const result = await pool.request()
@@ -5356,7 +5706,7 @@ app.post("/api/invoices", requireAdmin, async (req, res) => {
     console.error(error);
 
     if (error.number === 2627 || error.number === 2601) {
-      return res.status(409).json({ message: "Ya existe una factura con ese numero." });
+      return res.status(409).json({ message: "Ya existe una factura con ese número." });
     }
 
     res.status(500).json({ message: "Error al crear la factura." });
@@ -5368,7 +5718,7 @@ app.put("/api/invoices/:id", requireAdmin, async (req, res) => {
   const invoice = getInvoicePayload(req.body || {});
 
   if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
-    return res.status(400).json({ message: "ID de factura invalido." });
+    return res.status(400).json({ message: "ID de factura inválido." });
   }
 
   const validationError = getInvoiceValidationError(invoice);
@@ -5388,7 +5738,7 @@ app.put("/api/invoices/:id", requireAdmin, async (req, res) => {
     const activeClient = await getClientById(pool, invoice.clientId);
 
     if (!activeClient) {
-      return res.status(400).json({ message: "El cliente no existe o esta inactivo." });
+      return res.status(400).json({ message: "El cliente no existe o está inactivo." });
     }
 
     const subtotalResult = await pool.request()
@@ -5470,7 +5820,7 @@ app.put("/api/invoices/:id", requireAdmin, async (req, res) => {
     console.error(error);
 
     if (error.number === 2627 || error.number === 2601) {
-      return res.status(409).json({ message: "Ya existe una factura con ese numero." });
+      return res.status(409).json({ message: "Ya existe una factura con ese número." });
     }
 
     res.status(500).json({ message: "Error al editar la factura." });
@@ -5481,7 +5831,7 @@ app.delete("/api/invoices/:id", requireAdmin, async (req, res) => {
   const invoiceId = Number(req.params.id);
 
   if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
-    return res.status(400).json({ message: "ID de factura invalido." });
+    return res.status(400).json({ message: "ID de factura inválido." });
   }
 
   try {
@@ -5573,7 +5923,7 @@ app.get("/api/reports/service-hours/technicians", requireAdminOrTechnician, asyn
   } catch (error) {
     poolPromise = null;
     console.error(error);
-    res.status(500).json({ message: "Error al obtener tecnicos del reporte." });
+    res.status(500).json({ message: "Error al obtener técnicos del reporte." });
   }
 });
 
@@ -5664,7 +6014,7 @@ app.post("/api/manual-invoices/pdf", requireAdmin, (req, res) => {
     const validationError = getManualInvoiceValidationError(req.body || {});
 
     if (validationError) {
-      console.log("[manual-invoice-pdf] Validacion fallida:", validationError);
+      console.log("[manual-invoice-pdf] Validación fallida:", validationError);
       return res.status(400).json({ message: validationError });
     }
 
@@ -5721,7 +6071,7 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
     const value = Number(rawValue);
 
     if (!Number.isInteger(value) || value <= 0) {
-      return res.status(400).json({ message: `${name} invalido.` });
+      return res.status(400).json({ message: `${name} inválido.` });
     }
 
     numericFilters[name] = value;
@@ -5731,7 +6081,7 @@ app.get("/api/reports/service-hours/summary", requireAdminOrTechnician, async (r
     const sessionUserId = Number(req.session.user.UserID);
 
     if (numericFilters.TechnicianUserID && numericFilters.TechnicianUserID !== sessionUserId) {
-      return res.status(403).json({ message: "Los tecnicos solo pueden ver sus propios registros." });
+      return res.status(403).json({ message: "Los técnicos solo pueden ver sus propios registros." });
     }
 
     numericFilters.TechnicianUserID = sessionUserId;
@@ -5845,7 +6195,7 @@ app.get("/api/reports/invoices", requireAuth, requireInvoiceReadAccess, async (r
   }
 
   if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
-    return res.status(400).json({ message: "clientId invalido." });
+    return res.status(400).json({ message: "clientId inválido." });
   }
 
   if (status && !INVOICE_STATUSES.has(status)) {
@@ -5934,7 +6284,7 @@ app.get("/api/reports/invoices/summary", requireAuth, requireInvoiceReadAccess, 
   }
 
   if (hasClientFilter && (!Number.isInteger(clientId) || clientId <= 0)) {
-    return res.status(400).json({ message: "clientId invalido." });
+    return res.status(400).json({ message: "clientId inválido." });
   }
 
   if (status && !INVOICE_STATUSES.has(status)) {
@@ -6354,7 +6704,7 @@ app.get("/api/tickets", requireAuth, async (req, res) => {
     const sessionUser = await getUserById(pool, Number(req.session.user.UserID));
 
     if (!sessionUser) {
-      return res.status(401).json({ message: "Sesion invalida. Inicia sesion nuevamente." });
+      return res.status(401).json({ message: "Sesión inválida. Inicia sesión nuevamente." });
     }
 
     req.session.user = sessionUser;
@@ -6403,7 +6753,7 @@ app.post("/api/tickets", requireAuth, async (req, res) => {
     const sessionUser = await getUserById(pool, Number(req.session.user.UserID));
 
     if (!sessionUser) {
-      return res.status(401).json({ message: "Sesion invalida. Inicia sesion nuevamente." });
+      return res.status(401).json({ message: "Sesión inválida. Inicia sesión nuevamente." });
     }
 
     req.session.user = sessionUser;
@@ -6447,7 +6797,7 @@ app.put("/api/tickets/:id", requireAdmin, async (req, res) => {
   const { description, priority, status } = req.body;
 
   if (!Number.isInteger(ticketId)) {
-    return res.status(400).json({ message: "ID de ticket invalido." });
+    return res.status(400).json({ message: "ID de ticket inválido." });
   }
 
   if (!description || !priority || !status) {
@@ -6486,7 +6836,7 @@ app.put("/api/tickets/:id/close", requireAdmin, async (req, res) => {
   const ticketId = Number(req.params.id);
 
   if (!Number.isInteger(ticketId)) {
-    return res.status(400).json({ message: "ID de ticket invalido." });
+    return res.status(400).json({ message: "ID de ticket inválido." });
   }
 
   try {
@@ -6522,7 +6872,7 @@ app.delete("/api/tickets/:id", requireAdmin, async (req, res) => {
   const ticketId = Number(req.params.id);
 
   if (!Number.isInteger(ticketId)) {
-    return res.status(400).json({ message: "ID de ticket invalido." });
+    return res.status(400).json({ message: "ID de ticket inválido." });
   }
 
   try {
@@ -6986,7 +7336,7 @@ app.get("/api/reports/tickets/pdf", logReportEndpoint, requireAdmin, async (req,
         document.roundedRect(x, cardY, cardWidth, 40, 5).fill("#ffffff");
         document.roundedRect(x, cardY, cardWidth, 40, 5).strokeColor(card[2]).lineWidth(0.65).stroke();
         document.circle(x + 22, cardY + 20, 12).strokeColor(card[2]).lineWidth(1.4).stroke();
-        document.fillColor(card[2]).font("Helvetica-Bold").fontSize(row === 0 ? 9 : 11).text(row === 0 ? (index === 0 ? "T" : index === 1 ? "A" : index === 2 ? "-" : "✓") : String(card[1]), x + 14, cardY + 15, {
+        document.fillColor(card[2]).font("Helvetica-Bold").fontSize(row === 0 ? 9 : 11).text(row === 0 ? (index === 0 ? "T" : index === 1 ? "A" : index === 2 ? "-" : "âœ“") : String(card[1]), x + 14, cardY + 15, {
           width: 12,
           align: "center"
         });
@@ -7038,7 +7388,7 @@ app.get("/api/reports/tickets/pdf", logReportEndpoint, requireAdmin, async (req,
     let y = 214;
 
     if (reportRows.length === 0) {
-      document.fillColor(slate).fontSize(11).font("Helvetica").text("No hay tickets para los filtros seleccionados.", margin, y + 12);
+      document.fillColor(slate).fontSize(11).font("Helvetica").text("No hay registros para los filtros seleccionados.", margin, y + 12);
       y += 40;
     }
 
@@ -7088,7 +7438,7 @@ function sendVersionedIndex(res) {
   fs.readFile(indexPath, "utf8", (error, html) => {
     if (error) {
       console.error(error);
-      res.status(500).send("No se pudo cargar la aplicacion.");
+      res.status(500).send("No se pudo cargar la aplicación.");
       return;
     }
 
@@ -7106,13 +7456,13 @@ app.listen(PORT, async () => {
   console.log(`Base de datos configurada: ${dbConfig.database}`);
 
   if (process.env.AUTO_ENSURE_USERS !== "true") {
-    console.log("Verificacion automatica de Users omitida. Usa AUTO_ENSURE_USERS=true para ejecutarla al iniciar.");
+    console.log("Verificación automática de Users omitida. Usa AUTO_ENSURE_USERS=true para ejecutarla al iniciar.");
     return;
   }
 
   try {
     await ensureUsersTable();
-    console.log("Tabla Users verificada. Usuarios iniciales disponibles si la tabla estaba vacia.");
+    console.log("Tabla Users verificada. Usuarios iniciales disponibles si la tabla estaba vacía.");
   } catch (error) {
     poolPromise = null;
     console.error(error);
