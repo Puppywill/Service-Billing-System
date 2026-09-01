@@ -13,6 +13,30 @@ aplicación es `Solutions By Design, Inc.`
 
 ---
 
+## Vista previa de la aplicación
+
+Capturas de la aplicación en ejecución (tema oscuro, escritorio 1600×900). Las
+pantallas que muestran datos reales de clientes o de personal se documentan en
+texto en lugar de mostrarse aquí.
+
+![SBD Service — Panel](docs/screenshots/dashboard-dark.png)
+
+### Módulos principales
+
+| Inicio de sesión | Generador de facturas manuales |
+| --- | --- |
+| ![Inicio de sesión](docs/screenshots/login-dark.png) | ![Facturas](docs/screenshots/invoices-dark.png) |
+
+| Reportes | Panel — tema claro |
+| --- | --- |
+| ![Reportes](docs/screenshots/reports-dark.png) | ![Panel tema claro](docs/screenshots/dashboard-light.png) |
+
+| Configuración | Acerca de |
+| --- | --- |
+| ![Configuración](docs/screenshots/settings-dark.png) | ![Acerca de](docs/screenshots/about-dark.png) |
+
+---
+
 ## Estado del proyecto
 
 - **Rama:** esta versión se mantiene en **`development`**.

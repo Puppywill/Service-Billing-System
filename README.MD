@@ -13,6 +13,30 @@ The repository name is `Service-Billing-System`. The visible application brand i
 
 ---
 
+## Application Preview
+
+Screenshots of the running application (dark theme, 1600×900 desktop). Screens
+that display real client or personnel data are documented in text rather than
+shown here.
+
+![SBD Service — Dashboard](docs/screenshots/dashboard-dark.png)
+
+### Main Modules
+
+| Sign in | Manual invoice builder |
+| --- | --- |
+| ![Sign in](docs/screenshots/login-dark.png) | ![Manual invoices](docs/screenshots/invoices-dark.png) |
+
+| Reports | Dashboard — light theme |
+| --- | --- |
+| ![Reports](docs/screenshots/reports-dark.png) | ![Dashboard light](docs/screenshots/dashboard-light.png) |
+
+| Settings | About |
+| --- | --- |
+| ![Settings](docs/screenshots/settings-dark.png) | ![About](docs/screenshots/about-dark.png) |
+
+---
+
 ## Project status
 
 - **Branch:** this version is maintained on **`development`**.
