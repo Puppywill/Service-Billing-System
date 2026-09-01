@@ -37,6 +37,26 @@ texto en lugar de mostrarse aquí.
 
 ---
 
+## Documentación empresarial
+
+Documentación profesional preparada para la evaluación y las pruebas de
+aceptación de usuario (UAT) del Service Billing System.
+
+- 📄 [Ver Manual PDF](docs/manual/service-billing-system-manual.pdf) — 24 páginas, diseño corporativo con numeración
+- 📝 [Descargar Manual Word](docs/manual/service-billing-system-manual.docx) — `.docx` nativo y editable
+- 🌐 [Ver Manual HTML](docs/manual/service-billing-system-manual.html) — archivo único autocontenido
+
+La documentación presenta el funcionamiento general del sistema, el flujo de
+trabajo, los módulos, los roles, los reportes, el proceso de facturación manual,
+los controles de acceso, capturas de pantalla y el estado actual de
+Development/UAT. Está redactada en español para su presentación interna a
+supervisión, administración y personal usuario que evalúa el sistema.
+
+> **Estado actual: Development / UAT.** Esta versión todavía no ha sido promovida
+> a `main` ni a producción.
+
+---
+
 ## Estado del proyecto
 
 - **Rama:** esta versión se mantiene en **`development`**.
