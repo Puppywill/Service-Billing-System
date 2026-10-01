@@ -7451,3 +7451,49 @@ textarea.input-error:focus,
   font-weight: 600;
   line-height: 1.35;
 }
+
+/* Native <select> popup contrast — global, cross-browser fix.
+   The CLOSED control (the box you see on the page) is a normal styled
+   element and already gets its dark/light background and text from the
+   theme rules above — untouched here.
+
+   The OPEN dropdown list is different: it is drawn by the OS/browser's
+   native list popup, not by our page. Hand-tested (real screen capture,
+   not getComputedStyle) in actual Edge AND Brave on Windows:
+     - The popup's ROW BACKGROUND stays native white/light in both
+       browsers no matter what `background-color` we put on <option>.
+     - Edge also applies our `color` on <option> to every row, so a plain
+       dark-text rule was enough there.
+     - Brave only applied it reliably to the SELECTED row. The other rows
+       fell back to a near-white default text color — which lines up with
+       `color-scheme: dark` still reaching the element (inherited from
+       `:root { color-scheme: dark }` in dark mode via the pre-existing
+       `select { color-scheme: inherit; }` rule): Brave uses that hint to
+       pick a dark-scheme native TEXT default for rows it doesn't fully
+       hand off to CSS, even though it can't actually paint the row
+       background dark — white background + dark-scheme (near-white) text
+       default is exactly the "almost invisible" combo that was reported.
+   Fix: stop sending the dark hint for <select> at all. The popup is a
+   light surface in every browser tested, so `color-scheme: light` makes
+   each browser's own native-text fallback dark too, which then agrees
+   with our explicit <option> color instead of fighting it. `!important`
+   on the <option> declarations is deliberate insurance: this exact bug
+   was caused by an invisible cascade/inheritance interaction, so these
+   four declarations are pinned to win outright rather than hoping no
+   future rule or browser default outranks them. */
+select {
+  color-scheme: light;
+}
+
+select option,
+select optgroup {
+  background-color: #ffffff !important;
+  color: #172033 !important;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
