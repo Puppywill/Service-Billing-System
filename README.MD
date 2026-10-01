@@ -45,6 +45,8 @@ Professional documentation prepared for evaluation and User Acceptance Testing
 - 📄 [View PDF Manual](docs/manual/service-billing-system-manual.pdf) — 24 pages, corporate layout with page numbers
 - 📝 [Download Word Manual](docs/manual/service-billing-system-manual.docx) — native, editable `.docx`
 - 🌐 [View HTML Manual](docs/manual/service-billing-system-manual.html) — self-contained single file
+- 📥 The PDF manual can also be downloaded directly from the running application:
+  **About → System Manual → Download manual**.
 
 The documentation provides an overview of the system, its workflow, modules,
 roles, reporting capabilities, manual invoicing process, security/access model,
@@ -213,6 +215,12 @@ from this screen is stored in the database.**
 - Notification bell with unread count; admins can delete individual notifications.
 - Password recovery request workflow (`POST /api/forgot-password`); an admin
   resolves the request.
+- Successful sign‑ins create an admin‑visible `LOGIN` notification (who signed
+  in, date, and time) for administrative visibility; it is not shown to the
+  signing‑in user unless they are an Admin. Failed logins and inactive accounts
+  never create a notification, and no password, hash, token, or cookie is ever
+  stored. Timestamps are generated on the server and displayed in Puerto Rico
+  time (`America/Puerto_Rico`).
 
 ### Theme and UI
 
@@ -307,7 +315,7 @@ Node/Express server. It can optionally be packaged into an `.exe` with PyInstall
 | `service-billing-schema.sql` | Creates `ServiceBillingDB`, its tables, relationships, indexes, and demo data. |
 | `phase-34-project-manager-assignments.sql` | Idempotent migration for the Project Manager role and `UserProjectAssignments`. |
 | `seed.js`, `seed-demo-data.js` | Demo data helpers. |
-| `assets/` | Logos and favicon assets. |
+| `assets/` | Logos, favicon assets, and the downloadable system manual PDF (`assets/manual/`). |
 | `tools/launcher/` | Windows demo launcher and its documentation. |
 
 ---

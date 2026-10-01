@@ -683,6 +683,9 @@ const translations = {
     aboutModuleReportsText: "Genera reportes, PDF, Excel y facturas manuales para revision administrativa.",
     aboutPermissionsTitle: "Acceso según rol",
     aboutPermissionsText: "Las opciones disponibles pueden cambiar según el rol y permisos del usuario. Admin, Project Manager y Technician/User ven herramientas diferentes para proteger la información y mantener un flujo de trabajo ordenado.",
+    aboutManualTitle: "Manual del sistema",
+    aboutManualText: "Manual y Presentación del Service Billing System",
+    downloadManualButtonText: "Descargar manual",
     aboutFooter: "Desarrollado para Solutions By Design, Inc.",
     dashboardTitle: "Resumen",
     dashboardLoadError: "No se pudo cargar el resumen.",
@@ -1114,7 +1117,8 @@ const translations = {
       USER_UPDATED: "Usuario editado",
       PASSWORD_RESET_REQUESTED: "Recuperación de contraseña",
       REPORT_GENERATED: "Reporte generado",
-      SERVICE_RECORDS_PROCESSED: "Registros procesados"
+      SERVICE_RECORDS_PROCESSED: "Registros procesados",
+      LOGIN: "Inicio de sesión"
     },
     statuses: {
       Abierto: "Abierto",
@@ -1216,6 +1220,9 @@ const translations = {
     aboutModuleReportsText: "Generates reports, PDF, Excel, and manual invoices for administrative review.",
     aboutPermissionsTitle: "Role-based access",
     aboutPermissionsText: "Available options may change according to each user's role and permissions. Admin, Project Manager, and Technician/User accounts see different tools to protect information and keep work organized.",
+    aboutManualTitle: "System Manual",
+    aboutManualText: "Service Billing System Manual and Presentation",
+    downloadManualButtonText: "Download manual",
     aboutFooter: "Developed for Solutions By Design, Inc.",
     dashboardTitle: "Summary",
     dashboardLoadError: "Dashboard could not be loaded.",
@@ -1647,7 +1654,8 @@ const translations = {
       USER_UPDATED: "User updated",
       PASSWORD_RESET_REQUESTED: "Password recovery",
       REPORT_GENERATED: "Report generated",
-      SERVICE_RECORDS_PROCESSED: "Processed records"
+      SERVICE_RECORDS_PROCESSED: "Processed records",
+      LOGIN: "Login"
     },
     statuses: {
       Abierto: "Open",
@@ -6411,6 +6419,11 @@ function translateNotificationType(type) {
 }
 
 function translateNotificationMessage(message) {
+  const loginMatch = message.match(/^(.+) inició sesión$/);
+  if (loginMatch) {
+    return currentLanguage === "es" ? message : `${loginMatch[1]} signed in`;
+  }
+
   const prefixes = {
     "Ticket creado": currentLanguage === "es" ? "Registro de servicio creado" : "Service record created",
     "Ticket cerrado": currentLanguage === "es" ? "Registro de servicio cerrado" : "Service record closed",
@@ -6975,6 +6988,9 @@ function applyStaticLanguage() {
   setText("#aboutModuleReportsText", t("aboutModuleReportsText"));
   setText("#aboutPermissionsTitle", t("aboutPermissionsTitle"));
   setText("#aboutPermissionsText", t("aboutPermissionsText"));
+  setText("#aboutManualTitle", t("aboutManualTitle"));
+  setText("#aboutManualText", t("aboutManualText"));
+  setText("#downloadManualButtonText", t("downloadManualButtonText"));
   setText("#aboutFooter", t("aboutFooter"));
 
   setText("#editModal .section-title .eyebrow", t("admin"));
@@ -8807,7 +8823,10 @@ async function requestPasswordReset() {
 function formatDate(value) {
   const locale = currentLanguage === "es" ? "es-BO" : "en-US";
 
-  return new Date(value).toLocaleString(locale);
+  // CreatedAt/AssignedAt columns are stored in true UTC (sysutcdatetime()).
+  // Force America/Puerto_Rico so the displayed time is correct for PR
+  // regardless of the viewer's own browser/OS timezone.
+  return new Date(value).toLocaleString(locale, { timeZone: "America/Puerto_Rico" });
 }
 
 function formatDateOnly(value) {

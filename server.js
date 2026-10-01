@@ -3537,6 +3537,13 @@ app.post("/api/login", async (req, res) => {
 
     await regenerateSession(req, mapUser(user));
     console.info(`[auth] Login successful for user ${user.UserID}; role=${req.session.user.Role}; session created=true.`);
+
+    try {
+      await createNotification(pool, null, `${user.FullName} inició sesión`, "LOGIN");
+    } catch (notificationError) {
+      console.error(notificationError);
+    }
+
     res.json({ user: req.session.user });
   } catch (error) {
     poolPromise = null;

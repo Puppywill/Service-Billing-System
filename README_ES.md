@@ -45,6 +45,8 @@ aceptación de usuario (UAT) del Service Billing System.
 - 📄 [Ver Manual PDF](docs/manual/service-billing-system-manual.pdf) — 24 páginas, diseño corporativo con numeración
 - 📝 [Descargar Manual Word](docs/manual/service-billing-system-manual.docx) — `.docx` nativo y editable
 - 🌐 [Ver Manual HTML](docs/manual/service-billing-system-manual.html) — archivo único autocontenido
+- 📥 El manual en PDF también puede descargarse directamente desde la aplicación
+  en ejecución: **Acerca de → Manual del sistema → Descargar manual**.
 
 La documentación presenta el funcionamiento general del sistema, el flujo de
 trabajo, los módulos, los roles, los reportes, el proceso de facturación manual,
@@ -233,6 +235,12 @@ profesional. **Ningún dato de esta pantalla se guarda en la base de datos.**
   eliminar notificaciones individuales.
 - Flujo de solicitud de recuperación de contraseña
   (`POST /api/forgot-password`); un administrador resuelve la solicitud.
+- Cada inicio de sesión exitoso crea una notificación `LOGIN` visible para los
+  administradores (quién inició sesión, fecha y hora); no se muestra al propio
+  usuario que inició sesión a menos que sea Admin. Un login fallido o una
+  cuenta inactiva nunca crean notificación, y nunca se guarda contraseña, hash,
+  token ni cookie. La fecha/hora se genera en el servidor y se muestra en hora
+  de Puerto Rico (`America/Puerto_Rico`).
 
 ### Tema e interfaz
 
@@ -329,7 +337,7 @@ como `.exe` con PyInstaller.
 | `service-billing-schema.sql` | Crea `ServiceBillingDB`, sus tablas, relaciones, índices y datos de demostración. |
 | `phase-34-project-manager-assignments.sql` | Migración idempotente del rol Project Manager y `UserProjectAssignments`. |
 | `seed.js`, `seed-demo-data.js` | Utilidades de datos de demostración. |
-| `assets/` | Logos y favicons. |
+| `assets/` | Logos, favicons y el manual del sistema descargable (`assets/manual/`). |
 | `tools/launcher/` | Launcher de demostración para Windows y su documentación. |
 
 ---
